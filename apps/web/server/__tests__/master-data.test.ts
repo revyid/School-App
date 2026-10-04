@@ -20,11 +20,14 @@ let guruSid = "";
 let siswaSid = "";
 let classId = "";
 
+let seq = 0;
 async function mk(role: "ADMIN" | "GURU" | "SISWA") {
-  const t = `${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`;
+  seq++;
+  const t = `${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}${seq}`;
+  const digits = `9${t}`.replace(/\D/g, "").slice(0, 11);
   const u = await dbSystem.user.create({
     data: {
-      schoolId: S, role, email: `${role}-${t}@t.id`, nisn: `9${t}`.replace(/\D/g, "").slice(0, 12) + "1",
+      schoolId: S, role, email: `${role}-${t}@t.id`, nisn: `${digits}${seq}`.slice(0, 12),
       name: `${role} ${t}`, passwordHash: await argon2.hash(PW, { type: argon2.argon2id }),
     },
   });

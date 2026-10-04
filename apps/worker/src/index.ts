@@ -1,7 +1,10 @@
 import express from "express";
 import { createServer } from "node:http";
+import { Server as SocketServer } from "socket.io";
 import { startImportWorker } from "./queues.js";
 import { processImportBatch } from "./import-processor.js";
+import { attachRealtime } from "./realtime.js";
+import { runAutoAlphaTick } from "./auto-alpha.js";
 
 const app = express();
 app.get("/healthz", (_req, res) => {
@@ -18,10 +21,19 @@ startImportWorker(async (job) => {
   await job.updateProgress(100);
 });
 
-// Socket.io di-wire Phase 3.
-
 const port = Number(process.env.PORT ?? 3001);
 const server = createServer(app);
+const io = new SocketServer(server, {
+  path: "/socket.io/",
+  cors: { origin: false },
+});
+attachRealtime(io);
+
+// Auto-Alpha tick tiap 5 menit (cutoffTime per sekolah dicek di dalam).
+setInterval(() => {
+  runAutoAlphaTick().catch((e: unknown) => console.error("auto-alpha tick gagal:", (e as Error).message));
+}, 5 * 60 * 1000);
+
 server.listen(port, "127.0.0.1", () => {
   console.log(`worker listening on 127.0.0.1:${port}`);
 });

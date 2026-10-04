@@ -9,6 +9,7 @@
     "./school": { "types": "./dist/school.d.ts", "default": "./dist/school.js" },
     "./auth": { "types": "./dist/auth.d.ts", "default": "./dist/auth.js" },
     "./master": { "types": "./dist/master.d.ts", "default": "./dist/master.js" },
+    "./attendance": { "types": "./dist/attendance.d.ts", "default": "./dist/attendance.js" },
     "./package.json": "./package.json"
   },
   "scripts": { "build": "tsc -p tsconfig.json" },

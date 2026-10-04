@@ -2,6 +2,7 @@
 // `await connection()` + force-dynamic memastikan tidak ada halaman yang
 // ter-prerender statis tanpa nonce.
 import { connection } from "next/server";
+import "./globals.css";
 
 export const dynamic = "force-dynamic";
 

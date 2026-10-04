@@ -3,7 +3,7 @@ import { db } from "../client.js";
 import { runAsSchool } from "../tenant.js";
 import { dbSystemTest } from "../test-utils.js"; // TEST-ONLY
 
-const RLS_TABLES = ["User", "Class", "TeacherClass", "StudentProfile", "AuditLog", "School", "Subject", "SchoolSettings", "TimetableSlot", "ImportBatch"];
+const RLS_TABLES = ["User", "Class", "TeacherClass", "StudentProfile", "AuditLog", "School", "Subject", "SchoolSettings", "TimetableSlot", "ImportBatch", "AttendanceRecord", "AcademicCalendar", "StudentQr"];
 // Aturan: setiap tabel tenant BARU wajib ditambah di RLS_TABLES + satu blok it di bawah.
 
 let A = "", B = "";
@@ -39,6 +39,10 @@ beforeAll(async () => {
   BIDS.settings = (await dbSystemTest.schoolSettings.create({ data: { schoolId: B, portalName: "PB" } })).id;
   BIDS.slot = (await dbSystemTest.timetableSlot.create({ data: { schoolId: B, classId: BIDS.class, dayOfWeek: 1, startTime: "07:00", endTime: "07:45", subjectName: "MTK" } })).id;
   BIDS.batch = (await dbSystemTest.importBatch.create({ data: { schoolId: B, createdById: BIDS.guru, fileName: "t.xlsx" } })).id;
+  const bu = await dbSystemTest.user.create({ data: { schoolId: B, role: "SISWA", nisn: uniq("6"), name: "SB2", passwordHash: "x" } });
+  BIDS.att = (await dbSystemTest.attendanceRecord.create({ data: { schoolId: B, studentId: bu.id, date: new Date(Date.UTC(2026, 0, 5)), status: "HADIR", source: "SCAN" } })).id;
+  BIDS.cal = (await dbSystemTest.academicCalendar.create({ data: { schoolId: B, date: new Date(Date.UTC(2026, 0, 6)), kind: "LIBUR" } })).id;
+  BIDS.qr = (await dbSystemTest.studentQr.create({ data: { schoolId: B, studentId: bu.id, token: `sms1-${uniq("a").replace(/[^0-9a-f]/g, "b").padEnd(32, "0").slice(0, 32)}` } })).id;
 });
 afterAll(async () => {
   await dbSystemTest.school.deleteMany({ where: { id: { in: [A, B] } } });
@@ -179,6 +183,40 @@ describe("tenant isolation", () => {
     await expect(runAsSchool(db, A, (tx: Tx) => tx.importBatch.deleteMany({ where: { id: BIDS.batch } }))).resolves.toMatchObject({ count: 0 });
     await expect(runAsSchool(db, A, (tx: Tx) =>
       tx.importBatch.create({ data: { schoolId: B, createdById: BIDS.guru, fileName: "j.xlsx" } })
+    )).rejects.toThrow();
+  });
+
+  it("AttendanceRecord: scope A buta terhadap B", async () => {
+    const rows = await runAsSchool(db, A, (tx: Tx) => tx.attendanceRecord.findMany({ select: { id: true } }));
+    expect(rows.map((r) => r.id)).not.toContain(BIDS.att);
+    await expect(runAsSchool(db, A, (tx: Tx) =>
+      tx.attendanceRecord.updateMany({ where: { id: BIDS.att }, data: { note: "j" } }))).resolves.toMatchObject({ count: 0 });
+    await expect(runAsSchool(db, A, (tx: Tx) =>
+      tx.attendanceRecord.deleteMany({ where: { id: BIDS.att } }))).resolves.toMatchObject({ count: 0 });
+    const bu = await dbSystemTest.user.create({ data: { schoolId: B, role: "SISWA", name: "SB3", passwordHash: "x" } });
+    await expect(runAsSchool(db, A, (tx: Tx) =>
+      tx.attendanceRecord.create({ data: { schoolId: B, studentId: bu.id, date: new Date(Date.UTC(2026, 0, 7)), status: "HADIR", source: "SCAN" } })
+    )).rejects.toThrow();
+  });
+
+  it("AcademicCalendar: scope A buta terhadap B", async () => {
+    const rows = await runAsSchool(db, A, (tx: Tx) => tx.academicCalendar.findMany({ select: { id: true } }));
+    expect(rows.map((r) => r.id)).not.toContain(BIDS.cal);
+    await expect(runAsSchool(db, A, (tx: Tx) =>
+      tx.academicCalendar.deleteMany({ where: { id: BIDS.cal } }))).resolves.toMatchObject({ count: 0 });
+    await expect(runAsSchool(db, A, (tx: Tx) =>
+      tx.academicCalendar.create({ data: { schoolId: B, date: new Date(Date.UTC(2026, 0, 8)), kind: "LIBUR" } })
+    )).rejects.toThrow();
+  });
+
+  it("StudentQr: scope A buta terhadap B", async () => {
+    const rows = await runAsSchool(db, A, (tx: Tx) => tx.studentQr.findMany({ select: { id: true } }));
+    expect(rows.map((r) => r.id)).not.toContain(BIDS.qr);
+    await expect(runAsSchool(db, A, (tx: Tx) =>
+      tx.studentQr.deleteMany({ where: { id: BIDS.qr } }))).resolves.toMatchObject({ count: 0 });
+    const bu = await dbSystemTest.user.create({ data: { schoolId: B, role: "SISWA", name: "SB4", passwordHash: "x" } });
+    await expect(runAsSchool(db, A, (tx: Tx) =>
+      tx.studentQr.create({ data: { schoolId: B, studentId: bu.id, token: `sms1-${"c".repeat(32)}` } })
     )).rejects.toThrow();
   });
 });

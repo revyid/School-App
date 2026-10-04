@@ -15,6 +15,24 @@ enum Role {
   SISWA
 }
 
+enum AttendanceStatus {
+  HADIR
+  IZIN
+  SAKIT
+  ALPHA
+}
+
+enum AttendanceSource {
+  SCAN
+  MANUAL
+  AUTO
+}
+
+enum CalendarKind {
+  LIBUR
+  EFEKTIF
+}
+
 model School {
   id        String   @id @default(cuid())
   slug      String   @unique
@@ -33,6 +51,9 @@ model School {
   settings        SchoolSettings?
   timetableSlots  TimetableSlot[]
   importBatches   ImportBatch[]
+  attendance      AttendanceRecord[]
+  calendar        AcademicCalendar[]
+  studentQrs      StudentQr[]
 }
 
 model User {
@@ -53,6 +74,9 @@ model User {
   homeroomOf         Class[]        @relation("Homeroom")
   taughtClasses      TeacherClass[] @relation("TeacherAssignments")
   timetableSlots     TimetableSlot[]
+  attendance         AttendanceRecord[] @relation("StudentAttendance")
+  editedAttendance   AttendanceRecord[] @relation("EditedAttendance")
+  qrToken            StudentQr?
   auditActions       AuditLog[]     @relation("Actor")
   @@unique([schoolId, email])
   @@unique([schoolId, nisn])
@@ -70,6 +94,8 @@ model Class {
   students          StudentProfile[]
   assignments       TeacherClass[]
   timetableSlots    TimetableSlot[]
+  attendance        AttendanceRecord[]
+  calendarOverrides AcademicCalendar[]
   @@unique([schoolId, name])
   @@index([schoolId])
 }
@@ -182,4 +208,57 @@ model ImportBatch {
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
   @@index([schoolId, createdAt])
+}
+
+model AttendanceRecord {
+  id        String            @id @default(cuid())
+  schoolId  String
+  school    School            @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  studentId String
+  student   User              @relation("StudentAttendance", fields: [studentId], references: [id], onDelete: Cascade)
+  classId   String?
+  class     Class?            @relation(fields: [classId], references: [id], onDelete: SetNull)
+  date      DateTime          @db.Date
+  status    AttendanceStatus
+  source    AttendanceSource  @default(SCAN)
+  scannedAt DateTime?
+  editedById String?
+  editedBy  User?             @relation("EditedAttendance", fields: [editedById], references: [id], onDelete: SetNull)
+  note      String?           @db.VarChar(280)
+  createdAt DateTime          @default(now())
+  updatedAt DateTime          @updatedAt
+  @@unique([schoolId, studentId, date])
+  @@index([schoolId, date])
+  @@index([schoolId, classId, date])
+}
+
+model AcademicCalendar {
+  id        String       @id @default(cuid())
+  schoolId  String
+  school    School       @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  date      DateTime     @db.Date
+  kind      CalendarKind
+  classId   String?
+  class     Class?       @relation(fields: [classId], references: [id], onDelete: Cascade)
+  note      String?      @db.VarChar(280)
+  createdAt DateTime     @default(now())
+  // Keunikan ditegakkan via partial unique index di SQL (global vs per-kelas),
+  // karena Postgres menganggap NULL berbeda dalam UNIQUE biasa.
+  @@index([schoolId, date])
+}
+
+model StudentQr {
+  id        String   @id @default(cuid())
+  schoolId  String
+  school    School   @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  studentId String   @unique
+  student   User     @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  token     String   @unique
+  // Disiapkan untuk rotasi token bertanda tangan (fase berikutnya):
+  // version naik tiap rotasi, expiresAt membatasi masa berlaku token.
+  version   Int      @default(1)
+  expiresAt DateTime?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  @@index([schoolId])
 }
