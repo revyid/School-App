@@ -8,6 +8,7 @@ import { runAutoAlphaTick } from "./auto-alpha.js";
 
 import { startWaWorker, waQueue } from "./wa-queue.js";
 import { runDeadlineReminders } from "./reminders.js";
+import { runLeaveRetention } from "./retention.js";
 import { BaileysProvider } from "./baileys-provider.js";
 
 const app = express();
@@ -60,6 +61,11 @@ setInterval(() => {
 setInterval(() => {
   runDeadlineReminders().catch((e: unknown) => console.error("reminder tick gagal:", (e as Error).message));
 }, 60 * 60 * 1000);
+
+// Retensi foto izin harian.
+setInterval(() => {
+  runLeaveRetention().catch((e: unknown) => console.error("retensi tick gagal:", (e as Error).message));
+}, 24 * 60 * 60 * 1000);
 
 startWaWorker();
 

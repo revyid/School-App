@@ -12,6 +12,7 @@
     "./attendance": { "types": "./dist/attendance.d.ts", "default": "./dist/attendance.js" },
     "./lms": { "types": "./dist/lms.d.ts", "default": "./dist/lms.js" },
     "./notify": { "types": "./dist/notify.d.ts", "default": "./dist/notify.js" },
+    "./leave": { "types": "./dist/leave.d.ts", "default": "./dist/leave.js" },
     "./package.json": "./package.json"
   },
   "scripts": { "build": "tsc -p tsconfig.json" },

@@ -3,7 +3,7 @@ import { db } from "../client.js";
 import { runAsSchool } from "../tenant.js";
 import { dbSystemTest } from "../test-utils.js"; // TEST-ONLY
 
-const RLS_TABLES = ["User", "Class", "TeacherClass", "StudentProfile", "AuditLog", "School", "Subject", "SchoolSettings", "TimetableSlot", "ImportBatch", "AttendanceRecord", "AcademicCalendar", "StudentQr", "Task", "TaskMaterial", "Submission", "Notification", "MessageOutbox"];
+const RLS_TABLES = ["User", "Class", "TeacherClass", "StudentProfile", "AuditLog", "School", "Subject", "SchoolSettings", "TimetableSlot", "ImportBatch", "AttendanceRecord", "AcademicCalendar", "StudentQr", "Task", "TaskMaterial", "Submission", "Notification", "MessageOutbox", "LeaveRequest", "CaptureSession", "ParentalConsent", "PrivacyPolicy"];
 // Aturan: setiap tabel tenant BARU wajib ditambah di RLS_TABLES + satu blok it di bawah.
 
 let A = "", B = "";
@@ -258,6 +258,31 @@ describe("tenant isolation", () => {
       tx.notification.deleteMany({ where: { id: bn.id } }))).resolves.toMatchObject({ count: 0 });
     await expect(runAsSchool(db, A, (tx: Tx) =>
       tx.messageOutbox.create({ data: { schoolId: B, to: "6281", text: "x" } })
+    )).rejects.toThrow();
+  });
+
+  it("LeaveRequest/CaptureSession/ParentalConsent/PrivacyPolicy: scope A buta terhadap B", async () => {
+    const bu = await dbSystemTest.user.create({ data: { schoolId: B, role: "SISWA", name: "SB7", passwordHash: "x" } });
+    const bl = await dbSystemTest.leaveRequest.create({
+      data: { schoolId: B, studentId: bu.id, date: new Date(Date.UTC(2026, 5, 1)), kind: "IZIN", description: "sakit perut parah" },
+    });
+    const bc = await dbSystemTest.captureSession.create({
+      data: { schoolId: B, studentId: bu.id, token: `cap-${Date.now().toString(36)}`, expiresAt: new Date(Date.now() + 300_000) },
+    });
+    const bp = await dbSystemTest.parentalConsent.create({
+      data: { schoolId: B, studentId: bu.id, consented: true },
+    });
+    const bv = await dbSystemTest.privacyPolicy.create({
+      data: { schoolId: B, text: "kebijakan B" },
+    });
+    for (const [model, id] of [["leaveRequest", bl.id], ["captureSession", bc.id], ["parentalConsent", bp.id], ["privacyPolicy", bv.id]] as const) {
+      const rows = await runAsSchool(db, A, (tx: Tx) => (tx[model] as { findMany: (a: object) => Promise<{ id: string }[]> }).findMany({ select: { id: true } }));
+      expect(rows.map((r) => r.id)).not.toContain(id);
+    }
+    await expect(runAsSchool(db, A, (tx: Tx) =>
+      tx.leaveRequest.deleteMany({ where: { id: bl.id } }))).resolves.toMatchObject({ count: 0 });
+    await expect(runAsSchool(db, A, (tx: Tx) =>
+      tx.leaveRequest.create({ data: { schoolId: B, studentId: bu.id, date: new Date(Date.UTC(2026, 5, 2)), kind: "SAKIT", description: "demam tinggi" } })
     )).rejects.toThrow();
   });
 });

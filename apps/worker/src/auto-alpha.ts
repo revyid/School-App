@@ -53,8 +53,15 @@ export async function runAutoAlphaTick(now = new Date()): Promise<{ schools: num
         tx.timetableSlot.findMany({ where: { dayOfWeek: dow }, select: { classId: true } }),
       );
       const withSchedule = new Set(slots.map((x) => x.classId));
-      // Phase 6 (izin APPROVED) menyambung di sini; sementara kosong.
-      const approvedLeave = new Set<string>();
+      // Phase 6: izin APPROVED mengecualikan dari auto-alpha.
+      const leaves = await runAsSchool(db, s.id, (tx) =>
+        tx.leaveRequest.findMany({
+          where: { date: day, status: "APPROVED" },
+          select: { studentId: true },
+          take: 5000,
+        }),
+      );
+      const approvedLeave = new Set(leaves.map((l) => l.studentId));
 
       const targets = pickAutoAlpha({
         students: students.map((u) => ({ id: u.id, classId: u.studentProfile?.classId ?? null })),

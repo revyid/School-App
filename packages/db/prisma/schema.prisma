@@ -52,6 +52,17 @@ enum OutboxStatus {
   FAILED
 }
 
+enum LeaveKind {
+  IZIN
+  SAKIT
+}
+
+enum LeaveStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
 model School {
   id        String   @id @default(cuid())
   slug      String   @unique
@@ -78,6 +89,10 @@ model School {
   taskMaterials   TaskMaterial[]
   notifications   Notification[]
   outbox          MessageOutbox[]
+  leaveRequests   LeaveRequest[]
+  captureSessions CaptureSession[]
+  consents        ParentalConsent[]
+  privacyPolicies PrivacyPolicy[]
 }
 
 model User {
@@ -105,6 +120,9 @@ model User {
   submissions        Submission[]   @relation("StudentSubmission")
   gradedSubmissions  Submission[]   @relation("SubmissionGrader")
   notifications      Notification[]
+  leaveRequests      LeaveRequest[] @relation("LeaveStudent")
+  reviewedLeaves     LeaveRequest[] @relation("LeaveReviewer")
+  consents           ParentalConsent[]
   auditActions       AuditLog[]     @relation("Actor")
   @@unique([schoolId, email])
   @@unique([schoolId, nisn])
@@ -388,4 +406,66 @@ model MessageOutbox {
   createdAt  DateTime     @default(now())
   @@unique([schoolId, dedupeKey])
   @@index([schoolId, status, scheduledAt])
+}
+
+model LeaveRequest {
+  id          String      @id @default(cuid())
+  schoolId    String
+  school      School      @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  studentId   String
+  student     User        @relation("LeaveStudent", fields: [studentId], references: [id], onDelete: Cascade)
+  date        DateTime    @db.Date
+  kind        LeaveKind
+  description String      @db.VarChar(1000)
+  // Foto live-capture (jalan server-side, bukan path mentah dari klien):
+  studentPhoto String?    @db.VarChar(255)
+  parentPhoto  String?    @db.VarChar(255)
+  photographedAt DateTime?
+  status      LeaveStatus @default(PENDING)
+  reviewerId  String?
+  reviewer    User?       @relation("LeaveReviewer", fields: [reviewerId], references: [id], onDelete: SetNull)
+  reviewNote  String?     @db.VarChar(1000)
+  reviewedAt  DateTime?
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+  // Satu pengajuan per (siswa, tanggal): ajukan ulang = update yang PENDING.
+  @@unique([schoolId, studentId, date])
+  @@index([schoolId, status, date])
+  @@index([schoolId, studentId])
+}
+
+model CaptureSession {
+  id        String   @id @default(cuid())
+  schoolId  String
+  school    School   @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  studentId String
+  // Token opak server (bukan JWT): terikat user, sekali pakai, TTL pendek.
+  token     String   @unique
+  usedAt    DateTime?
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  @@index([schoolId, studentId])
+}
+
+model ParentalConsent {
+  id        String   @id @default(cuid())
+  schoolId  String
+  school    School   @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  studentId String   @unique
+  student   User     @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  consented Boolean  @default(false)
+  consentedAt DateTime?
+  // Admin penanda (bila ditandai manual, bukan via ortu).
+  markedById String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  @@index([schoolId])
+}
+
+model PrivacyPolicy {
+  id        String   @id @default(cuid())
+  schoolId  String   @unique
+  school    School   @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  text      String   @db.Text
+  updatedAt DateTime @updatedAt
 }
