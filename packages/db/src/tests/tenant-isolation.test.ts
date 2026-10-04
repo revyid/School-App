@@ -3,7 +3,7 @@ import { db } from "../client.js";
 import { runAsSchool } from "../tenant.js";
 import { dbSystemTest } from "../test-utils.js"; // TEST-ONLY
 
-const RLS_TABLES = ["User", "Class", "TeacherClass", "StudentProfile", "AuditLog", "School", "Subject", "SchoolSettings", "TimetableSlot", "ImportBatch", "AttendanceRecord", "AcademicCalendar", "StudentQr", "Task", "TaskMaterial", "Submission"];
+const RLS_TABLES = ["User", "Class", "TeacherClass", "StudentProfile", "AuditLog", "School", "Subject", "SchoolSettings", "TimetableSlot", "ImportBatch", "AttendanceRecord", "AcademicCalendar", "StudentQr", "Task", "TaskMaterial", "Submission", "Notification", "MessageOutbox"];
 // Aturan: setiap tabel tenant BARU wajib ditambah di RLS_TABLES + satu blok it di bawah.
 
 let A = "", B = "";
@@ -239,6 +239,25 @@ describe("tenant isolation", () => {
       tx.task.deleteMany({ where: { id: bt.id } }))).resolves.toMatchObject({ count: 0 });
     await expect(runAsSchool(db, A, (tx: Tx) =>
       tx.submission.create({ data: { schoolId: B, taskId: bt.id, studentId: bu.id, text: "x" } })
+    )).rejects.toThrow();
+  });
+
+  it("Notification/MessageOutbox: scope A buta terhadap B", async () => {
+    const bu = await dbSystemTest.user.create({ data: { schoolId: B, role: "SISWA", name: "SB6", passwordHash: "x" } });
+    const bn = await dbSystemTest.notification.create({
+      data: { schoolId: B, userId: bu.id, title: "T", body: "B" },
+    });
+    const bo = await dbSystemTest.messageOutbox.create({
+      data: { schoolId: B, to: "6281", text: "halo", dedupeKey: `iso-${Date.now()}` },
+    });
+    for (const [model, id] of [["notification", bn.id], ["messageOutbox", bo.id]] as const) {
+      const rows = await runAsSchool(db, A, (tx: Tx) => (tx[model] as { findMany: (a: object) => Promise<{ id: string }[]> }).findMany({ select: { id: true } }));
+      expect(rows.map((r) => r.id)).not.toContain(id);
+    }
+    await expect(runAsSchool(db, A, (tx: Tx) =>
+      tx.notification.deleteMany({ where: { id: bn.id } }))).resolves.toMatchObject({ count: 0 });
+    await expect(runAsSchool(db, A, (tx: Tx) =>
+      tx.messageOutbox.create({ data: { schoolId: B, to: "6281", text: "x" } })
     )).rejects.toThrow();
   });
 });

@@ -45,6 +45,13 @@ enum MaterialKind {
   IMAGE
 }
 
+enum OutboxStatus {
+  QUEUED
+  SENDING
+  SENT
+  FAILED
+}
+
 model School {
   id        String   @id @default(cuid())
   slug      String   @unique
@@ -69,6 +76,8 @@ model School {
   tasks           Task[]
   submissions     Submission[]
   taskMaterials   TaskMaterial[]
+  notifications   Notification[]
+  outbox          MessageOutbox[]
 }
 
 model User {
@@ -95,6 +104,7 @@ model User {
   createdTasks       Task[]         @relation("TaskAuthor")
   submissions        Submission[]   @relation("StudentSubmission")
   gradedSubmissions  Submission[]   @relation("SubmissionGrader")
+  notifications      Notification[]
   auditActions       AuditLog[]     @relation("Actor")
   @@unique([schoolId, email])
   @@unique([schoolId, nisn])
@@ -347,4 +357,35 @@ model Submission {
   @@unique([taskId, studentId])
   @@index([schoolId, taskId])
   @@index([schoolId, studentId])
+}
+
+model Notification {
+  id        String   @id @default(cuid())
+  schoolId  String
+  school    School   @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title     String   @db.VarChar(200)
+  body      String   @db.VarChar(2000)
+  readAt    DateTime?
+  createdAt DateTime @default(now())
+  @@index([schoolId, userId, createdAt])
+}
+
+model MessageOutbox {
+  id         String       @id @default(cuid())
+  schoolId   String
+  school     School       @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  to         String       @db.VarChar(32)
+  text       String       @db.VarChar(4000)
+  status     OutboxStatus @default(QUEUED)
+  attempts   Int          @default(0)
+  lastError  String?      @db.VarChar(1000)
+  // Idempotensi: kunci unik per pemicu (mis. alpha-<studentId>-<date>, h-1-<taskId>-<studentId>).
+  dedupeKey  String?      @db.VarChar(128)
+  scheduledAt DateTime    @default(now())
+  sentAt     DateTime?
+  createdAt  DateTime     @default(now())
+  @@unique([schoolId, dedupeKey])
+  @@index([schoolId, status, scheduledAt])
 }

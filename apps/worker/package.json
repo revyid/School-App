@@ -10,6 +10,7 @@
   "dependencies": {
     "@sms/db": "workspace:*",
     "@sms/shared": "workspace:*",
+    "@whiskeysockets/baileys": "7.0.0-rc14",
     "argon2": "0.45.1",
     "bullmq": "6.3.11",
     "express": "5.2.1",

@@ -47,9 +47,16 @@ export default function GuruTugasDetail({ params }: { params: Promise<{ id: stri
     }
   }
 
-  async function ingatkan() {
-    // Phase 5: antrekan notifikasi/pengingat. Sementara catat audit via endpoint khusus fase 5.
-    setMsg("Pengingat akan dikirim via notifikasi (Phase 5)");
+  async function ingatkan(kind: "reminder" | "thanks") {
+    if (!id) return;
+    const res = await api("/api/tasks/nudge", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ taskId: id, kind }),
+    });
+    const d = await res.json().catch(() => ({}));
+    if (!res.ok) setMsg(d.error || `Gagal (${res.status})`);
+    else setMsg(`Terkirim: ${d.inapp} in-app + ${d.wa} WA`);
   }
 
   if (!detail.data && detail.loading) return <main><p>Memuat…</p></main>;
@@ -62,7 +69,8 @@ export default function GuruTugasDetail({ params }: { params: Promise<{ id: stri
       <p>Kelas: {t.task.class.name} · {t.visible ? "Terlihat siswa" : "Terjadwal/belum publish"}</p>
       <p>{t.task.instruction}</p>
       <p>Terkumpul: {t.submissions.length} · Belum: {t.pending.length}</p>
-      <button type="button" onClick={ingatkan}>Kirim pengingat ke yang belum mengumpulkan</button>
+      <button type="button" onClick={() => ingatkan("reminder")}>Kirim pengingat ke yang belum mengumpulkan</button>
+      <button type="button" onClick={() => ingatkan("thanks")}>Kirim terima kasih ke yang sudah mengumpulkan</button>
       {msg && <p>{msg}</p>}
       <h2>Pengumpulan</h2>
       <table>

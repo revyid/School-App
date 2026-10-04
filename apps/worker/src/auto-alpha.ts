@@ -4,6 +4,7 @@
 import { db } from "@sms/db/client";
 import { runAsSchool } from "@sms/db/tenant";
 import { todayWib, pickAutoAlpha } from "@sms/shared/attendance";
+import { sendAlphaAlerts } from "./reminders.js";
 
 function cutoffPassed(cutoff: string, nowWib: Date): boolean {
   const m = /^(\d{2}):(\d{2})$/.exec(cutoff);
@@ -80,6 +81,12 @@ export async function runAutoAlphaTick(now = new Date()): Promise<{ schools: num
           }),
         );
         alpha++;
+      }
+      // Alert Alpha (in-app + WA ortu, idempotent via dedupeKey).
+      try {
+        await sendAlphaAlerts(s.id, day);
+      } catch (e) {
+        errors.push(`${s.id}: alert: ${(e as Error).message}`);
       }
     } catch (e) {
       errors.push(`${s.id}: ${(e as Error).message}`);
