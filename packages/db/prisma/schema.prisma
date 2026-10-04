@@ -33,6 +33,18 @@ enum CalendarKind {
   EFEKTIF
 }
 
+enum TaskType {
+  UPLOAD
+  DIAGNOSTIC
+  REGULAR
+}
+
+enum MaterialKind {
+  TEXT
+  FILE
+  IMAGE
+}
+
 model School {
   id        String   @id @default(cuid())
   slug      String   @unique
@@ -54,6 +66,9 @@ model School {
   attendance      AttendanceRecord[]
   calendar        AcademicCalendar[]
   studentQrs      StudentQr[]
+  tasks           Task[]
+  submissions     Submission[]
+  taskMaterials   TaskMaterial[]
 }
 
 model User {
@@ -77,6 +92,9 @@ model User {
   attendance         AttendanceRecord[] @relation("StudentAttendance")
   editedAttendance   AttendanceRecord[] @relation("EditedAttendance")
   qrToken            StudentQr?
+  createdTasks       Task[]         @relation("TaskAuthor")
+  submissions        Submission[]   @relation("StudentSubmission")
+  gradedSubmissions  Submission[]   @relation("SubmissionGrader")
   auditActions       AuditLog[]     @relation("Actor")
   @@unique([schoolId, email])
   @@unique([schoolId, nisn])
@@ -96,6 +114,7 @@ model Class {
   timetableSlots    TimetableSlot[]
   attendance        AttendanceRecord[]
   calendarOverrides AcademicCalendar[]
+  tasks             Task[]
   @@unique([schoolId, name])
   @@index([schoolId])
 }
@@ -153,6 +172,7 @@ model Subject {
   code     String?
   name     String
   slots    TimetableSlot[]
+  tasks    Task[]
   @@unique([schoolId, name])
   @@index([schoolId])
 }
@@ -261,4 +281,70 @@ model StudentQr {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   @@index([schoolId])
+}
+
+model Task {
+  id          String   @id @default(cuid())
+  schoolId    String
+  school      School   @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  classId     String
+  class       Class    @relation(fields: [classId], references: [id], onDelete: Cascade)
+  subjectId   String?
+  subject     Subject? @relation(fields: [subjectId], references: [id], onDelete: SetNull)
+  authorId    String
+  author      User     @relation("TaskAuthor", fields: [authorId], references: [id], onDelete: Restrict)
+  title       String   @db.VarChar(200)
+  instruction String   @db.Text
+  type        TaskType @default(REGULAR)
+  deadline    DateTime?
+  publishAt   DateTime @default(now())
+  allowLate   Boolean  @default(false)
+  isGroup     Boolean  @default(false)
+  materials   TaskMaterial[]
+  submissions Submission[]
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  @@index([schoolId, classId, publishAt])
+  @@index([schoolId, authorId])
+}
+
+model TaskMaterial {
+  id       String       @id @default(cuid())
+  schoolId String
+  school   School       @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  taskId   String
+  task     Task         @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  kind     MaterialKind @default(TEXT)
+  text     String?      @db.Text
+  fileName String?      @db.VarChar(255)
+  mime     String?      @db.VarChar(128)
+  size     Int?
+  createdAt DateTime    @default(now())
+  @@index([schoolId, taskId])
+}
+
+model Submission {
+  id          String    @id @default(cuid())
+  schoolId    String
+  school      School    @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  taskId      String
+  task        Task      @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  studentId   String
+  student     User      @relation("StudentSubmission", fields: [studentId], references: [id], onDelete: Cascade)
+  text        String?   @db.Text
+  link        String?   @db.VarChar(2048)
+  fileName    String?   @db.VarChar(255)
+  mime        String?   @db.VarChar(128)
+  size        Int?
+  submittedAt DateTime  @default(now())
+  isLate      Boolean   @default(false)
+  score       Int?
+  feedback    String?   @db.VarChar(2000)
+  gradedById  String?
+  gradedBy    User?     @relation("SubmissionGrader", fields: [gradedById], references: [id], onDelete: SetNull)
+  gradedAt    DateTime?
+  // Satu submission per (tugas, siswa): kirim ulang = update baris yang sama.
+  @@unique([taskId, studentId])
+  @@index([schoolId, taskId])
+  @@index([schoolId, studentId])
 }

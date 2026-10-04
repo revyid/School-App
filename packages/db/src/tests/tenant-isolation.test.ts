@@ -3,7 +3,7 @@ import { db } from "../client.js";
 import { runAsSchool } from "../tenant.js";
 import { dbSystemTest } from "../test-utils.js"; // TEST-ONLY
 
-const RLS_TABLES = ["User", "Class", "TeacherClass", "StudentProfile", "AuditLog", "School", "Subject", "SchoolSettings", "TimetableSlot", "ImportBatch", "AttendanceRecord", "AcademicCalendar", "StudentQr"];
+const RLS_TABLES = ["User", "Class", "TeacherClass", "StudentProfile", "AuditLog", "School", "Subject", "SchoolSettings", "TimetableSlot", "ImportBatch", "AttendanceRecord", "AcademicCalendar", "StudentQr", "Task", "TaskMaterial", "Submission"];
 // Aturan: setiap tabel tenant BARU wajib ditambah di RLS_TABLES + satu blok it di bawah.
 
 let A = "", B = "";
@@ -217,6 +217,28 @@ describe("tenant isolation", () => {
     const bu = await dbSystemTest.user.create({ data: { schoolId: B, role: "SISWA", name: "SB4", passwordHash: "x" } });
     await expect(runAsSchool(db, A, (tx: Tx) =>
       tx.studentQr.create({ data: { schoolId: B, studentId: bu.id, token: `sms1-${"c".repeat(32)}` } })
+    )).rejects.toThrow();
+  });
+
+  it("Task/TaskMaterial/Submission: scope A buta terhadap B", async () => {
+    const bt = await dbSystemTest.task.create({
+      data: { schoolId: B, classId: BIDS.class, authorId: BIDS.guru, title: "BT", instruction: "i", publishAt: new Date("2026-01-01T00:00:00Z") },
+    });
+    const bm = await dbSystemTest.taskMaterial.create({
+      data: { schoolId: B, taskId: bt.id, kind: "TEXT", text: "materi" },
+    });
+    const bu = await dbSystemTest.user.create({ data: { schoolId: B, role: "SISWA", name: "SB5", passwordHash: "x" } });
+    const bs = await dbSystemTest.submission.create({
+      data: { schoolId: B, taskId: bt.id, studentId: bu.id, text: "j" },
+    });
+    for (const [model, id] of [["task", bt.id], ["taskMaterial", bm.id], ["submission", bs.id]] as const) {
+      const rows = await runAsSchool(db, A, (tx: Tx) => (tx[model] as { findMany: (a: object) => Promise<{ id: string }[]> }).findMany({ select: { id: true } }));
+      expect(rows.map((r) => r.id)).not.toContain(id);
+    }
+    await expect(runAsSchool(db, A, (tx: Tx) =>
+      tx.task.deleteMany({ where: { id: bt.id } }))).resolves.toMatchObject({ count: 0 });
+    await expect(runAsSchool(db, A, (tx: Tx) =>
+      tx.submission.create({ data: { schoolId: B, taskId: bt.id, studentId: bu.id, text: "x" } })
     )).rejects.toThrow();
   });
 });
