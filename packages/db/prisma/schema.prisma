@@ -57,6 +57,16 @@ enum LeaveKind {
   SAKIT
 }
 
+enum QType {
+  MCQ
+  SORTING
+}
+
+enum AssessKind {
+  DIAGNOSTIC
+  REGULAR
+}
+
 enum LeaveStatus {
   PENDING
   APPROVED
@@ -93,6 +103,14 @@ model School {
   captureSessions CaptureSession[]
   consents        ParentalConsent[]
   privacyPolicies PrivacyPolicy[]
+  assessments     Assessment[]
+  questions       Question[]
+  assessQuestions AssessQuestion[]
+  assessAttempts  AssessAttempt[]
+  assessAnswers   AssessAnswer[]
+  studyGroups     StudyGroup[]
+  studyGroupMembers StudyGroupMember[]
+  expLogs         ExpLog[]
 }
 
 model User {
@@ -123,6 +141,11 @@ model User {
   leaveRequests      LeaveRequest[] @relation("LeaveStudent")
   reviewedLeaves     LeaveRequest[] @relation("LeaveReviewer")
   consents           ParentalConsent[]
+  markedConsents     ParentalConsent[] @relation("ConsentMarker")
+  assessAttempts     AssessAttempt[]  @relation("AssessStudent")
+  gradedAttempts     AssessAttempt[]  @relation("AssessGrader")
+  groupMemberships   StudyGroupMember[]
+  expLogs            ExpLog[]
   auditActions       AuditLog[]     @relation("Actor")
   @@unique([schoolId, email])
   @@unique([schoolId, nisn])
@@ -143,6 +166,7 @@ model Class {
   attendance        AttendanceRecord[]
   calendarOverrides AcademicCalendar[]
   tasks             Task[]
+  assessments       Assessment[]
   @@unique([schoolId, name])
   @@index([schoolId])
 }
@@ -201,6 +225,8 @@ model Subject {
   name     String
   slots    TimetableSlot[]
   tasks    Task[]
+  assessments Assessment[]
+  questions   Question[]
   @@unique([schoolId, name])
   @@index([schoolId])
 }
@@ -220,6 +246,8 @@ model SchoolSettings {
   studentRetentionDays Int      @default(90)
   photoRetentionDays   Int      @default(30)
   defaultPasswordMode  String   @default("random")
+  // Aturan EXP per sekolah (JSON: {submitOnTime, hadirHarian, streakBonus, ...}).
+  expRules             Json?
   updatedAt            DateTime @updatedAt
 }
 
@@ -457,6 +485,7 @@ model ParentalConsent {
   consentedAt DateTime?
   // Admin penanda (bila ditandai manual, bukan via ortu).
   markedById String?
+  markedBy   User?   @relation("ConsentMarker", fields: [markedById], references: [id], onDelete: SetNull)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   @@index([schoolId])
@@ -468,4 +497,164 @@ model PrivacyPolicy {
   school    School   @relation(fields: [schoolId], references: [id], onDelete: Cascade)
   text      String   @db.Text
   updatedAt DateTime @updatedAt
+}
+
+// ---------- Phase 7: Asesmen ----------
+// KUNCI JAWABAN (correctIndex/correctOrder) TIDAK PERNAH dikirim ke klien.
+// Acak urutan soal+opsi dan penilaian selalu server-side.
+
+model Assessment {
+  id          String     @id @default(cuid())
+  schoolId    String
+  school      School     @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  classId     String
+  class       Class      @relation(fields: [classId], references: [id], onDelete: Cascade)
+  subjectId   String?
+  subject     Subject?   @relation(fields: [subjectId], references: [id], onDelete: SetNull)
+  authorId    String
+  kind        AssessKind @default(REGULAR)
+  title       String     @db.VarChar(200)
+  instruction String?    @db.Text
+  durationMin Int?
+  publishAt   DateTime   @default(now())
+  deadline    DateTime?
+  shuffleQ    Boolean    @default(true)
+  shuffleOpt  Boolean    @default(true)
+  questions   AssessQuestion[]
+  attempts    AssessAttempt[]
+  groups      StudyGroup[]
+  memberLinks StudyGroupMember[] @relation("MemberAssessment")
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+  @@index([schoolId, classId, publishAt])
+  @@index([schoolId, authorId])
+}
+
+// Bank soal milik guru per mapel: Question + snapshot AssessQuestion per asesmen.
+// Alasan snapshot: bank boleh diedit guru tanpa merusak asesmen yang sudah jalan.
+model Question {
+  id        String   @id @default(cuid())
+  schoolId  String
+  school    School   @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  subjectId String?
+  subject   Subject? @relation(fields: [subjectId], references: [id], onDelete: SetNull)
+  authorId  String
+  type      QType    @default(MCQ)
+  stem      String   @db.Text
+  imageName String?  @db.VarChar(255)
+  options   String[] @db.Text
+  // KUNCI: hanya dibaca server-side (route attempt + grading + analisis).
+  correctIndex Int?
+  correctOrder Int[]  @default([])
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  @@index([schoolId, subjectId])
+  @@index([schoolId, authorId])
+}
+
+model AssessQuestion {
+  id           String     @id @default(cuid())
+  schoolId     String
+  school       School     @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  assessmentId String
+  assessment   Assessment @relation(fields: [assessmentId], references: [id], onDelete: Cascade)
+  type         QType      @default(MCQ)
+  stem         String     @db.Text
+  imageName    String?    @db.VarChar(255)
+  options      String[]   @db.Text
+  points       Int        @default(10)
+  position     Int        @default(0)
+  // KUNCI snapshot: server-side saja.
+  correctIndex Int?
+  correctOrder Int[]      @default([])
+  answers      AssessAnswer[]
+  @@index([schoolId, assessmentId, position])
+}
+
+model AssessAttempt {
+  id           String     @id @default(cuid())
+  schoolId     String
+  school       School     @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  assessmentId String
+  assessment   Assessment @relation(fields: [assessmentId], references: [id], onDelete: Cascade)
+  studentId    String
+  student      User       @relation("AssessStudent", fields: [studentId], references: [id], onDelete: Cascade)
+  // Urutan acak per attempt (seed tersimpan; jawaban dinilai via pemetaan server).
+  qOrder       String[]   @default([])
+  optOrders    Json?
+  startedAt    DateTime   @default(now())
+  submittedAt  DateTime?
+  score        Int?
+  maxScore     Int?
+  gradedById   String?
+  gradedBy     User?      @relation("AssessGrader", fields: [gradedById], references: [id], onDelete: SetNull)
+  answers      AssessAnswer[]
+  // Satu attempt per (asesmen, siswa): kirim ulang = update attempt yang sama.
+  @@unique([assessmentId, studentId])
+  @@index([schoolId, assessmentId])
+  @@index([schoolId, studentId])
+}
+
+model AssessAnswer {
+  id         String         @id @default(cuid())
+  schoolId   String
+  school     School         @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  attemptId  String
+  attempt    AssessAttempt  @relation(fields: [attemptId], references: [id], onDelete: Cascade)
+  questionId String
+  question   AssessQuestion @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  // Jawaban dalam KOORDINAT ASLI (dipetakan server dari koordinat acak klien).
+  pickedIndex Int?
+  pickedOrder Int[]          @default([])
+  isCorrect   Boolean?
+  points      Int?
+  @@unique([attemptId, questionId])
+  @@index([schoolId, attemptId])
+  @@index([schoolId, questionId])
+}
+
+// Grup per asesmen (isGroup di Task tidak dipakai untuk asesmen).
+// Nilai selalu per siswa (attempt masing-masing); grup hanya pengelompokan.
+model StudyGroup {
+  id           String             @id @default(cuid())
+  schoolId     String
+  school       School             @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  assessmentId String
+  assessment   Assessment         @relation(fields: [assessmentId], references: [id], onDelete: Cascade)
+  name         String             @db.VarChar(100)
+  members      StudyGroupMember[]
+  @@unique([assessmentId, name])
+  @@index([schoolId, assessmentId])
+}
+
+model StudyGroupMember {
+  id        String     @id @default(cuid())
+  schoolId  String
+  school    School     @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  groupId   String
+  group     StudyGroup @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  studentId String
+  student   User       @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  // Satu siswa = satu grup per asesmen.
+  @@unique([assessmentId, studentId])
+  assessmentId String
+  assessment   Assessment @relation("MemberAssessment", fields: [assessmentId], references: [id], onDelete: Cascade)
+  @@index([schoolId, groupId])
+}
+
+// ---------- Phase 8 (parsial di sini: ExpLog; portal lain di Fase 8) ----------
+
+model ExpLog {
+  id        String   @id @default(cuid())
+  schoolId  String
+  school    School   @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  studentId String
+  student   User     @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  points    Int
+  reason    String   @db.VarChar(200)
+  // Kunci idempotensi per pemicu (mis. submit-<submissionId>, hadir-<recordId>).
+  dedupeKey String?  @db.VarChar(128)
+  createdAt DateTime @default(now())
+  @@unique([schoolId, dedupeKey])
+  @@index([schoolId, studentId, createdAt])
 }

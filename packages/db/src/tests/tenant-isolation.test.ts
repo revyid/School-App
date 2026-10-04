@@ -3,7 +3,7 @@ import { db } from "../client.js";
 import { runAsSchool } from "../tenant.js";
 import { dbSystemTest } from "../test-utils.js"; // TEST-ONLY
 
-const RLS_TABLES = ["User", "Class", "TeacherClass", "StudentProfile", "AuditLog", "School", "Subject", "SchoolSettings", "TimetableSlot", "ImportBatch", "AttendanceRecord", "AcademicCalendar", "StudentQr", "Task", "TaskMaterial", "Submission", "Notification", "MessageOutbox", "LeaveRequest", "CaptureSession", "ParentalConsent", "PrivacyPolicy"];
+const RLS_TABLES = ["User", "Class", "TeacherClass", "StudentProfile", "AuditLog", "School", "Subject", "SchoolSettings", "TimetableSlot", "ImportBatch", "AttendanceRecord", "AcademicCalendar", "StudentQr", "Task", "TaskMaterial", "Submission", "Notification", "MessageOutbox", "LeaveRequest", "CaptureSession", "ParentalConsent", "PrivacyPolicy", "Assessment", "Question", "AssessQuestion", "AssessAttempt", "AssessAnswer", "StudyGroup", "StudyGroupMember", "ExpLog"];
 // Aturan: setiap tabel tenant BARU wajib ditambah di RLS_TABLES + satu blok it di bawah.
 
 let A = "", B = "";
@@ -284,5 +284,40 @@ describe("tenant isolation", () => {
     await expect(runAsSchool(db, A, (tx: Tx) =>
       tx.leaveRequest.create({ data: { schoolId: B, studentId: bu.id, date: new Date(Date.UTC(2026, 5, 2)), kind: "SAKIT", description: "demam tinggi" } })
     )).rejects.toThrow();
+  });
+
+  it("Assessment/Question/Attempt/Group/ExpLog: scope A buta terhadap B; unique grup ditegakkan", async () => {
+    const bu = await dbSystemTest.user.create({ data: { schoolId: B, role: "SISWA", name: "SB8", passwordHash: "x" } });
+    const bc = await dbSystemTest.class.create({ data: { schoolId: B, name: `KB-${Date.now().toString(36)}` } });
+    const ba = await dbSystemTest.assessment.create({
+      data: { schoolId: B, classId: bc.id, authorId: bu.id, title: "UH-1" },
+    });
+    const bq = await dbSystemTest.question.create({
+      data: { schoolId: B, authorId: bu.id, type: "MCQ", stem: "1+1?", options: ["1", "2"], correctIndex: 1 },
+    });
+    const bt = await dbSystemTest.assessAttempt.create({
+      data: { schoolId: B, assessmentId: ba.id, studentId: bu.id },
+    });
+    const bg = await dbSystemTest.studyGroup.create({
+      data: { schoolId: B, assessmentId: ba.id, name: "G1" },
+    });
+    await dbSystemTest.studyGroupMember.create({
+      data: { schoolId: B, groupId: bg.id, studentId: bu.id, assessmentId: ba.id },
+    });
+    const be = await dbSystemTest.expLog.create({
+      data: { schoolId: B, studentId: bu.id, points: 10, reason: "t", dedupeKey: `k-${Date.now().toString(36)}` },
+    });
+    for (const [model, id] of [["assessment", ba.id], ["question", bq.id], ["assessAttempt", bt.id], ["studyGroup", bg.id], ["expLog", be.id]] as const) {
+      const rows = await runAsSchool(db, A, (tx: Tx) => (tx[model] as { findMany: (a: object) => Promise<{ id: string }[]> }).findMany({ select: { id: true } }));
+      expect(rows.map((r) => r.id)).not.toContain(id);
+    }
+    // Satu siswa = satu grup per asesmen: duplikat ditolak DB.
+    await expect(dbSystemTest.studyGroupMember.create({
+      data: { schoolId: B, groupId: bg.id, studentId: bu.id, assessmentId: ba.id },
+    })).rejects.toThrow();
+    // Kunci jawaban tak ikut di select aman (kolom ada tapi route tak pernah select).
+    const q = await runAsSchool(db, B, (tx: Tx) =>
+      (tx.question as { findFirst: (a: object) => Promise<{ correctIndex: number } | null> }).findFirst({ where: { id: bq.id }, select: { correctIndex: true } }));
+    expect(q?.correctIndex).toBe(1);
   });
 });
