@@ -3,7 +3,7 @@ import { db } from "../client.js";
 import { runAsSchool } from "../tenant.js";
 import { dbSystemTest } from "../test-utils.js"; // TEST-ONLY
 
-const RLS_TABLES = ["User", "Class", "TeacherClass", "StudentProfile", "AuditLog", "School"];
+const RLS_TABLES = ["User", "Class", "TeacherClass", "StudentProfile", "AuditLog", "School", "Subject", "SchoolSettings", "TimetableSlot", "ImportBatch"];
 // Aturan: setiap tabel tenant BARU wajib ditambah di RLS_TABLES + satu blok it di bawah.
 
 let A = "", B = "";
@@ -35,6 +35,10 @@ beforeAll(async () => {
   BIDS.profile = (await dbSystemTest.studentProfile.create({ data: { schoolId: B, userId: BIDS.user, classId: BIDS.class } })).id;
   BIDS.ta = (await dbSystemTest.teacherClass.create({ data: { schoolId: B, teacherId: BIDS.guru, classId: BIDS.class, subject: "MTK" } })).id;
   BIDS.log = (await dbSystemTest.auditLog.create({ data: { schoolId: B, action: "TEST.SEED" } })).id;
+  BIDS.subject = (await dbSystemTest.subject.create({ data: { schoolId: B, name: uniq("S") } })).id;
+  BIDS.settings = (await dbSystemTest.schoolSettings.create({ data: { schoolId: B, portalName: "PB" } })).id;
+  BIDS.slot = (await dbSystemTest.timetableSlot.create({ data: { schoolId: B, classId: BIDS.class, dayOfWeek: 1, startTime: "07:00", endTime: "07:45", subjectName: "MTK" } })).id;
+  BIDS.batch = (await dbSystemTest.importBatch.create({ data: { schoolId: B, createdById: BIDS.guru, fileName: "t.xlsx" } })).id;
 });
 afterAll(async () => {
   await dbSystemTest.school.deleteMany({ where: { id: { in: [A, B] } } });
@@ -128,6 +132,53 @@ describe("tenant isolation", () => {
     )).rejects.toThrow();
     await expect(runAsSchool(db, A, (tx: Tx) =>
       tx.school.deleteMany({ where: { id: B } })
+    )).rejects.toThrow();
+  });
+
+  it("Subject: scope A buta terhadap B", async () => {
+    const rows = await runAsSchool(db, A, (tx: Tx) => tx.subject.findMany({ select: { id: true } }));
+    expect(rows.map((r) => r.id)).not.toContain(BIDS.subject);
+    await expect(runAsSchool(db, A, (tx: Tx) => tx.subject.updateMany({ where: { id: BIDS.subject }, data: { name: "j" } }))).resolves.toMatchObject({ count: 0 });
+    await expect(runAsSchool(db, A, (tx: Tx) => tx.subject.deleteMany({ where: { id: BIDS.subject } }))).resolves.toMatchObject({ count: 0 });
+    await expect(runAsSchool(db, A, (tx: Tx) =>
+      tx.subject.create({ data: { schoolId: B, name: uniq("J") } })
+    )).rejects.toThrow();
+  });
+
+  it("SchoolSettings: scope A buta terhadap B (tenant, bukan publik)", async () => {
+    const rows = await runAsSchool(db, A, (tx: Tx) => tx.schoolSettings.findMany({ select: { id: true } }));
+    expect(rows.map((r) => r.id)).not.toContain(BIDS.settings);
+    // Grant app_user = SELECT, INSERT, UPDATE (tanpa DELETE): UPDATE lintas sekolah
+    // tak terlihat RLS -> count 0; DELETE tanpa grant -> permission-denied.
+    await expect(runAsSchool(db, A, (tx: Tx) =>
+      tx.schoolSettings.updateMany({ where: { id: BIDS.settings }, data: { portalName: "j" } })
+    )).resolves.toMatchObject({ count: 0 });
+    await expect(runAsSchool(db, A, (tx: Tx) =>
+      tx.schoolSettings.deleteMany({ where: { id: BIDS.settings } })
+    )).rejects.toThrow();
+    await expect(runAsSchool(db, A, (tx: Tx) =>
+      tx.schoolSettings.create({ data: { schoolId: B, portalName: "j" } })
+    )).rejects.toThrow();
+  });
+
+  it("TimetableSlot: scope A buta terhadap B", async () => {
+    const rows = await runAsSchool(db, A, (tx: Tx) => tx.timetableSlot.findMany({ select: { id: true } }));
+    expect(rows.map((r) => r.id)).not.toContain(BIDS.slot);
+    await expect(runAsSchool(db, A, (tx: Tx) => tx.timetableSlot.updateMany({ where: { id: BIDS.slot }, data: { subjectName: "j" } }))).resolves.toMatchObject({ count: 0 });
+    await expect(runAsSchool(db, A, (tx: Tx) => tx.timetableSlot.deleteMany({ where: { id: BIDS.slot } }))).resolves.toMatchObject({ count: 0 });
+    const c = await dbSystemTest.class.create({ data: { schoolId: B, name: uniq("K") } });
+    await expect(runAsSchool(db, A, (tx: Tx) =>
+      tx.timetableSlot.create({ data: { schoolId: B, classId: c.id, dayOfWeek: 2, startTime: "07:00", endTime: "07:45" } })
+    )).rejects.toThrow();
+  });
+
+  it("ImportBatch: scope A buta terhadap B", async () => {
+    const rows = await runAsSchool(db, A, (tx: Tx) => tx.importBatch.findMany({ select: { id: true } }));
+    expect(rows.map((r) => r.id)).not.toContain(BIDS.batch);
+    await expect(runAsSchool(db, A, (tx: Tx) => tx.importBatch.updateMany({ where: { id: BIDS.batch }, data: { fileName: "j" } }))).resolves.toMatchObject({ count: 0 });
+    await expect(runAsSchool(db, A, (tx: Tx) => tx.importBatch.deleteMany({ where: { id: BIDS.batch } }))).resolves.toMatchObject({ count: 0 });
+    await expect(runAsSchool(db, A, (tx: Tx) =>
+      tx.importBatch.create({ data: { schoolId: B, createdById: BIDS.guru, fileName: "j.xlsx" } })
     )).rejects.toThrow();
   });
 });

@@ -29,6 +29,10 @@ model School {
   teacherClasses  TeacherClass[]
   studentProfiles StudentProfile[]
   auditLogs       AuditLog[]
+  subjects        Subject[]
+  settings        SchoolSettings?
+  timetableSlots  TimetableSlot[]
+  importBatches   ImportBatch[]
 }
 
 model User {
@@ -48,6 +52,7 @@ model User {
   studentProfile     StudentProfile?
   homeroomOf         Class[]        @relation("Homeroom")
   taughtClasses      TeacherClass[] @relation("TeacherAssignments")
+  timetableSlots     TimetableSlot[]
   auditActions       AuditLog[]     @relation("Actor")
   @@unique([schoolId, email])
   @@unique([schoolId, nisn])
@@ -64,6 +69,7 @@ model Class {
   homeroomTeacher   User?    @relation("Homeroom", fields: [homeroomTeacherId], references: [id], onDelete: SetNull)
   students          StudentProfile[]
   assignments       TeacherClass[]
+  timetableSlots    TimetableSlot[]
   @@unique([schoolId, name])
   @@index([schoolId])
 }
@@ -93,6 +99,8 @@ model StudentProfile {
   parentPhone String?
   avatarUrl   String?
   bio         String?
+  gender      String?   // "L" | "P"
+  birthDate   DateTime?
   @@index([schoolId])
   @@index([classId])
 }
@@ -109,5 +117,69 @@ model AuditLog {
   meta      Json?
   ip        String?
   createdAt DateTime @default(now())
+  @@index([schoolId, createdAt])
+}
+
+model Subject {
+  id       String @id @default(cuid())
+  schoolId String
+  school   School @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  code     String?
+  name     String
+  slots    TimetableSlot[]
+  @@unique([schoolId, name])
+  @@index([schoolId])
+}
+
+model SchoolSettings {
+  id                   String   @id @default(cuid())
+  schoolId             String   @unique
+  school               School   @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  portalName           String   @default("")
+  logoUrl              String?
+  startTime            String   @default("07:00")
+  cutoffTime           String   @default("07:30")
+  waDailyCap           Int      @default(200)
+  waPerMinuteCap       Int      @default(10)
+  ctaGtkUrl            String?
+  ctaMuridUrl          String?
+  studentRetentionDays Int      @default(90)
+  photoRetentionDays   Int      @default(30)
+  defaultPasswordMode  String   @default("random")
+  updatedAt            DateTime @updatedAt
+}
+
+model TimetableSlot {
+  id        String @id @default(cuid())
+  schoolId  String
+  school    School @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  classId   String
+  class     Class  @relation(fields: [classId], references: [id], onDelete: Cascade)
+  subjectId   String?
+  subjectRef  Subject? @relation(fields: [subjectId], references: [id], onDelete: SetNull)
+  subjectName String   @default("")
+  teacherId String?
+  teacher   User?  @relation(fields: [teacherId], references: [id], onDelete: SetNull)
+  dayOfWeek Int
+  startTime String
+  endTime   String
+  @@index([schoolId])
+  @@index([classId, dayOfWeek])
+}
+
+model ImportBatch {
+  id            String   @id @default(cuid())
+  schoolId      String
+  school        School   @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  createdById   String
+  fileName      String
+  status        String   @default("QUEUED")
+  totalRows     Int      @default(0)
+  processedRows Int      @default(0)
+  okRows        Int      @default(0)
+  errRows       Int      @default(0)
+  errorReport   Json?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
   @@index([schoolId, createdAt])
 }

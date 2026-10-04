@@ -1,6 +1,6 @@
 import { randomBytes, timingSafeEqual } from "node:crypto";
 import { redis } from "./redis";
-import { SESSION_COOKIE } from "@sms/shared/auth";
+import { SESSION_COOKIE, COOKIE_SECURE } from "@sms/shared/auth";
 
 const SESSION_TTL = 7 * 24 * 3600; // 7 hari, sliding
 
@@ -14,9 +14,9 @@ export interface SessRec {
 }
 
 export const cookieHeader = (sid: string, maxAge = SESSION_TTL) =>
-  `${SESSION_COOKIE}=${sid}; HttpOnly; Secure; Path=/; SameSite=Lax; Max-Age=${maxAge}`;
+  `${SESSION_COOKIE}=${sid}; HttpOnly;${COOKIE_SECURE ? " Secure;" : ""} Path=/; SameSite=Lax; Max-Age=${maxAge}`;
 export const clearCookieHeader = () =>
-  `${SESSION_COOKIE}=deleted; HttpOnly; Secure; Path=/; SameSite=Lax; Max-Age=0`;
+  `${SESSION_COOKIE}=deleted; HttpOnly;${COOKIE_SECURE ? " Secure;" : ""} Path=/; SameSite=Lax; Max-Age=0`;
 
 export async function createSession(userId: string, schoolId: string, schoolSlug: string, role: string) {
   const sid = randomBytes(32).toString("hex");

@@ -16,6 +16,13 @@ export function proxy(req: NextRequest) {
   const host = req.headers.get("host") ?? "";
   const slug = schoolSlugFromHost(host, apex);
   if (!slug) return new NextResponse("not found", { status: 404 });
+  // Nama cookie tergantung env (prod __Host-session, dev sms-session-dev).
+  // Proxy tidak boleh bergantung pada env yang belum tentu tersedia di runtime-nya,
+  // jadi terima KEDUANYA di sini. Otorisasi penuh tetap di authorize().
+  const hasSession =
+    (req.cookies.get(SESSION_COOKIE)?.value ?? "").length > 0 ||
+    (req.cookies.get("__Host-session")?.value ?? "").length > 0 ||
+    (req.cookies.get("sms-session-dev")?.value ?? "").length > 0;
 
   const nonce = Buffer.from(crypto.randomUUID()).toString("base64");
   const isDev = process.env.NODE_ENV === "development";
@@ -24,7 +31,10 @@ export function proxy(req: NextRequest) {
     `script-src 'self' 'nonce-${nonce}'${isDev ? " 'unsafe-eval'" : ""}`,
     "style-src 'self' 'unsafe-inline'",
     "img-src 'self' data: blob:",
-    `connect-src 'self' wss://${slug}.${apex}`,
+    // Dev (next dev): HMR pakai ws:// + port; prod: hanya wss:// apex.
+    isDev
+      ? `connect-src 'self' ws: wss: http: https:`
+      : `connect-src 'self' wss://${slug}.${apex}`,
     "frame-ancestors 'none'",
     "base-uri 'self'",
     "form-action 'self'",
@@ -36,14 +46,24 @@ export function proxy(req: NextRequest) {
   reqHeaders.set("Content-Security-Policy", csp);
 
   const path = req.nextUrl.pathname;
+
+  // Tanpa sesi, /change-password tidak berguna (API menolak) -> arahkan ke /login.
+  // (Halaman /login sendiri tetap publik.)
+  if (path === "/change-password" && !hasSession) {
+    const url = req.nextUrl.clone();
+    url.pathname = "/login";
+    const r = NextResponse.redirect(url);
+    r.headers.set("Content-Security-Policy", csp);
+    return r;
+  }
+
   if (isPublic(path)) {
     const res = NextResponse.next({ request: { headers: reqHeaders } });
     res.headers.set("Content-Security-Policy", csp);
     return res;
   }
 
-  const hasCookie = (req.cookies.get(SESSION_COOKIE)?.value ?? "").length > 0;
-  if (!hasCookie) {
+  if (!hasSession) {
     const url = req.nextUrl.clone();
     url.pathname = "/login";
     // redirect: opsi `request` hanya berlaku untuk next()/rewrite(), bukan redirect.

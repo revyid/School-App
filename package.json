@@ -16,7 +16,7 @@
   },
   "scripts": {
     "build": "pnpm --filter @sms/db exec prisma generate && pnpm -r --filter ./packages/* run build && pnpm -r --filter ./apps/* run build",
-    "test": "pnpm --filter @sms/shared exec vitest run && pnpm --filter @sms/db exec vitest run src/tests/tenant-isolation.test.ts && pnpm --filter @sms/web exec vitest run server/__tests__/auth-security.test.ts && pnpm --filter @sms/worker exec vitest run src/socket-auth.test.ts",
+    "test": "pnpm --filter @sms/shared exec vitest run && pnpm --filter @sms/db exec vitest run src/tests/tenant-isolation.test.ts && pnpm --filter @sms/web exec vitest run server/__tests__/ && pnpm --filter @sms/worker exec vitest run src/",
     "lint": "sh scripts/lint-imports.sh",
     "check": "pnpm -r --filter ./packages/* --filter @sms/web --filter @sms/worker exec tsc --noEmit -p tsconfig.json"
   },

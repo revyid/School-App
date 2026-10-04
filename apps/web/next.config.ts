@@ -8,6 +8,9 @@ const nextConfig: NextConfig = {
   output: "standalone",
   outputFileTracingRoot: path.join(dirname, "../.."),
   serverExternalPackages: ["argon2", "ioredis"],
+  // Dev via subdomain *.localtest.me: izinkan HMR/dev resource lintas-origin ini.
+  // (Prod tidak pakai next dev, jadi ini tidak berpengaruh di deploy.)
+  allowedDevOrigins: ["*.localtest.me", "demo.localtest.me"],
 };
 
 export default nextConfig;
