@@ -4,7 +4,7 @@
 # dari *.test.ts. Dijalankan via `pnpm lint`.
 set -eu
 bad=0
-for f in $(git grep -l -- '@sms/db/test-utils' -- ':!*.test.ts' 2>/dev/null || true); do
+for f in $(git grep -l -- '@sms/db/test-utils' -- ':!*.test.ts' ':!scripts/lint-imports.sh' 2>/dev/null || true); do
   echo "LINT-FAIL: $f mengimpor @sms/db/test-utils di luar *.test.ts"
   bad=1
 done
