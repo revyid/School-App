@@ -1,0 +1,20 @@
+{
+  "name": "@sms/shared",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "./dist/auth.js",
+  "types": "./dist/auth.d.ts",
+  "exports": {
+    "./school": { "types": "./dist/school.d.ts", "default": "./dist/school.js" },
+    "./auth": { "types": "./dist/auth.d.ts", "default": "./dist/auth.js" },
+    "./package.json": "./package.json"
+  },
+  "scripts": { "build": "tsc -p tsconfig.json" },
+  "dependencies": { "zod": "4.6.5" },
+  "devDependencies": {
+    "@types/node": "22.10.2",
+    "typescript": "5.9.3",
+    "vitest": "3.2.4"
+  }
+}

@@ -1,0 +1,17 @@
+FROM docker.io/library/node:22-bookworm-slim
+RUN corepack enable && corepack prepare pnpm@10.18.0 --activate
+WORKDIR /app
+COPY . .
+RUN pnpm install --frozen-lockfile
+# DATABASE_URL dummy HANYA untuk generate (inline, tidak masuk ENV image):
+RUN DATABASE_URL=postgresql://dummy:***@localhost:5432/dummy pnpm --filter @sms/db exec prisma generate
+RUN pnpm --filter @sms/shared run build
+RUN pnpm --filter @sms/db run build
+RUN pnpm --filter @sms/web exec next build
+# Salin aset statis + public ke standalone:
+RUN cp -r apps/web/.next/static apps/web/.next/standalone/apps/web/.next/static && \
+    cp -r apps/web/public apps/web/.next/standalone/apps/web/public
+USER node
+EXPOSE 3000
+ENV HOSTNAME=127.0.0.1 PORT=3000
+CMD ["node", "apps/web/.next/standalone/apps/web/server.js"]

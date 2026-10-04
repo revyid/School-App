@@ -1,0 +1,24 @@
+[Unit]
+Description=sms-lms worker (Socket.io + BullMQ + WA)
+After=sms-lms-postgres.service sms-lms-redis.service
+Requires=sms-lms-postgres.service sms-lms-redis.service
+
+[Container]
+Image=localhost/sms-lms-worker:latest
+ContainerName=sms-lms-worker
+Pod=sms-lms.pod
+User=node
+# Tanpa Exec=: pakai CMD dari image (harus SAMA dengan CMD di Containerfile.worker).
+EnvironmentFile=%h/sms-lms/worker.env
+Volume=wa-sessions.volume:/data/wa-sessions:Z,U
+Volume=uploads.volume:/data/uploads:Z,U
+Volume=backups.volume:/data/backups:Z,U
+HealthCmd=CMD-SHELL node -e "fetch('http://127.0.0.1:3001/healthz').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))"
+HealthInterval=30s
+
+[Service]
+Restart=always
+MemoryMax=1G
+
+[Install]
+WantedBy=default.target

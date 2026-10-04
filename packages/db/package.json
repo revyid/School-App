@@ -1,0 +1,22 @@
+{
+  "name": "@sms/db",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "./dist/client.js",
+  "types": "./dist/client.d.ts",
+  "exports": {
+    "./client": { "types": "./dist/client.d.ts", "default": "./dist/client.js" },
+    "./tenant": { "types": "./dist/tenant.d.ts", "default": "./dist/tenant.js" },
+    "./prisma": { "types": "./dist/prisma.d.ts", "default": "./dist/prisma.js" },
+    "./test-utils": { "types": "./dist/test-utils.d.ts", "default": "./dist/test-utils.js" },
+    "./package.json": "./package.json"
+  },
+  "scripts": { "build": "tsc -p tsconfig.json", "generate": "prisma generate" },
+  "dependencies": { "@prisma/adapter-pg": "7.10.0", "@prisma/client": "7.10.0" },
+  "devDependencies": {
+    "@types/node": "22.10.2",
+    "typescript": "5.9.3",
+    "vitest": "3.2.4"
+  }
+}

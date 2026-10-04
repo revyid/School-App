@@ -1,0 +1,8 @@
+[Unit]
+Description=sms-lms uploads (file sekolah, di luar webroot)
+
+[Volume]
+Label=app=sms-lms
+
+[Install]
+WantedBy=default.target

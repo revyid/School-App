@@ -1,0 +1,21 @@
+[Unit]
+Description=sms-lms web (Next.js standalone)
+After=sms-lms-postgres.service sms-lms-redis.service
+Requires=sms-lms-postgres.service sms-lms-redis.service
+
+[Container]
+Image=localhost/sms-lms-web:latest
+ContainerName=sms-lms-web
+Pod=sms-lms.pod
+User=node
+EnvironmentFile=%h/sms-lms/web.env
+Volume=uploads.volume:/data/uploads:Z,U
+HealthCmd=CMD-SHELL node -e "fetch('http://127.0.0.1:3000/api/health').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))"
+HealthInterval=30s
+
+[Service]
+Restart=always
+MemoryMax=1G
+
+[Install]
+WantedBy=default.target

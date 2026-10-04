@@ -1,0 +1,12 @@
+.git
+/node_modules
+/dist
+/.next
+/.env*
+**/*.env
+packages/db/src/generated
+packages/db/dist
+packages/shared/dist
+packages/cli/dist
+apps/web/.next
+apps/worker/dist

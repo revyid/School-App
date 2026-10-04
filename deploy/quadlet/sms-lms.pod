@@ -1,0 +1,22 @@
+# SATU pod, SEMUA sekolah, SATU deployment.
+# Semua sekolah memakai codebase, database, pod, dan container web yang sama.
+# Routing sekolah = SUBDOMAIN: <slug>.domainmu.id (wildcard DNS -> IP LAN server).
+# Sertifikat = wildcard publik via DNS-01. Tidak ada konfigurasi nginx per sekolah.
+[Unit]
+Description=sms-lms pod (SATU pod, SEMUA sekolah, SATU deployment)
+
+[Pod]
+PodName=sms-lms
+# PublishPort HANYA boleh di pod, tidak di container di dalamnya.
+PublishPort=80:80
+PublishPort=443:443
+# Port rendah rootless — pilih SATU (lihat docs/host-setup.md):
+#   (a) sysctl net.ipv4.ip_unprivileged_port_start=80, atau
+#   (b) PublishPort=8080:80 + 8443:443 + redirect firewall.
+# Migrasi/test dari host: tambahkan SEMENTARA PublishPort=127.0.0.1:5432:5432
+# dan 127.0.0.1:6379:6379, reload+restart, lalu HAPUS kembali setelah selesai.
+# Agar IP asli klien sampai ke nginx (rate limit baca X-Real-IP), butuh pasta.
+Network=pasta
+
+[Install]
+WantedBy=default.target

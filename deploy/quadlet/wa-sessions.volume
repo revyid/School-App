@@ -1,0 +1,8 @@
+[Unit]
+Description=sms-lms wa-sessions (auth state Baileys per sekolah)
+
+[Volume]
+Label=app=sms-lms
+
+[Install]
+WantedBy=default.target

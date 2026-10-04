@@ -1,0 +1,23 @@
+[Unit]
+Description=sms-lms postgres 18
+After=network-online.target
+
+[Container]
+Image=docker.io/library/postgres:18
+ContainerName=sms-lms-postgres
+Pod=sms-lms.pod
+EnvironmentFile=%h/sms-lms/postgres.env
+# PG18: PGDATA=/var/lib/postgresql/18/docker, VOLUME=/var/lib/postgresql.
+# Mount INDUKNYA agar klaster 18/docker ikut persisten.
+Volume=pgdata.volume:/var/lib/postgresql:Z
+# JANGAN pakai ${POSTGRES_USER} (di-expand systemd). Samakan 'sms' dengan POSTGRES_USER.
+HealthCmd=CMD-SHELL pg_isready -U sms
+HealthInterval=30s
+HealthRetries=3
+
+[Service]
+Restart=always
+MemoryMax=1G
+
+[Install]
+WantedBy=default.target

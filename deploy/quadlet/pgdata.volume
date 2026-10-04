@@ -1,0 +1,8 @@
+[Unit]
+Description=sms-lms pgdata
+
+[Volume]
+Label=app=sms-lms
+
+[Install]
+WantedBy=default.target

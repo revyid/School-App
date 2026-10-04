@@ -1,0 +1,111 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated"
+}
+
+datasource db {
+  provider = "postgresql"
+  // Prisma 7: koneksi CLI di prisma.config.ts (MIGRATE_URL); runtime via adapter.
+}
+
+enum Role {
+  SUPER_ADMIN
+  ADMIN
+  GURU
+  SISWA
+}
+
+model School {
+  id        String   @id @default(cuid())
+  slug      String   @unique
+  name      String
+  logoUrl   String?
+  lat       Float?
+  lng       Float?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  users     User[]
+  classes   Class[]
+  auditLogs AuditLog[]
+}
+
+model User {
+  id                 String    @id @default(cuid())
+  schoolId           String?
+  school             School?   @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  role               Role
+  email              String?
+  nisn               String?
+  passwordHash       String
+  name               String
+  isActive           Boolean   @default(true)
+  passwordChangedAt  DateTime?
+  mustChangePassword Boolean   @default(false)
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+  studentProfile     StudentProfile?
+  homeroomOf         Class[]        @relation("Homeroom")
+  taughtClasses      TeacherClass[] @relation("TeacherAssignments")
+  auditActions       AuditLog[]     @relation("Actor")
+  @@unique([schoolId, email])
+  @@unique([schoolId, nisn])
+  @@index([schoolId, role])
+}
+
+model Class {
+  id                String   @id @default(cuid())
+  schoolId          String
+  school            School   @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  name              String
+  gradeLevel        String?
+  homeroomTeacherId String?
+  homeroomTeacher   User?    @relation("Homeroom", fields: [homeroomTeacherId], references: [id], onDelete: SetNull)
+  students          StudentProfile[]
+  assignments       TeacherClass[]
+  @@unique([schoolId, name])
+  @@index([schoolId])
+}
+
+model TeacherClass {
+  id        String  @id @default(cuid())
+  schoolId  String
+  school    School  @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  teacherId String
+  teacher   User    @relation("TeacherAssignments", fields: [teacherId], references: [id], onDelete: Cascade)
+  classId   String
+  class     Class   @relation(fields: [classId], references: [id], onDelete: Cascade)
+  subject   String?
+  @@unique([teacherId, classId])
+  @@index([schoolId])
+  @@index([classId])
+}
+
+model StudentProfile {
+  id          String  @id @default(cuid())
+  schoolId    String
+  school      School  @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  userId      String  @unique
+  user        User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  classId     String?
+  class       Class?  @relation(fields: [classId], references: [id], onDelete: SetNull)
+  parentPhone String?
+  avatarUrl   String?
+  bio         String?
+  @@index([schoolId])
+  @@index([classId])
+}
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  schoolId  String
+  school    School   @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  actorId   String?
+  actor     User?    @relation("Actor", fields: [actorId], references: [id], onDelete: SetNull)
+  action    String
+  entity    String?
+  entityId  String?
+  meta      Json?
+  ip        String?
+  createdAt DateTime @default(now())
+  @@index([schoolId, createdAt])
+}

@@ -1,0 +1,10 @@
+[Unit]
+Description=Check wildcard cert renewal daily
+
+[Timer]
+OnCalendar=daily
+RandomizedDelaySec=6h
+Persistent=true
+
+[Install]
+WantedBy=default.target

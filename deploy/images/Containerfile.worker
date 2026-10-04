@@ -1,0 +1,14 @@
+FROM docker.io/library/node:22-bookworm-slim
+RUN corepack enable && corepack prepare pnpm@10.18.0 --activate
+WORKDIR /app
+COPY . .
+RUN pnpm install --frozen-lockfile
+RUN DATABASE_URL=postgresql://dummy:***@localhost:5432/dummy pnpm --filter @sms/db exec prisma generate
+RUN pnpm --filter @sms/shared run build
+RUN pnpm --filter @sms/db run build
+RUN pnpm --filter @sms/worker run build
+RUN pnpm --filter @sms/cli run build
+USER node
+EXPOSE 3001
+# Quadlet TANPA Exec= -> CMD ini yang jalan; sinkron dengan unit worker.
+CMD ["node", "apps/worker/dist/index.js"]

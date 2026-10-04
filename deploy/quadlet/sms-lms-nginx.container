@@ -1,0 +1,18 @@
+[Unit]
+Description=sms-lms nginx TLS termination (satu-satunya pintu masuk; port di pod)
+After=sms-lms-web.service sms-lms-worker.service
+
+[Container]
+Image=docker.io/library/nginx:stable-alpine
+ContainerName=sms-lms-nginx
+Pod=sms-lms.pod
+Volume=%h/sms-lms/nginx/nginx.conf:/etc/nginx/nginx.conf:ro,Z
+Volume=%h/sms-lms/certs:/etc/nginx/certs:ro,Z
+HealthCmd=CMD-SHELL wget -qO- http://127.0.0.1/healthz | grep -q ok
+HealthInterval=30s
+
+[Service]
+Restart=always
+
+[Install]
+WantedBy=default.target

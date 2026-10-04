@@ -1,0 +1,19 @@
+[Unit]
+Description=sms-lms redis 8 (persisten — antrean WA tahan restart)
+After=network-online.target
+
+[Container]
+Image=docker.io/library/redis:8
+ContainerName=sms-lms-redis
+Pod=sms-lms.pod
+Exec=redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy noeviction
+Volume=redisdata.volume:/data:Z
+HealthCmd=CMD-SHELL redis-cli ping | grep -q PONG
+HealthInterval=30s
+
+[Service]
+Restart=always
+MemoryMax=300M
+
+[Install]
+WantedBy=default.target
