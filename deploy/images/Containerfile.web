@@ -3,8 +3,8 @@ RUN corepack enable && corepack prepare pnpm@10.18.0 --activate
 WORKDIR /app
 COPY . .
 RUN pnpm install --frozen-lockfile
-# DATABASE_URL dummy HANYA untuk generate (inline, tidak masuk ENV image):
-RUN DATABASE_URL=postgresql://dummy:***@localhost:5432/dummy pnpm --filter @sms/db exec prisma generate
+# MIGRATE_URL dummy HANYA untuk generate (inline, tidak masuk ENV image):
+RUN MIGRATE_URL=postgresql://dummy:***@localhost:5432/dummy pnpm --filter @sms/db exec prisma generate
 RUN pnpm --filter @sms/shared run build
 RUN pnpm --filter @sms/db run build
 RUN pnpm --filter @sms/web exec next build

@@ -46,7 +46,8 @@ export function proxy(req: NextRequest) {
   if (!hasCookie) {
     const url = req.nextUrl.clone();
     url.pathname = "/login";
-    const r = NextResponse.redirect(url, { request: { headers: reqHeaders } });
+    // redirect: opsi `request` hanya berlaku untuk next()/rewrite(), bukan redirect.
+    const r = NextResponse.redirect(url);
     r.headers.set("Content-Security-Policy", csp);
     return r;
   }

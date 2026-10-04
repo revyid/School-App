@@ -3,7 +3,7 @@ RUN corepack enable && corepack prepare pnpm@10.18.0 --activate
 WORKDIR /app
 COPY . .
 RUN pnpm install --frozen-lockfile
-RUN DATABASE_URL=postgresql://dummy:***@localhost:5432/dummy pnpm --filter @sms/db exec prisma generate
+RUN MIGRATE_URL=postgresql://dummy:***@localhost:5432/dummy pnpm --filter @sms/db exec prisma generate
 RUN pnpm --filter @sms/shared run build
 RUN pnpm --filter @sms/db run build
 RUN pnpm --filter @sms/worker run build

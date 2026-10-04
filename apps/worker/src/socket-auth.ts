@@ -1,5 +1,5 @@
 // Handshake Socket.io: cookie sesi opak + Origin ketat + status user.
-import Redis from "ioredis";
+import { Redis } from "ioredis";
 import { schoolSlugFromHost } from "@sms/shared/school";
 
 const redis = new Redis(process.env.REDIS_URL ?? "redis://127.0.0.1:6379", { lazyConnect: true, maxRetriesPerRequest: 2 });

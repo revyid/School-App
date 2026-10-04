@@ -1,6 +1,6 @@
 // Helper TEST-ONLY worker: tulis sess:<sid> langsung ke Redis.
 import { randomBytes } from "node:crypto";
-import type Redis from "ioredis";
+import type { Redis } from "ioredis";
 
 const SESSION_TTL = 7 * 24 * 3600;
 

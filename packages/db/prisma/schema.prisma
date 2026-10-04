@@ -24,9 +24,11 @@ model School {
   lng       Float?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-  users     User[]
-  classes   Class[]
-  auditLogs AuditLog[]
+  users           User[]
+  classes         Class[]
+  teacherClasses  TeacherClass[]
+  studentProfiles StudentProfile[]
+  auditLogs       AuditLog[]
 }
 
 model User {
