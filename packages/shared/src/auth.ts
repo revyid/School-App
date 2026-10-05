@@ -14,7 +14,7 @@ export const COOKIE_SECURE =
     : process.env.NODE_ENV !== "development";
 export const CSRF_HEADER = "x-csrf-token";
 export const ROLE_HOME = { ADMIN: "/admin", GURU: "/guru", SISWA: "/siswa" } as const;
-export type Role = keyof typeof ROLE_HOME;
+export type Role = keyof typeof ROLE_HOME | "SUPER_ADMIN";
 
 export const loginSchema = z.object({
   identifier: z.string().trim().min(1).max(128),

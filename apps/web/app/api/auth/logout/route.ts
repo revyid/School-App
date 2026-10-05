@@ -16,7 +16,9 @@ export async function POST(req: NextRequest) {
   });
   if (a.ok) {
     await revokeSession(a.sid, a.userId);
-    await logAuth(a.school.id, "AUTH.LOGOUT", { actorId: a.userId });
+    if (a.school) {
+      await logAuth(a.school.id, "AUTH.LOGOUT", { actorId: a.userId });
+    }
   }
   const res = NextResponse.json({ ok: true });
   res.headers.set("Set-Cookie", clearCookieHeader());

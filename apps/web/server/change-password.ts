@@ -29,6 +29,8 @@ export async function doChangePassword(input: {
     csrf: input.csrf,
   });
   if (!a.ok) return a;
+  // Ganti password super-admin belum didukung di flow ini.
+  if (!a.school) return { ok: false as const, status: 403 as const, error: "forbidden" };
   const rl = await hit(`rl:pw:uid:${a.userId}`, 5, 900);
   if (!rl.ok) return { ok: false as const, status: 429, error: "Terlalu banyak percobaan, coba lagi nanti" };
   const u = await runAsSchool(db, a.school.id, (tx) => tx.user.findUnique({ where: { id: a.userId } }));

@@ -11,6 +11,7 @@ export async function GET(req: NextRequest) {
     pathname: "/api/auth/me",
   });
   if (!a.ok) return NextResponse.json({ error: a.error }, { status: a.status });
+  if (!a.school) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   const me = await runAsSchool(db, a.school.id, (tx) =>
     tx.user.findUnique({
       where: { id: a.userId },

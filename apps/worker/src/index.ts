@@ -34,6 +34,31 @@ app.get("/wa-status", async (req, res) => {
   res.json({ ...st, qr });
 });
 
+// Internal agregat: status semua sesi WA (untuk dashboard super-admin).
+app.get("/wa-status-all", async (req, res) => {
+  if (req.headers["x-internal-token"] !== (process.env.INTERNAL_TOKEN ?? "")) {
+    res.status(403).send("forbidden");
+    return;
+  }
+  const { db } = await import("@sms/db/client");
+  const schools = await db.school.findMany({ select: { id: true, slug: true } });
+  const rows: { schoolId: string; slug: string; connected: boolean; detail: string }[] = [];
+  for (const s of schools) {
+    try {
+      const p = new BaileysProvider(s.id);
+      const st = await p.status();
+      rows.push({
+        schoolId: s.id, slug: s.slug,
+        connected: st.connected === true,
+        detail: ("detail" in st && typeof st.detail === "string") ? st.detail : "",
+      });
+    } catch (e) {
+      rows.push({ schoolId: s.id, slug: s.slug, connected: false, detail: (e as Error).message });
+    }
+  }
+  res.json({ rows });
+});
+
 const uploadsRoot = process.env.UPLOADS_ROOT ?? "/data/uploads";
 
 startImportWorker(async (job) => {

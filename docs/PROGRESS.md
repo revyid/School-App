@@ -58,3 +58,102 @@
   isolasi 16 (+3 tabel Phase 3), web 17 (+3 authz guru-hanya-kelasnya), worker 5.
 - Dep baru: socket.io-client (web realtime), qrcode + @types/qrcode (render QR PNG).
 - Tertunda: PDF ekspor (baru .xlsx), suara di iOS Safari (perlu gesture dulu).
+
+## Fase 4 — LMS dasar (DONE, tag phase-4)
+- Tabel: Task (class, subject?, author, judul, instruksi, tipe, deadline, publishAt, allowLate, isGroup),
+  TaskMaterial (TEXT/FILE/IMAGE), Submission (unique taskId+studentId, teks/link/file, isLate, score, feedback, grader).
+  Semua RLS+FORCE + isolasi.
+- API: /api/tasks (GET beda guru/siswa + POST), /api/tasks/[id] (GET detail+progres/pending, PATCH, DELETE admin),
+  /api/tasks/[id]/submit (upsert, tolak TUTUP), /materials (GET/POST), /submissions/[id]/grade,
+  /api/task-files/[taskId]/[name] (otorisasi kepemilikan: siswa lain 403, tercatat audit).
+  File: magic pdf/png/jpg/webp/zip/mp4, 10MB, di tasks/<taskId>/.
+- Logika murni di shared/lms.ts: isVisibleToStudent, submitState (BELUM/SUDAH/TERLAMBAT/TUTUP), canSubmit, isLateSubmit.
+- UI mentah: guru tugas + detail (nilai + pending), siswa tugas + detail (kirim/dropzone),
+  dasbor guru (kelas/tugas/absensi hari ini), dasbor siswa (profil/progres/pending).
+- Tes (95): shared 53 (+6 lms), isolasi 17 (+1), web 20 (+3 file-scope), worker 5.
+
+## Fase 5 — Notifikasi & WA (DONE, tag phase-5)
+- Tabel: Notification (per user, readAt), MessageOutbox (to/text/status/attempts/dedupeKey unique/scheduledAt).
+- shared/notify.ts: MessageProvider interface, normalizePhone (->62), renderTemplate, DEFAULT_TEMPLATES.
+- Worker: FakeProvider (tes), BaileysProvider (sesi per sekolah di WA_SESSIONS_ROOT, QR pairing, reconnect
+  kecuali logout), wa-queue (BullMQ "wa", jobId wa-<id>, jeda 3-10 dtk, cap/mnt+harian dari settings,
+  retry 5x backoff eksponensial, tanpa fallback). reminders.ts (alpha alert + H-1 deadline),
+  worker /wa-status internal (INTERNAL_TOKEN, loopback saja).
+- Web: /api/notifications (+read), /api/wa/outbox (GET admin/guru, POST admin), /api/wa/status
+  (proxy server-side + notifikasi "sesi putus" 1x/24jam), /api/tasks/nudge (pengingat/terima kasih),
+  Bell di layout dash, /admin/wa (QR pairing render + kuota + antrean).
+- Dep: @whiskeysockets/baileys 7.0.0-rc14 (worker saja; web tidak impor).
+- Tes (102): shared 55, isolasi 18, web 22, worker 7. Image web+worker rebuilt + healthcheck OK.
+- Tertunda: pairing WA sungguhan (lihat docs/wa-manual.md).
+
+## Fase 6 — Izin & privasi (DONE, tag phase-6)
+- Tabel: LeaveRequest (unique schoolId+studentId+date, foto live-capture, status, reviewer),
+  CaptureSession (token opak 32hex, terikat user, sekali pakai, TTL 5 mnt),
+  ParentalConsent (flag + penanda admin), PrivacyPolicy (teks per sekolah). RLS+FORCE + isolasi.
+- Alur: siswa minta token (syarat consent) -> kamera live getUserMedia (tanpa opsi galeri di UI)
+  -> POST multipart (token + foto siswa wajib + foto ortu opsional, JPEG/PNG asli, 3MB).
+  Server tolak: tanpa token, token milik user lain, reuse, kedaluwarsa. Foto disimpan di
+  leave/<s|p>-<acak>.jpg; daftar tak pernah bocorkan nama file.
+- Review: wali/pengajar kelasnya atau admin; APPROVED -> WA ortu (dedupe) + dikecualikan
+  auto-alpha (hook Phase 3 tersambung). Foto: hanya siswa itu/wali/admin, tiap baca audit
+  LEAVE.PHOTO_ACCESS. Retensi: cron harian hapus file + null-kan ref setelah photoRetentionDays (def 30).
+- LAPORAN PRIVASI: data anak yang disimpan = foto izin (JPEG), nama/NISN/kelas, no ortu.
+  Akses: siswa (miliknya), wali kelasnya, admin. Retensi foto 30 hari (configurable).
+  Tanpa consent -> tak bisa mengajukan. Pencegahan kamera = dasar, bukan anti-spoofing.
+- Tes (107): shared 55, isolasi 19, web 26, worker 7.
+
+## Fase 7 — Asesmen (DONE, tag phase-7)
+- Tabel: Assessment (kind DIAGNOSTIC/REGULAR, shuffleQ/shuffleOpt, deadline), Question (bank soal
+  guru per mapel + kunci), AssessQuestion (snapshot per asesmen — bank boleh diedit tanpa merusak
+  asesmen jalan), AssessAttempt (unique assessmentId+studentId, qOrder+optOrders tersimpan),
+  AssessAnswer (koordinat ASLI), StudyGroup/StudyGroupMember (unique assessmentId+studentId:
+  satu siswa = satu grup), ExpLog (poin + dedupeKey). RLS+FORCE + isolasi.
+- Integritas kunci: correctIndex/correctOrder TAK PERNAH ke klien (dites via payload JSON +
+  RLS). Acak MCQ/SORTING deterministik per attempt (mulberry32 seed school|assess|student);
+  nilai server-side (MCQ exact, SORTING parsial proporsional). Analisis butir: difficulty +
+  distraktor. Diagnostik: histogram 10 bucket + rata-rata.
+- API: /api/questions (bank, tanpa kunci), /api/assessments (CRUD + snapshot),
+  /api/assessments/[id]/attempt (GET mulai + POST kumpul+EXP), /analysis, /diagnostic, /groups,
+  /api/assess-files/[qid]/[name] (otorisasi peran). Gambar soal JPEG/PNG 5MB.
+- UI mentah: guru asesmen (buat + analisis + diagnostik), siswa asesmen (MCQ radio + SORTING ↑↓).
+- Tes (116): shared 61 (+6 assess), isolasi 20 (+1), web 28 (+2 kunci), worker 7.
+
+## Fase 8 — Portal (DONE, tag phase-8)
+- Tabel: ExpBadge (unique studentId+name), Announcement (target ALL/GURU/SISWA/kelas:<id>),
+  CollabThread (senderId selalu tersimpan, anonymous, recipients multi-guru, revealedAt/By),
+  CollabMessage (lampiran). RLS+FORCE + isolasi. Settings += expRules JSON (aturan poin configurable).
+- Portal publik per subdomain (tanpa login, via runAsSchool dari slug — tenant_isolation tetap):
+  /api/portal/info (nama, lat/lng, CTA GTK/Murid, pengumuman ALL) + halaman portal (peta Leaflet
+  client-only + OSM, katalog e-book via BookProvider/OpenLibrary + cache 10 mnt, CTA).
+  Dep: leaflet + @types/leaflet.
+- Kolaborasi: POST multipart (recipients = guru aktif, anonim hanya siswa, lampiran jpg/png/pdf/zip
+  5MB), GET mask ("Anonim" untuk guru bila anonim), reply peserta, reveal ADMIN + audit COLLAB.REVEAL,
+  file hanya peserta. UI: siswa/guru inbox + admin inbox (reveal).
+- EXP: awardExp idempoten (dedupeKey) — submit tepat/terlambat (attempt), hadir harian (scan),
+  aturan dari settings; leaderboard per kelas; /api/exp/me + badge.
+- Tes (120): shared 64 (+3 portal: target/mask/expRules), isolasi 21 (+1), web 28, worker 7.
+
+## Fase 9 — Akademik ekstra (DONE, tag phase-9)
+- Gradebook: server/gradebook.ts (rata-rata tugas 0-100 + asesmen dinormalisasi 0-100, avg gabungan),
+  /api/gradebook + /api/gradebook/export (.xlsx via xlsx). Scope guru-kelasnya.
+- Audit viewer: /api/audit (ADMIN, cursor pagination take≤100, filter action) + halaman admin/audit.
+- PWA: manifest.webmanifest + ikon 192/512 (PIL) + sw.js (cache shell login, API tak di-cache,
+  bump versi per rilis) + SwRegister client + metadata manifest di layout root.
+- UI mentah: guru rapor (tabel + ekspor), admin audit.
+- Tes (122): shared 64, isolasi 21, web 30 (+2 gradebook: agregasi + tolak guru luar), worker 7.
+
+## Fase 10 — Hardening & operasi (DONE, tag phase-10)
+- SUPER_ADMIN login via admin.<apex>: POST /api/auth/admin-login (Host ketat + Origin + rate limit).
+  Kredensial via RPC SECURITY DEFINER (super_admin_cred/active) — web app_user tetap tanpa
+  SYSTEM_URL dan tanpa SELECT baris NULL. auth-gate cabang admin + requireRole overload
+  (tenant school non-null tanpa ubah 100+ route; me/logout/require-page/change-password
+  guard school-null). Role shared += SUPER_ADMIN.
+- Migrasi: phase10_superadmin_rpc + phase10_superadmin_active (GRANT EXECUTE app_user/app_system).
+- Health super-admin: /api/admin/health (sekolah, antrean import/wa, /wa-status-all worker,
+  disk statfs, backup env) + worker /wa-status-all (x-internal-token).
+- Beban: scripts/k6-scan.js + k6-submit.js (ramp 500 VU, p95<800ms, error<1%) + cek duplikat SQL.
+- Docs: backup-restore.md (dump+rsync+retensi 7 hari+drill) + security-checklist.md (RLS/auth/upload/
+  asesmen/privasi/operasi + tabel drill).
+- Tes (125): shared 64, isolasi 21, web 33 (+3 RPC: cred/active/tenant-dikecualikan), worker 7.
+- LAPORAN AKHIR: 10 fase backend selesai (tag phase-1..10), 125 tes hijau, tsc+build bersih,
+  image web+worker rebuilt + healthcheck OK. UI/styling menyusul (tunda per user).

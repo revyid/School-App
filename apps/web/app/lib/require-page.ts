@@ -25,6 +25,8 @@ export async function requirePage(o: PageInput) {
     const home = ROLE_HOME[a.role as keyof typeof ROLE_HOME] ?? "/siswa";
     return { ok: false as const, redirectTo: a.mustChangePassword ? "/change-password" : home };
   }
+  // Layout dash = tenant saja; super-admin tak masuk sini.
+  if (!a.school) return { ok: false as const, redirectTo: "/login" };
   const me = await runAsSchool(db, a.school.id, (tx) =>
     tx.user.findUnique({
       where: { id: a.userId },
