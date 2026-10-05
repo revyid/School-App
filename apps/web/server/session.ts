@@ -32,7 +32,8 @@ export async function createSession(userId: string, schoolId: string, schoolSlug
 export async function readSession(sid: string): Promise<SessRec | null> {
   if (!sid || !/^[0-9a-f]{64}$/.test(sid)) return null;
   const s = await redis.hgetall(`sess:${sid}`);
-  if (!s?.userId || !s?.schoolId || !s?.sch || !s?.csrf || !s?.iat) return null;
+  // schoolId BOLEH string kosong (sesi SUPER_ADMIN via admin.<apex>).
+  if (!s?.userId || s?.schoolId === undefined || !s?.sch || !s?.csrf || !s?.iat) return null;
   await redis.expire(`sess:${sid}`, SESSION_TTL);
   await redis.expire(`user-sess:${s.userId}`, SESSION_TTL);
   return s as unknown as SessRec;

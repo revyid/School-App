@@ -2,6 +2,7 @@ import { describe, it, expect, beforeAll, afterAll } from "vitest";
 import argon2 from "argon2";
 import { dbSystemTest as dbSystem } from "@sms/db/test-utils"; // TEST-ONLY
 import { db } from "@sms/db/client";
+import { createSession, readSession } from "../session";
 
 let saId = "";
 
@@ -52,5 +53,15 @@ describe("RPC super_admin_active", () => {
     const none = await db.$queryRaw<{ active: boolean }[]>`
       SELECT * FROM public.super_admin_active('tidak-ada')`;
     expect(none).toHaveLength(0);
+  });
+});
+
+describe("sesi super-admin (schoolId kosong)", () => {
+  it("readSession menerima sesi sch=admin/schoolId=''", async () => {
+    const { sid } = await createSession(saId, "", "admin", "SUPER_ADMIN");
+    const s = await readSession(sid);
+    expect(s?.userId).toBe(saId);
+    expect(s?.schoolId).toBe("");
+    expect(s?.sch).toBe("admin");
   });
 });

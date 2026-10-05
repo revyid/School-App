@@ -155,5 +155,11 @@
 - Docs: backup-restore.md (dump+rsync+retensi 7 hari+drill) + security-checklist.md (RLS/auth/upload/
   asesmen/privasi/operasi + tabel drill).
 - Tes (125): shared 64, isolasi 21, web 33 (+3 RPC: cred/active/tenant-dikecualikan), worker 7.
+- Fix pasca-tag: `readSession` menolak `schoolId:""` (falsy) → sesi super-admin selalu
+  401 di /api/admin/health. Regresi ditambah (web 34). Proxy: aset PWA publik
+  (manifest/sw/ikon 200 tanpa sesi) + host admin lolos 404 + halaman /admin-login & /pantau
+  (hanya host admin; proteksi data di API). Healthcheck image: worker ok, login 200,
+  PWA 200, dash tanpa sesi 307, halaman admin di tenant 404, health tanpa sesi 401,
+  admin-login→health bersesi 200 (cookie Secure; curl HTTP perlu kirim manual).
 - LAPORAN AKHIR: 10 fase backend selesai (tag phase-1..10), 125 tes hijau, tsc+build bersih,
   image web+worker rebuilt + healthcheck OK. UI/styling menyusul (tunda per user).

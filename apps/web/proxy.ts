@@ -5,17 +5,32 @@ import { SESSION_COOKIE } from "@sms/shared/auth";
 
 const apex = process.env.APEX_DOMAIN ?? "domainmu.id";
 
+const PWA_ASSETS = new Set([
+  "/manifest.webmanifest",
+  "/sw.js",
+  "/icon-192.png",
+  "/icon-512.png",
+]);
+
 // Cocokkan SEGMEN penuh: /publicity tidak lolos sebagai /public.
 function isPublic(path: string): boolean {
   if (path === "/login" || path === "/change-password") return true;
+  if (PWA_ASSETS.has(path)) return true;
   const seg = path.split("/").filter(Boolean)[0] ?? "";
   return seg === "portal" || seg === "public";
 }
 
+// Halaman super-admin (hanya di admin.<apex>). Data tetap dijaga API requireRole.
+function isAdminPage(path: string): boolean {
+  return path === "/admin-login" || path === "/pantau";
+}
+
 export function proxy(req: NextRequest) {
   const host = req.headers.get("host") ?? "";
+  const bare = host.split(":")[0].trim().toLowerCase();
+  const isAdminHost = bare === `admin.${apex}` || bare === "admin.localtest.me";
   const slug = schoolSlugFromHost(host, apex);
-  if (!slug) return new NextResponse("not found", { status: 404 });
+  if (!slug && !isAdminHost) return new NextResponse("not found", { status: 404 });
   // Nama cookie tergantung env (prod __Host-session, dev sms-session-dev).
   // Proxy tidak boleh bergantung pada env yang belum tentu tersedia di runtime-nya,
   // jadi terima KEDUANYA di sini. Otorisasi penuh tetap di authorize().
@@ -25,6 +40,7 @@ export function proxy(req: NextRequest) {
     (req.cookies.get("sms-session-dev")?.value ?? "").length > 0;
 
   const nonce = Buffer.from(crypto.randomUUID()).toString("base64");
+  const connectHost = isAdminHost ? `admin.${apex}` : `${slug}.${apex}`;
   const isDev = process.env.NODE_ENV === "development";
   const csp = [
     "default-src 'self'",
@@ -34,7 +50,7 @@ export function proxy(req: NextRequest) {
     // Dev (next dev): HMR pakai ws:// + port; prod: hanya wss:// apex.
     isDev
       ? `connect-src 'self' ws: wss: http: https:`
-      : `connect-src 'self' wss://${slug}.${apex}`,
+      : `connect-src 'self' wss://${connectHost}`,
     "frame-ancestors 'none'",
     "base-uri 'self'",
     "form-action 'self'",
@@ -55,6 +71,14 @@ export function proxy(req: NextRequest) {
     const r = NextResponse.redirect(url);
     r.headers.set("Content-Security-Policy", csp);
     return r;
+  }
+
+  if (isAdminPage(path)) {
+    // Halaman admin hanya di host admin; proteksi data tetap di tiap API.
+    if (!isAdminHost) return new NextResponse("not found", { status: 404 });
+    const res = NextResponse.next({ request: { headers: reqHeaders } });
+    res.headers.set("Content-Security-Policy", csp);
+    return res;
   }
 
   if (isPublic(path)) {
