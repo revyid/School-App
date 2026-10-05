@@ -13,8 +13,9 @@ const PWA_ASSETS = new Set([
 ]);
 
 // Cocokkan SEGMEN penuh: /publicity tidak lolos sebagai /public.
+// Root "/" = landing publik per sekolah (guest boleh, login diarahkan ke dasbor).
 function isPublic(path: string): boolean {
-  if (path === "/login" || path === "/change-password") return true;
+  if (path === "/" || path === "/login" || path === "/change-password") return true;
   if (PWA_ASSETS.has(path)) return true;
   const seg = path.split("/").filter(Boolean)[0] ?? "";
   return seg === "portal" || seg === "public";
@@ -102,5 +103,5 @@ export function proxy(req: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/((?!api|_next/static|_next/image|favicon.ico).*)"],
+  matcher: ["/((?!api|_next/static|_next/image|favicon.ico|assets|fonts|manifest.webmanifest|sw.js|icon-.*\\.png).*)"],
 };

@@ -1,25 +1,172 @@
+/* Edukids visual system — diadopsi untuk SMS-LMS (token + motion + radius).
+   Palet dari DESIGN.md referensi: cream canvas, terracotta focal, olive/blue/mint/yellow aksen.
+   Catatan: asset karakter referensi dipakai HANYA di ruang siswa (maskot penyemangat),
+   BUKAN foto anak nyata. Teks penting selalu di HTML, bukan di dalam gambar. */
 @import "tailwindcss";
 
 @theme {
-  --color-paper: #faf9f6;
-  --color-ink: #1c1917;
-  --color-accent: #166534;
-  --color-accent-dark: #14532d;
-  --color-line: #e7e2d9;
+  --color-paper: #f7f4ec;
+  --color-paper-deep: #eeeadd;
+  --color-cream: #fffdf8;
+  --color-ink: #171716;
+  --color-muted: #74746d;
+  --color-terracotta: #e85e43;
+  --color-terracotta-dark: #c94b35;
+  --color-olive: #71845a;
+  --color-olive-deep: #50643e;
+  --color-sun: #f5c94a;
+  --color-sky: #97c4db;
+  --color-mint: #aec6a4;
+  --color-line: rgba(23, 23, 22, 0.14);
+
+  --font-display: "Plus Jakarta Sans", system-ui, sans-serif;
+  --font-meta: "DM Mono", ui-monospace, monospace;
+}
+
+/* Font self-host (hemat Wi-Fi sekolah, tanpa Google Fonts CDN). */
+@font-face {
+  font-family: "Plus Jakarta Sans";
+  font-style: normal;
+  font-weight: 200 800;
+  font-display: swap;
+  src: url("/fonts/jakarta-200800-normal-latin.woff2") format("woff2");
+}
+@font-face {
+  font-family: "Plus Jakarta Sans";
+  font-style: italic;
+  font-weight: 200 800;
+  font-display: swap;
+  src: url("/fonts/jakarta-200800-italic-latin.woff2") format("woff2");
+}
+@font-face {
+  font-family: "DM Mono";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("/fonts/dmmono-400-normal-latin.woff2") format("woff2");
+}
+@font-face {
+  font-family: "DM Mono";
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url("/fonts/dmmono-500-normal-latin.woff2") format("woff2");
 }
 
 html {
   -webkit-text-size-adjust: 100%;
+  scroll-behavior: smooth;
 }
 
 body {
   background: var(--color-paper);
   color: var(--color-ink);
-  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  font-family: var(--font-display);
   font-size: 15px;
-  line-height: 1.5;
+  line-height: 1.6;
 }
 
-input, select, button {
+input, select, button, textarea {
   font: inherit;
+}
+
+/* --- Tipografi editorial --- */
+.display {
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  word-spacing: 0.06em;
+  line-height: 1.02;
+}
+.kicker {
+  font-family: var(--font-meta);
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--color-terracotta);
+}
+
+/* --- Kartu editorial --- */
+.card {
+  background: var(--color-cream);
+  border: 1px solid var(--color-line);
+  border-radius: 24px;
+}
+.card-lift {
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
+}
+.card-lift:hover {
+  transform: translateY(-6px) rotate(-0.4deg);
+  box-shadow: 0 18px 40px -22px rgba(23, 23, 22, 0.35);
+}
+
+/* --- Tombol stiker --- */
+.btn-sticker {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  border-radius: 999px;
+  font-weight: 700;
+  font-size: 13px;
+  padding: 0.7rem 1.4rem;
+  border: 1px solid var(--color-ink);
+  transition: transform 0.18s ease, box-shadow 0.18s ease;
+}
+.btn-sticker:hover {
+  transform: translateY(-2px);
+}
+.btn-primary {
+  background: var(--color-terracotta);
+  border-color: var(--color-terracotta-dark);
+  color: #fffdf8;
+  box-shadow: 3px 3px 0 var(--color-ink);
+}
+.btn-primary:hover {
+  background: var(--color-terracotta-dark);
+}
+.btn-ghost {
+  background: var(--color-cream);
+  color: var(--color-ink);
+}
+
+/* --- Motion bernyawa (bukan fade-only) --- */
+@keyframes floaty {
+  0%, 100% { transform: translateY(0) rotate(-1deg); }
+  50% { transform: translateY(-10px) rotate(1.5deg); }
+}
+@keyframes breathe {
+  0%, 100% { transform: translateY(0) scale(1); }
+  50% { transform: translateY(-4px) scale(1.015); }
+}
+@keyframes drift {
+  0%, 100% { transform: translate(0, 0) rotate(0deg); }
+  50% { transform: translate(10px, -12px) rotate(8deg); }
+}
+@keyframes grow-bar {
+  from { transform: scaleY(0); }
+  to { transform: scaleY(1); }
+}
+@keyframes fill-track {
+  from { transform: scaleX(0); }
+  to { transform: scaleX(1); }
+}
+.anim-floaty { animation: floaty 3.6s ease-in-out infinite; }
+.anim-breathe { animation: breathe 3.2s ease-in-out infinite; }
+.anim-drift { animation: drift 4.5s ease-in-out infinite; }
+
+/* Scroll reveal: pembuka section, bukan satu-satunya motion. */
+.reveal {
+  opacity: 0;
+  transform: translateY(20px) scale(0.985);
+  transition: opacity 0.5s ease, transform 0.5s ease;
+}
+.reveal.is-visible {
+  opacity: 1;
+  transform: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  .anim-floaty, .anim-breathe, .anim-drift { animation: none; }
+  .reveal { opacity: 1; transform: none; transition: none; }
+  .card-lift:hover, .btn-sticker:hover { transform: none; }
 }

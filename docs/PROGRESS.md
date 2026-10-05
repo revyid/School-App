@@ -163,3 +163,22 @@
   admin-login→health bersesi 200 (cookie Secure; curl HTTP perlu kirim manual).
 - LAPORAN AKHIR: 10 fase backend selesai (tag phase-1..10), 125 tes hijau, tsc+build bersih,
   image web+worker rebuilt + healthcheck OK. UI/styling menyusul (tunda per user).
+
+## UI edukids (DONE — gaya dari referensi ~/Downloads/edukids.zip, isi ikut data asli)
+- Fondasi: token cream/terracotta/olive/sun/sky/mint di globals.css, font Plus Jakarta Sans +
+  DM Mono self-host (/fonts, tanpa CDN), aset karakter/doodle dikompres (alpha aman),
+  tombol stiker + kartu editorial + motion hidup (float/breathe/drift + reveal aman-JS-lambat
+  + reduced-motion). Proxy: /assets|fonts|manifest|sw|ikon bebas auth (matcher).
+- Shell: DashShell (sidebar per peran + drawer HP + topbar Bell/avatar/logout + kartu sekolah),
+  Logo SVG (teks di HTML), Reveal (visible-dulu pola aman).
+- Landing publik `/`: guest 200 (hero editorial + pengumuman ALL asli + rak buku + peta/CTA),
+  user login 307 ke dasbor perannya. Nav mati (#tentang) dibuang; hero dipadatkan agar CTA
+  di atas fold.
+- Dasbor siswa (data API asli): hero sapaan + maskot, 4 metrik (selesai/menunggu/EXP/lencana),
+  tugas menunggu + lencana. Dasbor guru: hero hijau + antrean (izin pending/absen/tugas) +
+  jalan pintas. Dasbor admin: hero gelap + denyut (siswa/guru/kelas/izin) + operasional.
+  Login: split kartu + panel hijau maskot + doodle orbit/bintang.
+- Verifikasi visual via screenshot: login OK, siswa OK (data asli: 2 tugas, 55 EXP),
+  guru OK, admin OK, landing OK. Fix: headline tracking (-0.03em), page guru versi lama,
+  sidebar overflow, Reveal pudar, sapaan "Bu Sinta", metrik students pakai rows.
+- Tes 126 hijau, tsc 0, build 44/44.
