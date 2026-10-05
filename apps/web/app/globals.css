@@ -72,10 +72,11 @@ input, select, button, textarea {
 
 /* --- Tipografi editorial --- */
 .display {
+  font-family: var(--font-display);
   font-weight: 800;
-  letter-spacing: -0.03em;
-  word-spacing: 0.06em;
-  line-height: 1.02;
+  letter-spacing: -0.055em;
+  line-height: 1.04;
+  text-wrap: balance;
 }
 .kicker {
   font-family: var(--font-meta);

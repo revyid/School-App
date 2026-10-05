@@ -25,11 +25,21 @@ export async function GET(req: NextRequest) {
       orderBy: { publishAt: "desc" },
       take: 20,
     }));
+  // Agregat publik non-sensitif: hitungan warga + daftar mapel (nama saja).
+  const [studentCount, teacherCount, classCount, subjects] = await Promise.all([
+    runAsSchool(db, sid, (tx) => tx.studentProfile.count()),
+    runAsSchool(db, sid, (tx) => tx.user.count({ where: { role: "GURU", isActive: true } })),
+    runAsSchool(db, sid, (tx) => tx.class.count()),
+    runAsSchool(db, sid, (tx) =>
+      tx.subject.findMany({ select: { id: true, name: true }, orderBy: { name: "asc" }, take: 8 })),
+  ]);
   return NextResponse.json({
     school: { name: school.name, lat: school.lat, lng: school.lng },
     portalName: s?.portalName || school.name,
     ctaGtkUrl: s?.ctaGtkUrl ?? null,
     ctaMuridUrl: s?.ctaMuridUrl ?? null,
     announcements,
+    counts: { students: studentCount, teachers: teacherCount, classes: classCount },
+    subjects,
   });
 }
