@@ -61,12 +61,13 @@ export default function PortalPage() {
             <a href="#mapel" style={{ color: "#74746d", textDecoration: "none" }}>Mapel</a>
             <a href="#pengumuman" style={{ color: "#74746d", textDecoration: "none" }}>Pengumuman</a>
             <a href="#lokasi" style={{ color: "#74746d", textDecoration: "none" }}>Lokasi</a>
+            <a href="/siswa/inbox" style={{ color: "#e85e43", textDecoration: "none", fontWeight: 700 }}>Pesan Anonim ✉</a>
           </nav>
           <AuthCta className="btn-sticker" style={{ background: "#171716", color: "#fffdf8", textDecoration: "none" }} />
           <details className="portal-burger" style={{ position: "relative" }}>
             <summary aria-label="Buka menu" style={{ listStyle: "none", cursor: "pointer", display: "grid", placeItems: "center", width: 44, height: 44, border: "1px solid #171716", borderRadius: "50%", background: "#fffdf8", fontSize: 20 }}>☰</summary>
             <nav style={{ position: "absolute", right: 0, top: 52, display: "flex", flexDirection: "column", gap: 4, minWidth: 180, padding: 10, background: "#fffdf8", border: "1px solid #171716", borderRadius: 16, boxShadow: "4px 5px 0 #171716" }}>
-              {[["Tentang", "#tentang"], ["Program", "#program"], ["Mapel", "#mapel"], ["Pengumuman", "#pengumuman"], ["Lokasi", "#lokasi"]].map(([label, href]) => (
+              {[["Tentang", "#tentang"], ["Program", "#program"], ["Mapel", "#mapel"], ["Pengumuman", "#pengumuman"], ["Lokasi", "#lokasi"], ["Pesan Anonim ✉", "/siswa/inbox"]].map(([label, href]) => (
                 <a key={href} href={href} style={{ padding: "10px 12px", borderRadius: 10, color: "#171716", fontSize: 13, fontWeight: 700, textDecoration: "none" }}>{label}</a>
               ))}
             </nav>
@@ -116,6 +117,7 @@ export default function PortalPage() {
               </p>
               <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 25, marginTop: 32, flexWrap: "wrap" }}>
                 <AuthCta className="btn-sticker btn-primary" style={{ textDecoration: "none", minHeight: 50, padding: "0 21px" }} loginLabel="Mulai belajar ↗" />
+                <a href="/siswa/inbox" className="btn-sticker btn-ghost" style={{ textDecoration: "none", minHeight: 50, padding: "0 21px", background: "#fffdf8" }}>Kirim Pesan / Anonim ✉</a>
                 <a href="#tentang" style={{ color: "#e85e43", fontSize: 12, fontWeight: 700, textDecoration: "none" }}>Kenalan dulu ↓</a>
               </div>
             </div>

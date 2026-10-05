@@ -9,7 +9,7 @@ import { runAutoAlphaTick } from "./auto-alpha.js";
 import { startWaWorker, waQueue } from "./wa-queue.js";
 import { runDeadlineReminders } from "./reminders.js";
 import { runLeaveRetention } from "./retention.js";
-import { BaileysProvider } from "./baileys-provider.js";
+import { BaileysProvider, initPersistedSessions } from "./baileys-provider.js";
 
 const app = express();
 app.get("/healthz", (_req, res) => {
@@ -93,6 +93,7 @@ setInterval(() => {
 }, 24 * 60 * 60 * 1000);
 
 startWaWorker();
+initPersistedSessions().catch((e: unknown) => console.error("initPersistedSessions gagal:", (e as Error).message));
 
 server.listen(port, "127.0.0.1", () => {
   console.log(`worker listening on 127.0.0.1:${port}`);
