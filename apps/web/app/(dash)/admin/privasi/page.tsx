@@ -3,6 +3,7 @@
 // Admin: flag persetujuan ortu + teks kebijakan privasi.
 import { useState } from "react";
 import { api, useFetch } from "@/app/lib/api";
+import { PageHead, Panel, Toolbar, TextInput, Btn, Badge, Note } from "@/components/DashUI";
 
 export default function PrivasiAdminPage() {
   const [studentId, setStudentId] = useState("");
@@ -43,24 +44,33 @@ export default function PrivasiAdminPage() {
   }
 
   return (
-    <main>
-      <h1>Privasi & Persetujuan Ortu</h1>
-      <h2>Flag persetujuan</h2>
-      <label>ID siswa: <input value={studentId} onChange={(e) => setStudentId(e.target.value)} placeholder="userId siswa" /></label>
-      {consent.data && (
-        <p>
-          Status: {consent.data.consent.consented ? "Disetujui" : "Belum"}
-          <button type="button" onClick={() => tandai(true)}>Tandai setuju</button>
-          <button type="button" onClick={() => tandai(false)}>Tandai belum</button>
-        </p>
-      )}
-      <h2>Kebijakan privasi sekolah</h2>
-      {policy.data?.policy && <p>Saat ini: {policy.data.policy.text.slice(0, 200)}…</p>}
-      <form onSubmit={simpanPolicy}>
-        <label>Teks kebijakan: <textarea value={text} onChange={(e) => setText(e.target.value)} rows={6} /></label>
-        <button type="submit">Simpan</button>
-      </form>
-      {msg && <p>{msg}</p>}
-    </main>
+    <>
+      <PageHead kicker="Kepatuhan" title="Privasi dan persetujuan ortu" desc="Catat persetujuan orang tua dan kelola teks kebijakan privasi sekolah." />
+      <Panel style={{ marginBottom: 16 }}>
+        <h2 className="display" style={{ fontSize: 18, margin: "0 0 12px" }}>Flag persetujuan</h2>
+        <Toolbar>
+          <TextInput value={studentId} onChange={(e) => setStudentId(e.target.value)} placeholder="userId siswa" style={{ maxWidth: 280 }} />
+        </Toolbar>
+        {consent.data && (
+          <p style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+            Status: <Badge status={consent.data.consent.consented ? "AKTIF" : "PENDING"}>{consent.data.consent.consented ? "Disetujui" : "Belum"}</Badge>
+            <Btn type="button" onClick={() => tandai(true)}>Tandai setuju</Btn>
+            <Btn kind="ghost" type="button" onClick={() => tandai(false)}>Tandai belum</Btn>
+          </p>
+        )}
+      </Panel>
+      <Panel>
+        <h2 className="display" style={{ fontSize: 18, margin: "0 0 12px" }}>Kebijakan privasi sekolah</h2>
+        {policy.data?.policy && <Note>Saat ini: {policy.data.policy.text.slice(0, 200)}…</Note>}
+        <form onSubmit={simpanPolicy} style={{ display: "grid", gap: 12, maxWidth: 560 }}>
+          <label style={{ display: "grid", gap: 6, fontSize: 13, color: "#74746d" }}>
+            Teks kebijakan:
+            <textarea value={text} onChange={(e) => setText(e.target.value)} rows={6} style={{ borderRadius: 14, border: "1px solid rgba(23,23,22,.25)", background: "#fffdf8", padding: "9px 14px", fontSize: 14 }} />
+          </label>
+          <Toolbar><Btn type="submit">Simpan</Btn></Toolbar>
+        </form>
+        {msg && <p style={{ fontWeight: 700 }}>{msg}</p>}
+      </Panel>
+    </>
   );
 }

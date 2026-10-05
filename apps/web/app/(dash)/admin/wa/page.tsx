@@ -4,6 +4,7 @@
 import { useEffect, useState } from "react";
 import QRCode from "qrcode";
 import { useFetch } from "@/app/lib/api";
+import { PageHead, Panel, Toolbar, Btn, Badge, WarmTable, warmCell, SegStat, Note, Err } from "@/components/DashUI";
 
 export default function WaAdminPage() {
   const st = useFetch<{ connected: boolean; detail?: string; qr?: string | null }>("/api/wa/status");
@@ -23,49 +24,57 @@ export default function WaAdminPage() {
   }, [st.data?.qr]);
 
   return (
-    <main>
-      <h1>WhatsApp Sekolah</h1>
-      {st.loading && <p>Memuat status…</p>}
-      {st.error && <p>Gagal: {st.error}</p>}
-      {st.data && (
-        <div>
-          <p>Status: {st.data.connected ? "Terhubung" : `Putus (${st.data.detail ?? "?"})`}</p>
-          {!st.data.connected && st.data.qr && (
-            <div>
-              <p>Pindai QR ini dengan WA sekolah (Tautkan perangkat):</p>
-              {qrImg ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img src={qrImg} alt="QR pairing WA" width={256} height={256} />
-              ) : (
-                <pre style={{ wordBreak: "break-all", whiteSpace: "pre-wrap" }}>{st.data.qr}</pre>
-              )}
-            </div>
-          )}
-          {!st.data.connected && !st.data.qr && <p>QR belum tersedia — tunggu beberapa detik lalu muat ulang.</p>}
-          <button type="button" onClick={() => st.reload()}>Muat ulang status</button>
-        </div>
-      )}
+    <>
+      <PageHead kicker="Notifikasi" title="WhatsApp sekolah" desc="Pairing perangkat, pantau kuota, dan lihat antrean pesan keluar." />
+      <Panel style={{ marginBottom: 16 }}>
+        {st.loading && <Note>Memuat status…</Note>}
+        {st.error && <Err>Gagal: {st.error}</Err>}
+        {st.data && (
+          <>
+            <p style={{ display: "flex", gap: 8, alignItems: "center" }}>
+              Status: <Badge status={st.data.connected ? "AKTIF" : "ALPHA"}>{st.data.connected ? "Terhubung" : `Putus (${st.data.detail ?? "?"})`}</Badge>
+            </p>
+            {!st.data.connected && st.data.qr && (
+              <div>
+                <Note>Pindai QR ini dengan WA sekolah (Tautkan perangkat):</Note>
+                {qrImg ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={qrImg} alt="QR pairing WA" width={256} height={256} style={{ borderRadius: 16, border: "1px solid rgba(23,23,22,.14)" }} />
+                ) : (
+                  <pre style={{ wordBreak: "break-all", whiteSpace: "pre-wrap", fontSize: 12 }}>{st.data.qr}</pre>
+                )}
+              </div>
+            )}
+            {!st.data.connected && !st.data.qr && <Note>QR belum tersedia — tunggu beberapa detik lalu muat ulang.</Note>}
+            <Toolbar><Btn kind="ghost" type="button" onClick={() => st.reload()}>Muat ulang status</Btn></Toolbar>
+          </>
+        )}
+      </Panel>
       {out.data && (
-        <div>
-          <h2>Kuota hari ini</h2>
-          <p>Terkirim 24 jam terakhir: {out.data.quota.sentDay}/{out.data.quota.dailyCap} (maks/menit: {out.data.quota.perMinuteCap})</p>
-          <h2>Antrean terakhir</h2>
-          <table>
-            <thead><tr><th>Tujuan</th><th>Isi</th><th>Status</th><th>Percobaan</th><th>Error</th></tr></thead>
-            <tbody>
+        <Panel>
+          <h2 className="display" style={{ fontSize: 18, margin: "0 0 12px" }}>Kuota hari ini</h2>
+          <SegStat stats={[
+            { label: "Terkirim 24 jam", value: out.data.quota.sentDay },
+            { label: "Batas harian", value: out.data.quota.dailyCap },
+            { label: "Maks/menit", value: out.data.quota.perMinuteCap },
+          ]} />
+          <h2 className="display" style={{ fontSize: 18, margin: "16px 0 12px" }}>Antrean terakhir</h2>
+          {out.data.rows.length === 0 && <Note>Antrean kosong.</Note>}
+          {out.data.rows.length > 0 && (
+            <WarmTable head={["Tujuan", "Isi", "Status", "Percobaan", "Error"]}>
               {out.data.rows.map((r) => (
                 <tr key={r.id}>
-                  <td>{r.to}</td>
-                  <td>{r.text}</td>
-                  <td>{r.status}</td>
-                  <td>{r.attempts}</td>
-                  <td>{r.lastError ?? "-"}</td>
+                  <td style={warmCell({ whiteSpace: "nowrap" })}>{r.to}</td>
+                  <td style={warmCell()}>{r.text}</td>
+                  <td style={warmCell()}><Badge status={r.status.toUpperCase()}>{r.status}</Badge></td>
+                  <td style={warmCell()}>{r.attempts}</td>
+                  <td style={warmCell()}>{r.lastError ?? "-"}</td>
                 </tr>
               ))}
-            </tbody>
-          </table>
-        </div>
+            </WarmTable>
+          )}
+        </Panel>
       )}
-    </main>
+    </>
   );
 }

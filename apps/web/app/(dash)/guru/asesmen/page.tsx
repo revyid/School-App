@@ -3,6 +3,7 @@
 // Guru: daftar asesmen + buat baru (dari bank / inline) + analisis + diagnostik.
 import { useState } from "react";
 import { api, useFetch } from "@/app/lib/api";
+import { PageHead, Panel, Toolbar, TextInput, TextSelect, Btn, Badge, WarmTable, warmCell, Note, Err } from "@/components/DashUI";
 
 interface Row {
   id: string; kind: string; title: string;
@@ -48,41 +49,65 @@ export default function AsesmenGuruPage() {
   }
 
   return (
-    <main>
-      <h1>Asesmen</h1>
-      <h2>Buat baru (1 soal MCQ inline)</h2>
-      <form onSubmit={buat}>
-        <label>ID kelas: <input value={classId} onChange={(e) => setClassId(e.target.value)} required placeholder="classId" /></label>
-        <label>Judul: <input value={title} onChange={(e) => setTitle(e.target.value)} required /></label>
-        <label>Jenis:
-          <select value={kind} onChange={(e) => setKind(e.target.value)}>
-            <option value="REGULAR">REGULAR</option>
-            <option value="DIAGNOSTIC">DIAGNOSTIC</option>
-          </select>
-        </label>
-        <label>Soal: <textarea value={stem} onChange={(e) => setStem(e.target.value)} required /></label>
-        <label>Opsi (1 baris = 1 opsi): <textarea value={options} onChange={(e) => setOptions(e.target.value)} rows={4} /></label>
-        <label>Index benar (0-based): <input value={correct} onChange={(e) => setCorrect(e.target.value)} required /></label>
-        <button type="submit">Buat</button>
-      </form>
-      {msg && <p>{msg}</p>}
-      <h2>Daftar</h2>
-      {loading && <p>Memuat…</p>}
-      {error && <p>Gagal: {error}</p>}
-      {data && (
-        <ul>
-          {data.rows.map((r) => (
-            <li key={r.id}>
-              {r.title} · {r.kind} · {r._count?.questions ?? "?"} soal · {r._count?.attempts ?? "?"} attempt{" "}
-              <button type="button" onClick={() => setSel(r.id)}>Analisis</button>
-            </li>
-          ))}
-        </ul>
-      )}
+    <>
+      <PageHead kicker="Ujian" title="Asesmen kelas" desc="Buat ujian baru, lalu lihat analisis butir soal dan sebaran nilai." />
+      <Panel style={{ marginBottom: 16 }}>
+        <h2 className="display" style={{ fontSize: 18, margin: "0 0 12px" }}>Buat baru (1 soal MCQ inline)</h2>
+        <form onSubmit={buat} style={{ display: "grid", gap: 12, maxWidth: 560 }}>
+          <label style={{ display: "grid", gap: 6, fontSize: 13, color: "#74746d" }}>
+            ID kelas:
+            <TextInput value={classId} onChange={(e) => setClassId(e.target.value)} required placeholder="classId" />
+          </label>
+          <label style={{ display: "grid", gap: 6, fontSize: 13, color: "#74746d" }}>
+            Judul:
+            <TextInput value={title} onChange={(e) => setTitle(e.target.value)} required />
+          </label>
+          <label style={{ display: "grid", gap: 6, fontSize: 13, color: "#74746d" }}>
+            Jenis:
+            <TextSelect value={kind} onChange={(e) => setKind(e.target.value)}>
+              <option value="REGULAR">REGULAR</option>
+              <option value="DIAGNOSTIC">DIAGNOSTIC</option>
+            </TextSelect>
+          </label>
+          <label style={{ display: "grid", gap: 6, fontSize: 13, color: "#74746d" }}>
+            Soal:
+            <textarea value={stem} onChange={(e) => setStem(e.target.value)} required rows={3} style={{ borderRadius: 14, border: "1px solid rgba(23,23,22,.25)", background: "#fffdf8", padding: "9px 14px", fontSize: 14 }} />
+          </label>
+          <label style={{ display: "grid", gap: 6, fontSize: 13, color: "#74746d" }}>
+            Opsi (1 baris = 1 opsi):
+            <textarea value={options} onChange={(e) => setOptions(e.target.value)} rows={4} style={{ borderRadius: 14, border: "1px solid rgba(23,23,22,.25)", background: "#fffdf8", padding: "9px 14px", fontSize: 14 }} />
+          </label>
+          <label style={{ display: "grid", gap: 6, fontSize: 13, color: "#74746d" }}>
+            Index benar (0-based):
+            <TextInput value={correct} onChange={(e) => setCorrect(e.target.value)} required style={{ width: 120 }} />
+          </label>
+          <Toolbar><Btn type="submit">Buat asesmen</Btn></Toolbar>
+        </form>
+        {msg && <p style={{ fontWeight: 700 }}>{msg}</p>}
+      </Panel>
+      <Panel style={{ marginBottom: 16 }}>
+        <h2 className="display" style={{ fontSize: 18, margin: "0 0 12px" }}>Daftar</h2>
+        {loading && <Note>Memuat…</Note>}
+        {error && <Err>Gagal: {error}</Err>}
+        {data && data.rows.length === 0 && <Note>Belum ada asesmen. Buat yang pertama di atas.</Note>}
+        {data && data.rows.length > 0 && (
+          <WarmTable head={["Judul", "Jenis", "Soal", "Attempt", ""]}>
+            {data.rows.map((r) => (
+              <tr key={r.id}>
+                <td style={warmCell({ fontWeight: 700 })}>{r.title}</td>
+                <td style={warmCell()}><Badge status={r.kind === "DIAGNOSTIC" ? "IZIN" : "AKTIF"}>{r.kind}</Badge></td>
+                <td style={warmCell()}>{r._count?.questions ?? "?"}</td>
+                <td style={warmCell()}>{r._count?.attempts ?? "?"}</td>
+                <td style={warmCell()}><Btn kind="ghost" type="button" onClick={() => setSel(r.id)}>Analisis</Btn></td>
+              </tr>
+            ))}
+          </WarmTable>
+        )}
+      </Panel>
       {sel && analysis.data && (
-        <div>
-          <h3>Analisis butir ({analysis.data.attempts} terkumpul)</h3>
-          <ul>
+        <Panel style={{ marginBottom: 16 }}>
+          <h3 className="display" style={{ fontSize: 18, margin: "0 0 12px" }}>Analisis butir ({analysis.data.attempts} terkumpul)</h3>
+          <ul style={{ margin: 0, paddingLeft: 18, display: "grid", gap: 8, fontSize: 14 }}>
             {analysis.data.items.map((it) => (
               <li key={it.questionId}>
                 {it.stem} — n={it.n}, sulit={Math.round(it.difficulty * 100)}%,
@@ -90,14 +115,14 @@ export default function AsesmenGuruPage() {
               </li>
             ))}
           </ul>
-        </div>
+        </Panel>
       )}
       {sel && diag.data && (
-        <div>
-          <h3>Distribusi skor (n={diag.data.n}, rata-rata={diag.data.avg})</h3>
-          <pre>{diag.data.buckets.map((b, i) => `${i * 10}-${i * 10 + 10}: ${"#".repeat(b)} (${b})`).join("\n")}</pre>
-        </div>
+        <Panel>
+          <h3 className="display" style={{ fontSize: 18, margin: "0 0 12px" }}>Distribusi skor (n={diag.data.n}, rata-rata={diag.data.avg})</h3>
+          <pre style={{ margin: 0, fontSize: 13, overflowX: "auto" }}>{diag.data.buckets.map((b, i) => `${i * 10}-${i * 10 + 10}: ${"#".repeat(b)} (${b})`).join("\n")}</pre>
+        </Panel>
       )}
-    </main>
+    </>
   );
 }

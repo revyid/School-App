@@ -3,6 +3,7 @@
 // Admin: pengumuman CRUD-minimal (buat + daftar) + reveal thread anonim + atur expRules.
 import { useState } from "react";
 import { api, useFetch } from "@/app/lib/api";
+import { PageHead, Panel, Toolbar, TextInput, TextSelect, Btn, Badge, WarmTable, warmCell, Note } from "@/components/DashUI";
 
 export default function PengumumanAdminPage() {
   const { data, reload } = useFetch<{ rows: { id: string; title: string; target: string }[] }>("/api/announcements");
@@ -29,26 +30,45 @@ export default function PengumumanAdminPage() {
   }
 
   return (
-    <main>
-      <h1>Pengumuman</h1>
-      <form onSubmit={buat}>
-        <label>Judul: <input value={title} onChange={(e) => setTitle(e.target.value)} required /></label>
-        <label>Isi: <textarea value={body} onChange={(e) => setBody(e.target.value)} required /></label>
-        <label>Target:
-          <select value={target} onChange={(e) => setTarget(e.target.value)}>
-            <option value="ALL">ALL</option>
-            <option value="GURU">GURU</option>
-            <option value="SISWA">SISWA</option>
-          </select>
-        </label>
-        <button type="submit">Terbitkan</button>
-      </form>
-      {msg && <p>{msg}</p>}
-      <ul>
-        {data?.rows.map((r) => (
-          <li key={r.id}>{r.title} ({r.target})</li>
-        ))}
-      </ul>
-    </main>
+    <>
+      <PageHead kicker="Komunikasi" title="Pengumuman" desc="Terbitkan info resmi untuk guru, siswa, atau semua warga sekolah." />
+      <Panel style={{ marginBottom: 16 }}>
+        <form onSubmit={buat} style={{ display: "grid", gap: 12, maxWidth: 560 }}>
+          <label style={{ display: "grid", gap: 6, fontSize: 13, color: "#74746d" }}>
+            Judul:
+            <TextInput value={title} onChange={(e) => setTitle(e.target.value)} required />
+          </label>
+          <label style={{ display: "grid", gap: 6, fontSize: 13, color: "#74746d" }}>
+            Isi:
+            <textarea value={body} onChange={(e) => setBody(e.target.value)} required rows={4} style={{ borderRadius: 14, border: "1px solid rgba(23,23,22,.25)", background: "#fffdf8", padding: "9px 14px", fontSize: 14 }} />
+          </label>
+          <label style={{ display: "grid", gap: 6, fontSize: 13, color: "#74746d" }}>
+            Target:
+            <TextSelect value={target} onChange={(e) => setTarget(e.target.value)}>
+              <option value="ALL">Semua</option>
+              <option value="GURU">Guru saja</option>
+              <option value="SISWA">Siswa saja</option>
+            </TextSelect>
+          </label>
+          <Toolbar><Btn type="submit">Terbitkan</Btn></Toolbar>
+        </form>
+        {msg && <p style={{ fontWeight: 700 }}>{msg}</p>}
+      </Panel>
+      <Panel>
+        <h2 className="display" style={{ fontSize: 18, margin: "0 0 12px" }}>Sudah terbit</h2>
+        {!data && <Note>Memuat…</Note>}
+        {data && data.rows.length === 0 && <Note>Belum ada pengumuman.</Note>}
+        {data && data.rows.length > 0 && (
+          <WarmTable head={["Judul", "Target"]}>
+            {data.rows.map((r) => (
+              <tr key={r.id}>
+                <td style={warmCell({ fontWeight: 700 })}>{r.title}</td>
+                <td style={warmCell()}><Badge status={r.target === "ALL" ? "AKTIF" : "IZIN"}>{r.target}</Badge></td>
+              </tr>
+            ))}
+          </WarmTable>
+        )}
+      </Panel>
+    </>
   );
 }

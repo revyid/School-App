@@ -3,6 +3,7 @@
 // Guru: detail tugas + progres + nilai + kirim pengingat/terima kasih (Phase 5 menyambung via notifikasi).
 import { useState } from "react";
 import { api, useFetch } from "@/app/lib/api";
+import { PageHead, Panel, Toolbar, TextInput, Btn, Badge, WarmTable, warmCell, SegStat, Note, Err } from "@/components/DashUI";
 
 interface Sub {
   id: string;
@@ -59,57 +60,77 @@ export default function GuruTugasDetail({ params }: { params: Promise<{ id: stri
     else setMsg(`Terkirim: ${d.inapp} in-app + ${d.wa} WA`);
   }
 
-  if (!detail.data && detail.loading) return <main><p>Memuat…</p></main>;
-  if (detail.error) return <main><p>Gagal: {detail.error}</p></main>;
-  if (!detail.data) return <main><p>Memuat…</p></main>;
+  if (!detail.data && detail.loading) return <Note>Memuat…</Note>;
+  if (detail.error) return <Err>Gagal: {detail.error}</Err>;
+  if (!detail.data) return <Note>Memuat…</Note>;
   const t = detail.data;
   return (
-    <main>
-      <h1>{t.task.title}</h1>
-      <p>Kelas: {t.task.class.name} · {t.visible ? "Terlihat siswa" : "Terjadwal/belum publish"}</p>
-      <p>{t.task.instruction}</p>
-      <p>Terkumpul: {t.submissions.length} · Belum: {t.pending.length}</p>
-      <button type="button" onClick={() => ingatkan("reminder")}>Kirim pengingat ke yang belum mengumpulkan</button>
-      <button type="button" onClick={() => ingatkan("thanks")}>Kirim terima kasih ke yang sudah mengumpulkan</button>
-      {msg && <p>{msg}</p>}
-      <h2>Pengumpulan</h2>
-      <table>
-        <thead><tr><th>Nama</th><th>Waktu</th><th>Terlambat</th><th>File/Link</th><th>Nilai</th><th>Aksi</th></tr></thead>
-        <tbody>
-          {t.submissions.map((s) => (
-            <tr key={s.id}>
-              <td>{s.student.name}</td>
-              <td>{new Date(s.submittedAt).toLocaleString("id-ID")}</td>
-              <td>{s.isLate ? "Ya" : "Tidak"}</td>
-              <td>
-                {s.fileName && <a href={`/api/task-files/${t.task.id}/${s.fileName}`}>unduh</a>}
-                {s.link && <> <a href={s.link} target="_blank" rel="noreferrer">tautan</a></>}
-                {s.text && <span> (teks)</span>}
-              </td>
-              <td>{s.score ?? "-"}</td>
-              <td>
-                <input
-                  type="number" min={0} max={100} placeholder="0-100" style={{ width: 70 }}
-                  value={grades[s.id]?.score ?? ""}
-                  onChange={(e) => setGrades({ ...grades, [s.id]: { score: e.target.value, feedback: grades[s.id]?.feedback ?? "" } })}
-                />
-                <input
-                  placeholder="umpan balik" style={{ width: 140 }}
-                  value={grades[s.id]?.feedback ?? ""}
-                  onChange={(e) => setGrades({ ...grades, [s.id]: { score: grades[s.id]?.score ?? "", feedback: e.target.value } })}
-                />
-                <button type="button" onClick={() => nilai(s.id)}>Simpan</button>
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-      <h2>Belum mengumpulkan ({t.pending.length})</h2>
-      <ul>
-        {t.pending.map((p) => (
-          <li key={p.id}>{p.name}</li>
-        ))}
-      </ul>
-    </main>
+    <>
+      <PageHead
+        kicker="Tugas"
+        title={t.task.title}
+        desc={`Kelas: ${t.task.class.name}`}
+        right={<Badge status={t.visible ? "AKTIF" : "PENDING"}>{t.visible ? "Terlihat siswa" : "Terjadwal/belum publish"}</Badge>}
+      />
+      <Panel style={{ marginBottom: 16 }}>
+        <p style={{ margin: "0 0 12px", whiteSpace: "pre-wrap" }}>{t.task.instruction}</p>
+        <SegStat stats={[
+          { label: "Terkumpul", value: t.submissions.length },
+          { label: "Belum", value: t.pending.length },
+        ]} />
+        <Toolbar>
+          <Btn type="button" onClick={() => ingatkan("reminder")}>Kirim pengingat ke yang belum mengumpulkan</Btn>
+          <Btn kind="ghost" type="button" onClick={() => ingatkan("thanks")}>Kirim terima kasih ke yang sudah mengumpulkan</Btn>
+        </Toolbar>
+        {msg && <p style={{ fontWeight: 700 }}>{msg}</p>}
+      </Panel>
+      <Panel style={{ marginBottom: 16 }}>
+        <h2 className="display" style={{ fontSize: 18, margin: "0 0 12px" }}>Pengumpulan</h2>
+        {t.submissions.length === 0 && <Note>Belum ada yang mengumpulkan.</Note>}
+        {t.submissions.length > 0 && (
+          <WarmTable head={["Nama", "Waktu", "Terlambat", "File/Link", "Nilai", "Beri nilai"]}>
+            {t.submissions.map((s) => (
+              <tr key={s.id}>
+                <td style={warmCell({ fontWeight: 700 })}>{s.student.name}</td>
+                <td style={warmCell({ whiteSpace: "nowrap" })}>{new Date(s.submittedAt).toLocaleString("id-ID")}</td>
+                <td style={warmCell()}>{s.isLate ? <Badge status="TERLAMBAT">Ya</Badge> : "Tidak"}</td>
+                <td style={warmCell()}>
+                  {s.fileName && <a href={`/api/task-files/${t.task.id}/${s.fileName}`}>unduh</a>}
+                  {s.link && <> <a href={s.link} target="_blank" rel="noreferrer">tautan</a></>}
+                  {s.text && <span> (teks)</span>}
+                </td>
+                <td style={warmCell({ fontWeight: 700 })}>{s.score ?? "-"}</td>
+                <td style={warmCell()}>
+                  <span style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                    <TextInput
+                      type="number" min={0} max={100} placeholder="0-100" style={{ width: 80 }}
+                      value={grades[s.id]?.score ?? ""}
+                      onChange={(e) => setGrades({ ...grades, [s.id]: { score: e.target.value, feedback: grades[s.id]?.feedback ?? "" } })}
+                    />
+                    <TextInput
+                      placeholder="umpan balik" style={{ minWidth: 140 }}
+                      value={grades[s.id]?.feedback ?? ""}
+                      onChange={(e) => setGrades({ ...grades, [s.id]: { score: grades[s.id]?.score ?? "", feedback: e.target.value } })}
+                    />
+                    <Btn kind="ghost" type="button" onClick={() => nilai(s.id)}>Simpan</Btn>
+                  </span>
+                </td>
+              </tr>
+            ))}
+          </WarmTable>
+        )}
+      </Panel>
+      <Panel>
+        <h2 className="display" style={{ fontSize: 18, margin: "0 0 12px" }}>Belum mengumpulkan ({t.pending.length})</h2>
+        {t.pending.length === 0 && <Note>Semua sudah mengumpulkan.</Note>}
+        {t.pending.length > 0 && (
+          <ul style={{ margin: 0, paddingLeft: 18, display: "grid", gap: 4, fontSize: 14 }}>
+            {t.pending.map((p) => (
+              <li key={p.id}>{p.name}</li>
+            ))}
+          </ul>
+        )}
+      </Panel>
+    </>
   );
 }

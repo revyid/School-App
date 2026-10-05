@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { PageHead, Panel, Toolbar, TextInput, Btn, Err } from "@/components/DashUI";
 
 async function csrf(): Promise<string> {
   const cached = sessionStorage.getItem("csrf");
@@ -48,24 +49,26 @@ export default function ChangePasswordPage() {
   }
 
   return (
-    <main>
-      <h1>Ganti kata sandi</h1>
-      <form onSubmit={submit}>
-        <label>
-          Kata sandi lama
-          <input type="password" value={oldPassword} onChange={(e) => setOld(e.target.value)} autoComplete="current-password" required />
-        </label>
-        <label>
-          Kata sandi baru (min. 8 karakter)
-          <input type="password" value={p1} onChange={(e) => setP1(e.target.value)} autoComplete="new-password" required />
-        </label>
-        <label>
-          Ulangi kata sandi baru
-          <input type="password" value={p2} onChange={(e) => setP2(e.target.value)} autoComplete="new-password" required />
-        </label>
-        {error && <p role="alert">{error}</p>}
-        <button type="submit">Simpan</button>
-      </form>
-    </main>
+    <>
+      <PageHead kicker="Akun" title="Ganti kata sandi" desc="Minimal 8 karakter. Setelah berhasil kamu diminta login ulang." />
+      <Panel style={{ maxWidth: 480 }}>
+        <form onSubmit={submit} style={{ display: "grid", gap: 12 }}>
+          <label style={{ display: "grid", gap: 6, fontSize: 13, color: "#74746d" }}>
+            Kata sandi lama
+            <TextInput type="password" value={oldPassword} onChange={(e) => setOld(e.target.value)} autoComplete="current-password" required />
+          </label>
+          <label style={{ display: "grid", gap: 6, fontSize: 13, color: "#74746d" }}>
+            Kata sandi baru (min. 8 karakter)
+            <TextInput type="password" value={p1} onChange={(e) => setP1(e.target.value)} autoComplete="new-password" required />
+          </label>
+          <label style={{ display: "grid", gap: 6, fontSize: 13, color: "#74746d" }}>
+            Ulangi kata sandi baru
+            <TextInput type="password" value={p2} onChange={(e) => setP2(e.target.value)} autoComplete="new-password" required />
+          </label>
+          {error && <Err>{error}</Err>}
+          <Toolbar><Btn type="submit">Simpan</Btn></Toolbar>
+        </form>
+      </Panel>
+    </>
   );
 }

@@ -2,6 +2,7 @@
 
 // Dashboard super-admin: agregat /api/admin/health (semua sekolah).
 import { useEffect, useState } from "react";
+import { PageHead, Panel, Badge, WarmTable, warmCell, SegStat, Note, Err } from "@/components/DashUI";
 
 interface Health {
   schoolCount: number;
@@ -27,31 +28,42 @@ export default function PantauPage() {
     }).catch((e) => setError(String(e)));
   }, []);
 
-  if (error) return <main><h1>Pantau</h1><p role="alert">{error}</p></main>;
-  if (!h) return <main><h1>Pantau</h1><p>Memuat…</p></main>;
+  if (error) return <Err>{error}</Err>;
+  if (!h) return <Note>Memuat…</Note>;
 
   return (
-    <main>
-      <h1>Pantau ({h.schoolCount} sekolah)</h1>
-      <p>Backup: {h.backup.lastAt ?? "belum pernah"} ({h.backup.lastResult ?? "-"})</p>
-      <h2>Antrean</h2>
-      <ul>
-        {Object.entries(h.queues).map(([q, s]) => (
-          <li key={q}>{q}: tunggu {s.waiting}, gagal {s.failed}</li>
-        ))}
-      </ul>
-      <h2>WhatsApp</h2>
-      <ul>
-        {(h.wa.rows ?? []).map((r) => (
-          <li key={r.schoolId}>{r.slug}: {r.connected ? "terhubung" : `putus (${r.detail})`}</li>
-        ))}
-      </ul>
-      <h2>Sekolah</h2>
-      <ul>
-        {h.schools.map((s) => (
-          <li key={s.id}>{s.name} ({s.slug})</li>
-        ))}
-      </ul>
-    </main>
+    <>
+      <PageHead
+        kicker="Platform"
+        title={`Pantau (${h.schoolCount} sekolah)`}
+        desc={`Backup: ${h.backup.lastAt ?? "belum pernah"} (${h.backup.lastResult ?? "-"})`}
+      />
+      <Panel style={{ marginBottom: 16 }}>
+        <h2 className="display" style={{ fontSize: 18, margin: "0 0 12px" }}>Antrean</h2>
+        <SegStat stats={Object.entries(h.queues).map(([q, s]) => ({ label: q, value: `${s.waiting} tunggu / ${s.failed} gagal` }))} />
+      </Panel>
+      <Panel style={{ marginBottom: 16 }}>
+        <h2 className="display" style={{ fontSize: 18, margin: "0 0 12px" }}>WhatsApp</h2>
+        {(h.wa.rows ?? []).length === 0 && <Note>Tidak ada data WA.</Note>}
+        {(h.wa.rows ?? []).length > 0 && (
+          <WarmTable head={["Sekolah", "Status"]}>
+            {(h.wa.rows ?? []).map((r) => (
+              <tr key={r.schoolId}>
+                <td style={warmCell({ fontWeight: 700 })}>{r.slug}</td>
+                <td style={warmCell()}><Badge status={r.connected ? "AKTIF" : "ALPHA"}>{r.connected ? "terhubung" : `putus (${r.detail})`}</Badge></td>
+              </tr>
+            ))}
+          </WarmTable>
+        )}
+      </Panel>
+      <Panel>
+        <h2 className="display" style={{ fontSize: 18, margin: "0 0 12px" }}>Sekolah</h2>
+        <ul style={{ margin: 0, paddingLeft: 18, display: "grid", gap: 4, fontSize: 14 }}>
+          {h.schools.map((s) => (
+            <li key={s.id}>{s.name} ({s.slug})</li>
+          ))}
+        </ul>
+      </Panel>
+    </>
   );
 }

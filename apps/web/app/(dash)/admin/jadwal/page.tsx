@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { api, useFetch } from "@/app/lib/api";
+import { PageHead, Panel, Toolbar, TextInput, TextSelect, Btn, WarmTable, warmCell, Note, Err } from "@/components/DashUI";
 
 const DAYS = ["Min", "Sen", "Sel", "Rab", "Kam", "Jum", "Sab"];
 
@@ -41,51 +42,53 @@ export default function TimetablePage() {
   }
 
   return (
-    <main>
-      <h1>Jadwal Pelajaran</h1>
-      <select value={classId} onChange={(e) => setClassId(e.target.value)}>
-        <option value="">Pilih kelas</option>
-        {classes?.rows.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
-      </select>
-      {loading && <p>Memuat…</p>}
-      {error && <p style={{ color: "red" }}>Error: {error}</p>}
-      {data && (
-        <table>
-          <thead><tr><th>Hari</th><th>Jam</th><th>Mapel</th><th>Guru</th><th>Aksi</th></tr></thead>
-          <tbody>
+    <>
+      <PageHead kicker="Akademik" title="Jadwal pelajaran" desc="Atur slot mapel per kelas per hari." />
+      <Panel style={{ marginBottom: 16 }}>
+        <Toolbar>
+          <TextSelect value={classId} onChange={(e) => setClassId(e.target.value)}>
+            <option value="">Pilih kelas</option>
+            {classes?.rows.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+          </TextSelect>
+        </Toolbar>
+        {loading && <Note>Memuat…</Note>}
+        {error && <Err>Error: {error}</Err>}
+        {data && data.rows.length === 0 && <Note>Belum ada slot jadwal untuk kelas ini.</Note>}
+        {data && data.rows.length > 0 && (
+          <WarmTable head={["Hari", "Jam", "Mapel", "Guru", "Aksi"]}>
             {data.rows.map((s) => (
               <tr key={s.id}>
-                <td>{DAYS[s.dayOfWeek]}</td>
-                <td>{s.startTime}–{s.endTime}</td>
-                <td>{s.subjectRef?.name ?? s.subjectName ?? "-"}</td>
-                <td>{s.teacher?.name ?? "-"}</td>
-                <td><button onClick={() => remove(s.id)}>Hapus</button></td>
+                <td style={warmCell({ fontWeight: 700 })}>{DAYS[s.dayOfWeek]}</td>
+                <td style={warmCell({ whiteSpace: "nowrap" })}>{s.startTime}–{s.endTime}</td>
+                <td style={warmCell()}>{s.subjectRef?.name ?? s.subjectName ?? "-"}</td>
+                <td style={warmCell()}>{s.teacher?.name ?? "-"}</td>
+                <td style={warmCell()}><Btn kind="ghost" onClick={() => remove(s.id)}>Hapus</Btn></td>
               </tr>
             ))}
-          </tbody>
-        </table>
-      )}
+          </WarmTable>
+        )}
+      </Panel>
       {classId && (
-        <>
-          <h2>Tambah Slot</h2>
-          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-            <select value={day} onChange={(e) => setDay(e.target.value)}>
+        <Panel>
+          <h2 className="display" style={{ fontSize: 18, margin: "0 0 12px" }}>Tambah slot</h2>
+          <Toolbar>
+            <TextSelect value={day} onChange={(e) => setDay(e.target.value)}>
               {DAYS.map((d, i) => <option key={i} value={i}>{d}</option>)}
-            </select>
-            <input type="time" value={start} onChange={(e) => setStart(e.target.value)} />
-            <input type="time" value={end} onChange={(e) => setEnd(e.target.value)} />
-            <select value={subjectId} onChange={(e) => setSubjectId(e.target.value)}>
+            </TextSelect>
+            <TextInput type="time" value={start} onChange={(e) => setStart(e.target.value)} style={{ width: "auto" }} />
+            <TextInput type="time" value={end} onChange={(e) => setEnd(e.target.value)} style={{ width: "auto" }} />
+            <TextSelect value={subjectId} onChange={(e) => setSubjectId(e.target.value)}>
               <option value="">Pilih mapel</option>
               {subjects?.rows.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
-            </select>
-            <select value={teacherId} onChange={(e) => setTeacherId(e.target.value)}>
+            </TextSelect>
+            <TextSelect value={teacherId} onChange={(e) => setTeacherId(e.target.value)}>
               <option value="">Pilih guru</option>
               {teachers?.rows.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
-            </select>
-            <button onClick={add}>Tambah</button>
-          </div>
-        </>
+            </TextSelect>
+            <Btn onClick={add}>Tambah</Btn>
+          </Toolbar>
+        </Panel>
       )}
-    </main>
+    </>
   );
 }

@@ -3,6 +3,7 @@
 // Siswa: daftar asesmen + kerjakan (MCQ pilih opsi; SORTING: naik/turunkan urutan).
 import { useState } from "react";
 import { api, useFetch } from "@/app/lib/api";
+import { PageHead, Panel, Toolbar, Btn, Note } from "@/components/DashUI";
 
 interface Q {
   id: string; type: "MCQ" | "SORTING"; stem: string; imageUrl: string | null; options: string[];
@@ -50,66 +51,74 @@ export default function AsesmenSiswaPage() {
   }
 
   return (
-    <main>
-      <h1>Asesmen</h1>
-      {loading && <p>Memuat…</p>}
+    <>
+      <PageHead kicker="Ujian" title="Asesmen" desc="Kerjakan dengan jujur. Soal diacak per siswa, nilai keluar otomatis." />
+      {loading && <Note>Memuat…</Note>}
       {data && !aid && (
-        <ul>
-          {data.rows.map((r) => (
-            <li key={r.id}>
-              {r.title} {r.deadline ? `(deadline ${r.deadline.slice(0, 10)})` : ""}{" "}
-              <button type="button" onClick={() => setAid(r.id)}>Kerjakan</button>
-            </li>
-          ))}
-        </ul>
+        <Panel>
+          {data.rows.length === 0 && <Note>Belum ada asesmen untukmu.</Note>}
+          <ul style={{ listStyle: "none", margin: 0, padding: 0, display: "grid", gap: 10 }}>
+            {data.rows.map((r) => (
+              <li key={r.id} style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
+                <span style={{ flex: 1, minWidth: 200, fontWeight: 700 }}>{r.title}</span>
+                {r.deadline && <span style={{ fontSize: 12.5, color: "#74746d" }}>deadline {r.deadline.slice(0, 10)}</span>}
+                <Btn type="button" kind="dark" onClick={() => setAid(r.id)}>Kerjakan</Btn>
+              </li>
+            ))}
+          </ul>
+        </Panel>
       )}
       {aid && attempt.data && (
-        <div>
-          <h2>{attempt.data.assessment.title}</h2>
+        <Panel>
+          <h2 className="display" style={{ fontSize: 20, margin: "0 0 14px" }}>{attempt.data.assessment.title}</h2>
           {attempt.data.attempt.submittedAt ? (
-            <p>Sudah dikumpulkan{attempt.data.attempt.score != null ? `, skor: ${attempt.data.attempt.score}` : ""}.</p>
+            <Note>Sudah dikumpulkan{attempt.data.attempt.score != null ? `, skor: ${attempt.data.attempt.score}` : ""}.</Note>
           ) : (
             <>
               {attempt.data.questions.map((q, qi) => (
-                <div key={q.id}>
-                  <p>{qi + 1}. {q.stem}</p>
+                <div key={q.id} style={{ marginBottom: 18, padding: 14, border: "1px solid rgba(23,23,22,.14)", borderRadius: 16 }}>
+                  <p style={{ fontWeight: 700, margin: "0 0 10px" }}>{qi + 1}. {q.stem}</p>
                   {q.imageUrl && (
                     // eslint-disable-next-line @next/next/no-img-element
-                    <img src={q.imageUrl} alt="gambar soal" style={{ maxWidth: 480 }} />
+                    <img src={q.imageUrl} alt="gambar soal" style={{ maxWidth: "100%", borderRadius: 12, marginBottom: 10 }} />
                   )}
                   {q.type === "MCQ" ? (
-                    <ul>
+                    <ul style={{ listStyle: "none", margin: 0, padding: 0, display: "grid", gap: 6 }}>
                       {q.options.map((o, i) => (
                         <li key={i}>
-                          <label>
+                          <label style={{ display: "flex", gap: 10, alignItems: "flex-start", padding: "9px 12px", borderRadius: 12, border: "1px solid rgba(23,23,22,.14)", cursor: "pointer", background: mcq[q.id] === i ? "#eeeadd" : "#fffdf8" }}>
                             <input
                               type="radio" name={q.id} checked={mcq[q.id] === i}
                               onChange={() => setMcq({ ...mcq, [q.id]: i })}
-                            /> {o}
+                            /> <span>{o}</span>
                           </label>
                         </li>
                       ))}
                     </ul>
                   ) : (
-                    <ol>
+                    <ol style={{ margin: 0, paddingLeft: 20, display: "grid", gap: 6 }}>
                       {(sort[q.id] ?? q.options).map((o, i, arr) => (
-                        <li key={`${o}-${i}`}>
-                          {o}{" "}
-                          <button type="button" onClick={() => move(q.id, q.options, i, -1)}>↑</button>
-                          <button type="button" onClick={() => move(q.id, q.options, i, 1)}>↓</button>
+                        <li key={`${o}-${i}`} style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                          <span style={{ flex: 1 }}>{o}{" "}</span>
+                          <Btn type="button" kind="ghost" onClick={() => move(q.id, q.options, i, -1)}>↑</Btn>
+                          <Btn type="button" kind="ghost" onClick={() => move(q.id, q.options, i, 1)}>↓</Btn>
                         </li>
                       ))}
                     </ol>
                   )}
                 </div>
               ))}
-              <button type="button" onClick={kumpul}>Kumpulkan jawaban</button>
+              <Toolbar>
+                <Btn type="button" onClick={kumpul}>Kumpulkan jawaban</Btn>
+              </Toolbar>
             </>
           )}
-          <button type="button" onClick={() => { setAid(null); setMsg(null); }}>Kembali</button>
-        </div>
+          <Toolbar>
+            <Btn type="button" kind="ghost" onClick={() => { setAid(null); setMsg(null); }}>Kembali</Btn>
+          </Toolbar>
+        </Panel>
       )}
-      {msg && <p>{msg}</p>}
-    </main>
+      {msg && <p style={{ fontWeight: 700 }}>{msg}</p>}
+    </>
   );
 }

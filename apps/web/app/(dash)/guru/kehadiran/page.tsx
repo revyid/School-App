@@ -3,6 +3,7 @@
 // Rekap kehadiran harian per kelas (guru: hanya kelasnya — server menolak yang lain).
 import { useState } from "react";
 import { api, useFetch } from "@/app/lib/api";
+import { PageHead, Panel, Toolbar, TextInput, TextSelect, Btn, Badge, WarmTable, warmCell, SegStat, Note, Err, LinkBtn } from "@/components/DashUI";
 
 interface Row {
   studentId: string;
@@ -42,55 +43,68 @@ export default function KehadiranPage() {
     }
   }
 
+  const s = daily.data?.summary;
   return (
-    <main>
-      <h1>Kehadiran Harian</h1>
-      <div>
-        <label>Tanggal: <input type="date" value={date} onChange={(e) => setDate(e.target.value)} /></label>
-        <label>Kelas:
-          <select value={classId} onChange={(e) => setClassId(e.target.value)}>
-            <option value="">— pilih —</option>
-            {classes.data?.rows.map((r) => (
-              <option key={r.id} value={r.id}>{r.class.name}</option>
-            ))}
-          </select>
-        </label>
-      </div>
-      {daily.data && (
-        <p>
-          Hadir: {daily.data.summary.HADIR} · Izin: {daily.data.summary.IZIN} ·
-          Sakit: {daily.data.summary.SAKIT} · Alpha: {daily.data.summary.ALPHA} ·
-          Belum tercatat: {daily.data.summary.BELUM}
-        </p>
-      )}
-      {msg && <p>{msg}</p>}
-      {daily.loading && <p>Memuat…</p>}
-      {daily.error && <p>Gagal: {daily.error}</p>}
-      {daily.data && (
-        <table>
-          <thead><tr><th>Nama</th><th>NISN</th><th>Status</th><th>Ubah manual</th></tr></thead>
-          <tbody>
+    <>
+      <PageHead
+        kicker="Absensi"
+        title="Kehadiran harian"
+        desc="Pilih tanggal dan kelas, lalu tandai manual bila ada yang terlewat scan."
+        right={<LinkBtn href="/guru/scanner">Buka scanner</LinkBtn>}
+      />
+      <Panel style={{ marginBottom: 16 }}>
+        <Toolbar>
+          <label style={{ display: "flex", gap: 8, alignItems: "center", fontSize: 13, color: "#74746d" }}>
+            Tanggal: <TextInput type="date" value={date} onChange={(e) => setDate(e.target.value)} style={{ width: "auto" }} />
+          </label>
+          <label style={{ display: "flex", gap: 8, alignItems: "center", fontSize: 13, color: "#74746d" }}>
+            Kelas:
+            <TextSelect value={classId} onChange={(e) => setClassId(e.target.value)}>
+              <option value="">— pilih —</option>
+              {classes.data?.rows.map((r) => (
+                <option key={r.id} value={r.id}>{r.class.name}</option>
+              ))}
+            </TextSelect>
+          </label>
+        </Toolbar>
+        {s && (
+          <SegStat stats={[
+            { label: "Hadir", value: s.HADIR ?? 0 },
+            { label: "Izin", value: s.IZIN ?? 0 },
+            { label: "Sakit", value: s.SAKIT ?? 0 },
+            { label: "Alpha", value: s.ALPHA ?? 0 },
+            { label: "Belum tercatat", value: s.BELUM ?? 0 },
+          ]} />
+        )}
+        {msg && <p style={{ fontWeight: 700 }}>{msg}</p>}
+        {daily.loading && <Note>Memuat…</Note>}
+        {daily.error && <Err>Gagal: {daily.error}</Err>}
+        {daily.data && (
+          <WarmTable head={["Nama", "NISN", "Status", "Ubah manual"]}>
             {daily.data.rows.map((r) => (
               <tr key={r.studentId}>
-                <td>{r.name}</td>
-                <td>{r.nisn ?? "-"}</td>
-                <td>{r.record ? `${r.record.status} (${r.record.source})` : "—"}</td>
-                <td>
-                  <select value={edit[r.studentId] ?? ""} onChange={(e) => setEdit({ ...edit, [r.studentId]: e.target.value })}>
-                    <option value="">—</option>
-                    <option value="HADIR">HADIR</option>
-                    <option value="IZIN">IZIN</option>
-                    <option value="SAKIT">SAKIT</option>
-                    <option value="ALPHA">ALPHA</option>
-                  </select>
-                  <button type="button" onClick={() => saveManual(r.studentId)}>Simpan</button>
+                <td style={warmCell({ fontWeight: 700 })}>{r.name}</td>
+                <td style={warmCell()}>{r.nisn ?? "-"}</td>
+                <td style={warmCell()}>
+                  {r.record ? <><Badge status={r.record.status} /> <span style={{ fontSize: 12, color: "#74746d" }}>({r.record.source})</span></> : <Badge status="BELUM" />}
+                </td>
+                <td style={warmCell()}>
+                  <span style={{ display: "flex", gap: 6 }}>
+                    <TextSelect value={edit[r.studentId] ?? ""} onChange={(e) => setEdit({ ...edit, [r.studentId]: e.target.value })}>
+                      <option value="">—</option>
+                      <option value="HADIR">HADIR</option>
+                      <option value="IZIN">IZIN</option>
+                      <option value="SAKIT">SAKIT</option>
+                      <option value="ALPHA">ALPHA</option>
+                    </TextSelect>
+                    <Btn kind="ghost" type="button" onClick={() => saveManual(r.studentId)}>Simpan</Btn>
+                  </span>
                 </td>
               </tr>
             ))}
-          </tbody>
-        </table>
-      )}
-      <p><a href="/guru/scanner">Ke scanner</a></p>
-    </main>
+          </WarmTable>
+        )}
+      </Panel>
+    </>
   );
 }

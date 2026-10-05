@@ -3,6 +3,7 @@
 // Guru: persetujuan izin siswa kelasnya (APPROVED mengecualikan auto-alpha).
 import { useState } from "react";
 import { api, useFetch } from "@/app/lib/api";
+import { PageHead, Panel, Toolbar, TextInput, TextSelect, Btn, Badge, WarmTable, warmCell, Note, Err } from "@/components/DashUI";
 
 interface Row {
   id: string;
@@ -35,29 +36,32 @@ export default function IzinGuruPage() {
   }
 
   return (
-    <main>
-      <h1>Persetujuan Izin</h1>
-      <label>Status:
-        <select value={status} onChange={(e) => setStatus(e.target.value)}>
-          <option value="PENDING">PENDING</option>
-          <option value="APPROVED">APPROVED</option>
-          <option value="REJECTED">REJECTED</option>
-        </select>
-      </label>
-      {loading && <p>Memuat…</p>}
-      {error && <p>Gagal: {error}</p>}
-      {msg && <p>{msg}</p>}
-      {data && (
-        <table>
-          <thead><tr><th>Tanggal</th><th>Nama</th><th>Jenis</th><th>Alasan</th><th>Foto</th><th>Catatan</th><th>Aksi</th></tr></thead>
-          <tbody>
+    <>
+      <PageHead kicker="Perizinan" title="Persetujuan izin" desc="Setujui atau tolak pengajuan siswa kelasmu. Yang disetujui dikecualikan dari alpha otomatis." />
+      <Panel>
+        <Toolbar>
+          <label style={{ display: "flex", gap: 8, alignItems: "center", fontSize: 13, color: "#74746d" }}>
+            Status:
+            <TextSelect value={status} onChange={(e) => setStatus(e.target.value)}>
+              <option value="PENDING">PENDING</option>
+              <option value="APPROVED">APPROVED</option>
+              <option value="REJECTED">REJECTED</option>
+            </TextSelect>
+          </label>
+        </Toolbar>
+        {loading && <Note>Memuat…</Note>}
+        {error && <Err>Gagal: {error}</Err>}
+        {msg && <p style={{ fontWeight: 700 }}>{msg}</p>}
+        {data && data.rows.length === 0 && <Note>Tidak ada pengajuan pada status ini.</Note>}
+        {data && data.rows.length > 0 && (
+          <WarmTable head={["Tanggal", "Nama", "Jenis", "Alasan", "Foto", "Catatan", "Aksi"]}>
             {data.rows.map((r) => (
               <tr key={r.id}>
-                <td>{r.date.slice(0, 10)}</td>
-                <td>{r.student.name}</td>
-                <td>{r.kind}</td>
-                <td>{r.description}</td>
-                <td>
+                <td style={warmCell({ whiteSpace: "nowrap" })}>{r.date.slice(0, 10)}</td>
+                <td style={warmCell({ fontWeight: 700 })}>{r.student.name}</td>
+                <td style={warmCell()}><Badge status={r.kind} /></td>
+                <td style={warmCell()}>{r.description}</td>
+                <td style={warmCell()}>
                   {r.hasPhoto ? (
                     <>
                       <a href={`/api/leave/${r.id}/photo?which=siswa`} target="_blank" rel="noreferrer">siswa</a>{" "}
@@ -65,26 +69,27 @@ export default function IzinGuruPage() {
                     </>
                   ) : "-"}
                 </td>
-                <td>
-                  <input
+                <td style={warmCell()}>
+                  <TextInput
                     value={notes[r.id] ?? ""}
                     onChange={(e) => setNotes({ ...notes, [r.id]: e.target.value })}
                     placeholder="catatan (opsional)"
+                    style={{ minWidth: 140 }}
                   />
                 </td>
-                <td>
+                <td style={warmCell()}>
                   {r.status === "PENDING" ? (
-                    <>
-                      <button type="button" onClick={() => review(r.id, "APPROVED")}>Setujui</button>
-                      <button type="button" onClick={() => review(r.id, "REJECTED")}>Tolak</button>
-                    </>
-                  ) : r.status}
+                    <span style={{ display: "flex", gap: 6 }}>
+                      <Btn type="button" onClick={() => review(r.id, "APPROVED")}>Setujui</Btn>
+                      <Btn kind="ghost" type="button" onClick={() => review(r.id, "REJECTED")}>Tolak</Btn>
+                    </span>
+                  ) : <Badge status={r.status} />}
                 </td>
               </tr>
             ))}
-          </tbody>
-        </table>
-      )}
-    </main>
+          </WarmTable>
+        )}
+      </Panel>
+    </>
   );
 }

@@ -2,6 +2,7 @@
 
 import { useRef, useState } from "react";
 import { api } from "@/app/lib/api";
+import { PageHead, Panel, Toolbar, Btn, Badge, SegStat, Note, LinkBtn } from "@/components/DashUI";
 
 interface BatchStatus {
   batch: {
@@ -44,26 +45,36 @@ export default function ImportPage() {
   }
 
   return (
-    <main>
-      <h1>Import Siswa dari Excel</h1>
-      <p>Kolom: Nama | JK | NISN | Tgl Lahir | Kelas | No Ortu. Maks 10MB, format .xlsx.</p>
-      <div style={{ display: "flex", gap: 8 }}>
-        <input ref={fileRef} type="file" accept=".xlsx" />
-        <button onClick={upload}>Upload & Proses</button>
-      </div>
-      {msg && <p>{msg}</p>}
-      {status && (
-        <div>
-          <p>Status: {status.status} — {status.processedRows}/{status.totalRows} baris, ok {status.okRows}, error {status.errRows}</p>
-          {status.status === "DONE" && batchId && (
-            <div style={{ display: "flex", gap: 8 }}>
-              <a href={`/api/students/import/${batchId}/errors`}>Unduh laporan error</a>
-              <a href={`/api/students/import/${batchId}/credentials`}>Unduh kredensial (sekali saja)</a>
-            </div>
-          )}
-        </div>
-      )}
-      <p><a href="/admin/siswa">← Kembali ke daftar siswa</a></p>
-    </main>
+    <>
+      <PageHead
+        kicker="Data master"
+        title="Import siswa dari Excel"
+        desc="Kolom: Nama | JK | NISN | Tgl Lahir | Kelas | No Ortu. Maks 10MB, format .xlsx."
+        right={<LinkBtn href="/admin/siswa">Kembali ke daftar siswa</LinkBtn>}
+      />
+      <Panel style={{ maxWidth: 640 }}>
+        <Toolbar>
+          <input ref={fileRef} type="file" accept=".xlsx" />
+          <Btn onClick={upload}>Upload dan proses</Btn>
+        </Toolbar>
+        {msg && <p style={{ fontWeight: 700 }}>{msg}</p>}
+        {status && (
+          <>
+            <SegStat stats={[
+              { label: "Diproses", value: `${status.processedRows}/${status.totalRows}` },
+              { label: "Berhasil", value: status.okRows },
+              { label: "Gagal", value: status.errRows },
+            ]} />
+            <p>Status batch: <Badge status={status.status === "DONE" ? "AKTIF" : "PENDING"}>{status.status}</Badge></p>
+            {status.status === "DONE" && batchId && (
+              <Toolbar>
+                <LinkBtn href={`/api/students/import/${batchId}/errors`}>Unduh laporan error</LinkBtn>
+                <LinkBtn kind="dark" href={`/api/students/import/${batchId}/credentials`}>Unduh kredensial (sekali saja)</LinkBtn>
+              </Toolbar>
+            )}
+          </>
+        )}
+      </Panel>
+    </>
   );
 }

@@ -4,6 +4,7 @@
 // disediakan di UI; server menolak tanpa capture token valid (sekali pakai, 5 mnt).
 import { useRef, useState } from "react";
 import { api, useFetch } from "@/app/lib/api";
+import { PageHead, Panel, Toolbar, TextInput, TextSelect, Btn, Badge, Note } from "@/components/DashUI";
 
 export default function IzinPage() {
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -89,41 +90,56 @@ export default function IzinPage() {
   }
 
   return (
-    <main>
-      <h1>Izin / Sakit</h1>
-      <p>Foto wajib diambil langsung dari kamera (tidak bisa dari galeri). Pencegahan dasar, bukan anti-spoofing sempurna.</p>
-      <div>
-        {!streaming
-          ? <button type="button" onClick={startCamera}>Nyalakan kamera</button>
-          : <button type="button" onClick={stopCamera}>Matikan kamera</button>}
-      </div>
-      <video ref={videoRef} playsInline muted style={{ width: "100%", maxWidth: 480, background: "#000" }} />
-      <canvas ref={canvasRef} style={{ display: "none" }} />
-      <div>
-        <button type="button" onClick={() => jepret("siswa")} disabled={!streaming}>Jepret foto saya</button>
-        <button type="button" onClick={() => jepret("ortu")} disabled={!streaming}>Jepret foto orang tua</button>
-        <span> {fotoSiswa ? "✓ siswa" : "· siswa"} {fotoOrtu ? "✓ ortu" : "· ortu (opsional)"}</span>
-      </div>
-      <form onSubmit={ajukan}>
-        <label>Tanggal: <input type="date" value={date} onChange={(e) => setDate(e.target.value)} required /></label>
-        <label>Jenis:
-          <select value={kind} onChange={(e) => setKind(e.target.value)}>
-            <option value="IZIN">IZIN</option>
-            <option value="SAKIT">SAKIT</option>
-          </select>
-        </label>
-        <label>Alasan (min 10 huruf): <textarea value={desc} onChange={(e) => setDesc(e.target.value)} required minLength={10} /></label>
-        <button type="submit">Ajukan</button>
-      </form>
-      {msg && <p>{msg}</p>}
-      <h2>Riwayat saya</h2>
-      {history.data && (
-        <ul>
-          {history.data.rows.map((r) => (
-            <li key={r.id}>{r.date.slice(0, 10)} · {r.kind} · {r.status}</li>
-          ))}
-        </ul>
-      )}
-    </main>
+    <>
+      <PageHead kicker="Perizinan" title="Izin / sakit" desc="Foto wajib diambil langsung dari kamera (tidak bisa dari galeri). Pencegahan dasar, bukan anti-spoofing sempurna." />
+      <Panel style={{ marginBottom: 16 }}>
+        <Toolbar>
+          {!streaming
+            ? <Btn type="button" kind="dark" onClick={startCamera}>Nyalakan kamera</Btn>
+            : <Btn type="button" kind="ghost" onClick={stopCamera}>Matikan kamera</Btn>}
+        </Toolbar>
+        <video ref={videoRef} playsInline muted style={{ width: "100%", maxWidth: 480, background: "#171716", borderRadius: 16 }} />
+        <canvas ref={canvasRef} style={{ display: "none" }} />
+        <Toolbar>
+          <Btn type="button" kind="ghost" onClick={() => jepret("siswa")} disabled={!streaming}>Jepret foto saya</Btn>
+          <Btn type="button" kind="ghost" onClick={() => jepret("ortu")} disabled={!streaming}>Jepret foto orang tua</Btn>
+          <span style={{ fontSize: 13, color: "#74746d" }}>{fotoSiswa ? "✓ siswa" : "· siswa"} {fotoOrtu ? "✓ ortu" : "· ortu (opsional)"}</span>
+        </Toolbar>
+        <form onSubmit={ajukan} style={{ display: "grid", gap: 12, maxWidth: 520 }}>
+          <label style={{ display: "grid", gap: 6, fontSize: 13, color: "#74746d" }}>
+            Tanggal:
+            <TextInput type="date" value={date} onChange={(e) => setDate(e.target.value)} required />
+          </label>
+          <label style={{ display: "grid", gap: 6, fontSize: 13, color: "#74746d" }}>
+            Jenis:
+            <TextSelect value={kind} onChange={(e) => setKind(e.target.value)}>
+              <option value="IZIN">IZIN</option>
+              <option value="SAKIT">SAKIT</option>
+            </TextSelect>
+          </label>
+          <label style={{ display: "grid", gap: 6, fontSize: 13, color: "#74746d" }}>
+            Alasan (min 10 huruf):
+            <textarea value={desc} onChange={(e) => setDesc(e.target.value)} required minLength={10} rows={3} style={{ borderRadius: 14, border: "1px solid rgba(23,23,22,.25)", background: "#fffdf8", padding: "9px 14px", fontSize: 14 }} />
+          </label>
+          <Toolbar><Btn type="submit">Ajukan</Btn></Toolbar>
+        </form>
+        {msg && <p style={{ fontWeight: 700 }}>{msg}</p>}
+      </Panel>
+      <Panel>
+        <h2 className="display" style={{ fontSize: 18, margin: "0 0 12px" }}>Riwayat saya</h2>
+        {history.data && history.data.rows.length === 0 && <Note>Belum pernah mengajukan.</Note>}
+        {history.data && history.data.rows.length > 0 && (
+          <ul style={{ listStyle: "none", margin: 0, padding: 0, display: "grid", gap: 8 }}>
+            {history.data.rows.map((r) => (
+              <li key={r.id} style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap", fontSize: 14 }}>
+                <span style={{ fontFamily: "var(--font-meta)", fontSize: 12 }}>{r.date.slice(0, 10)}</span>
+                <Badge status={r.kind} />
+                <Badge status={r.status} />
+              </li>
+            ))}
+          </ul>
+        )}
+      </Panel>
+    </>
   );
 }

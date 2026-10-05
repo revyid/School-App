@@ -7,6 +7,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { io, type Socket } from "socket.io-client";
 import { api } from "@/app/lib/api";
+import { PageHead, Panel, Toolbar, TextInput, Btn, Badge, Note, LinkBtn } from "@/components/DashUI";
 
 interface ScanItem { token: string; at: number; tries: number }
 const QUEUE_KEY = "att-offline-queue";
@@ -186,31 +187,39 @@ export default function ScannerPage() {
   }, [streaming, postToken]);
 
   return (
-    <main>
-      <h1>Scanner Kehadiran</h1>
-      {offlineCount > 0 && <p>Antrean offline: {offlineCount} (otomatis dikirim saat online)</p>}
-      <div>
-        {!streaming
-          ? <button type="button" onClick={startCamera}>Nyalakan kamera</button>
-          : <button type="button" onClick={stopCamera}>Matikan kamera</button>}
-      </div>
-      <video ref={videoRef} playsInline muted style={{ width: "100%", maxWidth: 480, background: "#000" }} />
-      <form onSubmit={(e) => { e.preventDefault(); if (manual.trim()) { void postToken(manual.trim()); setManual(""); } }}>
-        <label>
-          Token manual (bila kamera tak mendukung):
-          <input value={manual} onChange={(e) => setManual(e.target.value)} placeholder="sms1-…" />
-        </label>
-        <button type="submit">Catat hadir</button>
-      </form>
-      {msg && <p>{msg}</p>}
-      {lastScan && (
-        <p>
-          {lastScan.duplicate ? "Duplikat — " : "Hadir — "}
-          {lastScan.name}{lastScan.className ? ` (${lastScan.className})` : ""}
-        </p>
-      )}
-      <p><a href="/guru/kehadiran">Lihat rekap hari ini</a></p>
-    </main>
+    <>
+      <PageHead
+        kicker="Absensi"
+        title="Scanner kehadiran"
+        desc="Arahkan kamera ke kartu QR siswa. Bisa offline, antrean terkirim otomatis."
+        right={<LinkBtn href="/guru/kehadiran">Lihat rekap hari ini</LinkBtn>}
+      />
+      <Panel style={{ maxWidth: 640 }}>
+        {offlineCount > 0 && (
+          <p style={{ margin: "0 0 12px" }}><Badge status="PENDING">Antrean offline: {offlineCount} (otomatis dikirim saat online)</Badge></p>
+        )}
+        <Toolbar>
+          {!streaming
+            ? <Btn type="button" kind="dark" onClick={startCamera}>Nyalakan kamera</Btn>
+            : <Btn kind="ghost" type="button" onClick={stopCamera}>Matikan kamera</Btn>}
+        </Toolbar>
+        <video ref={videoRef} playsInline muted style={{ width: "100%", maxWidth: 480, background: "#171716", borderRadius: 16 }} />
+        <form onSubmit={(e) => { e.preventDefault(); if (manual.trim()) { void postToken(manual.trim()); setManual(""); } }} style={{ display: "grid", gap: 10, marginTop: 12, maxWidth: 480 }}>
+          <label style={{ display: "grid", gap: 6, fontSize: 13, color: "#74746d" }}>
+            Token manual (bila kamera tak mendukung):
+            <TextInput value={manual} onChange={(e) => setManual(e.target.value)} placeholder="sms1-…" />
+          </label>
+          <Toolbar><Btn type="submit">Catat hadir</Btn></Toolbar>
+        </form>
+        {msg && <p style={{ fontWeight: 700 }}>{msg}</p>}
+        {lastScan && (
+          <p style={{ padding: "10px 14px", borderRadius: 14, background: lastScan.duplicate ? "#eeeadd" : "#aec6a4", fontWeight: 700 }}>
+            {lastScan.duplicate ? "Duplikat — " : "Hadir — "}
+            {lastScan.name}{lastScan.className ? ` (${lastScan.className})` : ""}
+          </p>
+        )}
+      </Panel>
+    </>
   );
 }
 

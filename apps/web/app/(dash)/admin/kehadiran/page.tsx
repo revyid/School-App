@@ -3,6 +3,7 @@
 // Admin: dashboard kehadiran (ringkasan hari ini per kelas) + ekspor bulanan.
 import { useState } from "react";
 import { api, useFetch } from "@/app/lib/api";
+import { PageHead, Panel, Toolbar, TextInput, TextSelect, Btn, Badge, WarmTable, warmCell, SegStat, Note, Err } from "@/components/DashUI";
 
 interface Row {
   studentId: string;
@@ -74,49 +75,54 @@ export default function AdminKehadiranPage() {
     w.document.close();
   }
 
+  const s = daily.data?.summary;
   return (
-    <main>
-      <h1>Kehadiran (Admin)</h1>
-      <div>
-        <label>Tanggal: <input type="date" value={date} onChange={(e) => setDate(e.target.value)} /></label>
-        <label>Kelas:
-          <select value={classId} onChange={(e) => setClassId(e.target.value)}>
-            <option value="">— pilih —</option>
-            {classes.data?.rows.map((c) => (
-              <option key={c.id} value={c.id}>{c.name}</option>
-            ))}
-          </select>
-        </label>
-      </div>
-      {daily.data && (
-        <p>
-          Hadir: {daily.data.summary.HADIR} · Izin: {daily.data.summary.IZIN} ·
-          Sakit: {daily.data.summary.SAKIT} · Alpha: {daily.data.summary.ALPHA} ·
-          Belum: {daily.data.summary.BELUM}
-        </p>
-      )}
-      <div>
-        <label>Bulan: <input type="month" value={month} onChange={(e) => setMonth(e.target.value)} /></label>
-        <button type="button" onClick={exportMonthly}>Unduh rekap bulanan (.xlsx)</button>
-        <button type="button" onClick={cetakMassal}>Cetak kartu QR sekelas</button>
-      </div>
-      {msg && <p>{msg}</p>}
-      {daily.loading && <p>Memuat…</p>}
-      {daily.error && <p>Gagal: {daily.error}</p>}
-      {daily.data && (
-        <table>
-          <thead><tr><th>Nama</th><th>NISN</th><th>Status</th></tr></thead>
-          <tbody>
+    <>
+      <PageHead kicker="Absensi" title="Kehadiran sekolah" desc="Pantau kehadiran harian per kelas dan unduh rekap bulanan." />
+      <Panel style={{ marginBottom: 16 }}>
+        <Toolbar>
+          <label style={{ display: "flex", gap: 8, alignItems: "center", fontSize: 13, color: "#74746d" }}>
+            Tanggal: <TextInput type="date" value={date} onChange={(e) => setDate(e.target.value)} style={{ width: "auto" }} />
+          </label>
+          <label style={{ display: "flex", gap: 8, alignItems: "center", fontSize: 13, color: "#74746d" }}>
+            Kelas:
+            <TextSelect value={classId} onChange={(e) => setClassId(e.target.value)}>
+              <option value="">— pilih —</option>
+              {classes.data?.rows.map((c) => (
+                <option key={c.id} value={c.id}>{c.name}</option>
+              ))}
+            </TextSelect>
+          </label>
+          <label style={{ display: "flex", gap: 8, alignItems: "center", fontSize: 13, color: "#74746d" }}>
+            Bulan: <TextInput type="month" value={month} onChange={(e) => setMonth(e.target.value)} style={{ width: "auto" }} />
+          </label>
+          <Btn kind="ghost" type="button" onClick={exportMonthly}>Unduh rekap (.xlsx)</Btn>
+          <Btn kind="ghost" type="button" onClick={cetakMassal}>Cetak kartu QR sekelas</Btn>
+        </Toolbar>
+        {s && (
+          <SegStat stats={[
+            { label: "Hadir", value: s.HADIR ?? 0 },
+            { label: "Izin", value: s.IZIN ?? 0 },
+            { label: "Sakit", value: s.SAKIT ?? 0 },
+            { label: "Alpha", value: s.ALPHA ?? 0 },
+            { label: "Belum", value: s.BELUM ?? 0 },
+          ]} />
+        )}
+        {msg && <p style={{ fontWeight: 700 }}>{msg}</p>}
+        {daily.loading && <Note>Memuat…</Note>}
+        {daily.error && <Err>Gagal: {daily.error}</Err>}
+        {daily.data && (
+          <WarmTable head={["Nama", "NISN", "Status"]}>
             {daily.data.rows.map((r) => (
               <tr key={r.studentId}>
-                <td>{r.name}</td>
-                <td>{r.nisn ?? "-"}</td>
-                <td>{r.record ? r.record.status : "—"}</td>
+                <td style={warmCell({ fontWeight: 700 })}>{r.name}</td>
+                <td style={warmCell()}>{r.nisn ?? "-"}</td>
+                <td style={warmCell()}>{r.record ? <Badge status={r.record.status} /> : <Badge status="BELUM" />}</td>
               </tr>
             ))}
-          </tbody>
-        </table>
-      )}
-    </main>
+          </WarmTable>
+        )}
+      </Panel>
+    </>
   );
 }

@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { api, useFetch } from "@/app/lib/api";
+import { PageHead, Panel, Toolbar, TextInput, TextSelect, Btn, Badge, WarmTable, warmCell, Note, Err, LinkBtn } from "@/components/DashUI";
 
 interface StudentRow {
   userId: string;
@@ -75,70 +76,74 @@ export default function StudentsPage() {
   }
 
   return (
-    <main>
-      <h1>Daftar Siswa</h1>
-      <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 12 }}>
-        <input placeholder="Cari nama / NISN" value={q} onChange={(e) => setQ(e.target.value)} />
-        <select value={classId} onChange={(e) => { setClassId(e.target.value); setPage(1); }}>
-          <option value="">Semua kelas</option>
-          {classes?.rows.map((c) => (
-            <option key={c.id} value={c.id}>{c.name}</option>
-          ))}
-        </select>
-        <a href="/admin/import">Import Excel</a>
-        <a href="/api/students/import/template">Unduh template .xlsx</a>
-      </div>
-      {loading && <p>Memuat…</p>}
-      {error && <p style={{ color: "red" }}>Error: {error}</p>}
-      {data && (
-        <>
-          <p>Total {data.total} siswa</p>
-          <table>
-            <thead><tr><th>Nama</th><th>NISN</th><th>Kelas</th><th>No Ortu</th><th>Status</th><th>Aksi</th></tr></thead>
-            <tbody>
+    <>
+      <PageHead
+        kicker="Data master"
+        title="Daftar siswa"
+        desc={`Total ${data?.total ?? "…"} siswa. Cari, saring per kelas, edit, atau nonaktifkan.`}
+        right={<span style={{ display: "flex", gap: 8 }}><LinkBtn href="/admin/import">Import Excel</LinkBtn><LinkBtn kind="dark" href="/api/students/import/template">Unduh template .xlsx</LinkBtn></span>}
+      />
+      <Panel>
+        <Toolbar>
+          <TextInput placeholder="Cari nama / NISN" value={q} onChange={(e) => setQ(e.target.value)} style={{ maxWidth: 260 }} />
+          <TextSelect value={classId} onChange={(e) => { setClassId(e.target.value); setPage(1); }}>
+            <option value="">Semua kelas</option>
+            {classes?.rows.map((c) => (
+              <option key={c.id} value={c.id}>{c.name}</option>
+            ))}
+          </TextSelect>
+        </Toolbar>
+        {loading && <Note>Memuat…</Note>}
+        {error && <Err>Error: {error}</Err>}
+        {data && data.rows.length === 0 && <Note>Tidak ada siswa yang cocok.</Note>}
+        {data && data.rows.length > 0 && (
+          <>
+            <WarmTable head={["Nama", "NISN", "Kelas", "No Ortu", "Status", "Aksi"]}>
               {data.rows.map((r) => (
                 <tr key={r.userId}>
-                  <td>{r.user.name}</td>
-                  <td>{r.user.nisn ?? "-"}</td>
-                  <td>{r.class?.name ?? "-"}</td>
-                  <td>{r.parentPhone ?? "-"}</td>
-                  <td>{r.user.isActive ? "Aktif" : "Nonaktif"}</td>
-                  <td style={{ display: "flex", gap: 6 }}>
-                    <button onClick={() => startEdit(r)}>Edit</button>
-                    <button onClick={() => toggleActive(r)}>{r.user.isActive ? "Nonaktifkan" : "Aktifkan"}</button>
+                  <td style={warmCell({ fontWeight: 700 })}>{r.user.name}</td>
+                  <td style={warmCell()}>{r.user.nisn ?? "-"}</td>
+                  <td style={warmCell()}>{r.class?.name ?? "-"}</td>
+                  <td style={warmCell()}>{r.parentPhone ?? "-"}</td>
+                  <td style={warmCell()}><Badge status={r.user.isActive ? "AKTIF" : "NONAKTIF"}>{r.user.isActive ? "Aktif" : "Nonaktif"}</Badge></td>
+                  <td style={warmCell()}>
+                    <span style={{ display: "flex", gap: 6 }}>
+                      <Btn kind="ghost" onClick={() => startEdit(r)}>Edit</Btn>
+                      <Btn kind="ghost" onClick={() => toggleActive(r)}>{r.user.isActive ? "Nonaktifkan" : "Aktifkan"}</Btn>
+                    </span>
                   </td>
                 </tr>
               ))}
-            </tbody>
-          </table>
-          <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
-            <button disabled={page <= 1} onClick={() => setPage((p) => p - 1)}>‹ Prev</button>
-            <span>Halaman {page}/{totalPages}</span>
-            <button disabled={page >= totalPages} onClick={() => setPage((p) => p + 1)}>Next ›</button>
-          </div>
-        </>
-      )}
+            </WarmTable>
+            <Toolbar>
+              <Btn kind="ghost" disabled={page <= 1} onClick={() => setPage((p) => p - 1)}>‹ Sebelumnya</Btn>
+              <span style={{ fontSize: 13, color: "#74746d" }}>Halaman {page}/{totalPages}</span>
+              <Btn kind="ghost" disabled={page >= totalPages} onClick={() => setPage((p) => p + 1)}>Berikutnya ›</Btn>
+            </Toolbar>
+          </>
+        )}
+      </Panel>
       {editing && (
-        <div role="dialog" aria-label="Edit siswa" style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,.4)", display: "grid", placeItems: "center", padding: 16 }}>
-          <div style={{ background: "#fffdf8", borderRadius: 16, padding: 20, minWidth: 300, display: "grid", gap: 10 }}>
-            <h2 style={{ margin: 0 }}>Edit siswa</h2>
-            <label>Nama <input value={editName} onChange={(e) => setEditName(e.target.value)} /></label>
-            <label>Kelas
-              <select value={editClass} onChange={(e) => setEditClass(e.target.value)}>
+        <div role="dialog" aria-label="Edit siswa" style={{ position: "fixed", inset: 0, background: "rgba(23,23,22,.45)", display: "grid", placeItems: "center", padding: 16, zIndex: 50 }}>
+          <div style={{ background: "#fffdf8", borderRadius: 20, padding: 22, minWidth: 300, display: "grid", gap: 12 }}>
+            <h2 className="display" style={{ margin: 0, fontSize: 20 }}>Edit siswa</h2>
+            <label style={{ display: "grid", gap: 6, fontSize: 13, color: "#74746d" }}>Nama <TextInput value={editName} onChange={(e) => setEditName(e.target.value)} /></label>
+            <label style={{ display: "grid", gap: 6, fontSize: 13, color: "#74746d" }}>Kelas
+              <TextSelect value={editClass} onChange={(e) => setEditClass(e.target.value)}>
                 <option value="">Tanpa kelas</option>
                 {classes?.rows.map((c) => (
                   <option key={c.id} value={c.id}>{c.name}</option>
                 ))}
-              </select>
+              </TextSelect>
             </label>
-            <label>No ortu <input value={editPhone} onChange={(e) => setEditPhone(e.target.value)} placeholder="628…" /></label>
-            <div style={{ display: "flex", gap: 8 }}>
-              <button onClick={saveEdit}>Simpan</button>
-              <button onClick={() => setEditing(null)}>Batal</button>
-            </div>
+            <label style={{ display: "grid", gap: 6, fontSize: 13, color: "#74746d" }}>No ortu <TextInput value={editPhone} onChange={(e) => setEditPhone(e.target.value)} placeholder="628…" /></label>
+            <Toolbar>
+              <Btn onClick={saveEdit}>Simpan</Btn>
+              <Btn kind="ghost" onClick={() => setEditing(null)}>Batal</Btn>
+            </Toolbar>
           </div>
         </div>
       )}
-    </main>
+    </>
   );
 }

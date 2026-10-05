@@ -3,6 +3,7 @@
 // Admin: kalender akademik (hari libur / hari efektif per bulan).
 import { useState } from "react";
 import { api, useFetch } from "@/app/lib/api";
+import { PageHead, Panel, Toolbar, TextInput, TextSelect, Btn, Badge, WarmTable, warmCell, Note, Err } from "@/components/DashUI";
 
 interface CalRow {
   id: string;
@@ -52,48 +53,63 @@ export default function KalenderPage() {
   }
 
   return (
-    <main>
-      <h1>Kalender Akademik</h1>
-      <label>Bulan: <input type="month" value={month} onChange={(e) => setMonth(e.target.value)} /></label>
-      {loading && <p>Memuat…</p>}
-      {error && <p>Gagal: {error}</p>}
-      {data && (
-        <table>
-          <thead><tr><th>Tanggal</th><th>Jenis</th><th>Kelas</th><th>Catatan</th><th></th></tr></thead>
-          <tbody>
+    <>
+      <PageHead kicker="Akademik" title="Kalender akademik" desc="Tandai hari libur dan hari efektif khusus per bulan." />
+      <Panel style={{ marginBottom: 16 }}>
+        <Toolbar>
+          <label style={{ display: "flex", gap: 8, alignItems: "center", fontSize: 13, color: "#74746d" }}>
+            Bulan:
+            <TextInput type="month" value={month} onChange={(e) => setMonth(e.target.value)} style={{ width: "auto" }} />
+          </label>
+        </Toolbar>
+        {loading && <Note>Memuat…</Note>}
+        {error && <Err>Gagal: {error}</Err>}
+        {data && data.rows.length === 0 && <Note>Bulan ini belum ada hari khusus.</Note>}
+        {data && data.rows.length > 0 && (
+          <WarmTable head={["Tanggal", "Jenis", "Kelas", "Catatan", ""]}>
             {data.rows.map((r) => (
               <tr key={r.id}>
-                <td>{r.date.slice(0, 10)}</td>
-                <td>{r.kind}</td>
-                <td>{r.class?.name ?? "Semua"}</td>
-                <td>{r.note ?? "-"}</td>
-                <td><button type="button" onClick={() => hapus(r.id)}>Hapus</button></td>
+                <td style={warmCell({ whiteSpace: "nowrap", fontWeight: 700 })}>{r.date.slice(0, 10)}</td>
+                <td style={warmCell()}><Badge status={r.kind === "LIBUR" ? "ALPHA" : "AKTIF"}>{r.kind}</Badge></td>
+                <td style={warmCell()}>{r.class?.name ?? "Semua"}</td>
+                <td style={warmCell()}>{r.note ?? "-"}</td>
+                <td style={warmCell()}><Btn kind="ghost" type="button" onClick={() => hapus(r.id)}>Hapus</Btn></td>
               </tr>
             ))}
-          </tbody>
-        </table>
-      )}
-      <h2>Tambah / ubah hari</h2>
-      <form onSubmit={save}>
-        <label>Tanggal: <input type="date" value={date} onChange={(e) => setDate(e.target.value)} required /></label>
-        <label>Jenis:
-          <select value={kind} onChange={(e) => setKind(e.target.value)}>
-            <option value="LIBUR">LIBUR</option>
-            <option value="EFEKTIF">EFEKTIF (masuk walau tanpa jadwal)</option>
-          </select>
-        </label>
-        <label>Kelas (kosongkan = semua sekolah):
-          <select value={classId} onChange={(e) => setClassId(e.target.value)}>
-            <option value="">Semua</option>
-            {classes.data?.rows.map((c) => (
-              <option key={c.id} value={c.id}>{c.name}</option>
-            ))}
-          </select>
-        </label>
-        <label>Catatan: <input value={note} onChange={(e) => setNote(e.target.value)} maxLength={280} /></label>
-        <button type="submit">Simpan</button>
-      </form>
-      {msg && <p>{msg}</p>}
-    </main>
+          </WarmTable>
+        )}
+      </Panel>
+      <Panel>
+        <h2 className="display" style={{ fontSize: 18, margin: "0 0 12px" }}>Tambah / ubah hari</h2>
+        <form onSubmit={save} style={{ display: "grid", gap: 12, maxWidth: 560 }}>
+          <label style={{ display: "grid", gap: 6, fontSize: 13, color: "#74746d" }}>
+            Tanggal:
+            <TextInput type="date" value={date} onChange={(e) => setDate(e.target.value)} required style={{ width: "auto" }} />
+          </label>
+          <label style={{ display: "grid", gap: 6, fontSize: 13, color: "#74746d" }}>
+            Jenis:
+            <TextSelect value={kind} onChange={(e) => setKind(e.target.value)}>
+              <option value="LIBUR">LIBUR</option>
+              <option value="EFEKTIF">EFEKTIF (masuk walau tanpa jadwal)</option>
+            </TextSelect>
+          </label>
+          <label style={{ display: "grid", gap: 6, fontSize: 13, color: "#74746d" }}>
+            Kelas (kosongkan = semua sekolah):
+            <TextSelect value={classId} onChange={(e) => setClassId(e.target.value)}>
+              <option value="">Semua</option>
+              {classes.data?.rows.map((c) => (
+                <option key={c.id} value={c.id}>{c.name}</option>
+              ))}
+            </TextSelect>
+          </label>
+          <label style={{ display: "grid", gap: 6, fontSize: 13, color: "#74746d" }}>
+            Catatan:
+            <TextInput value={note} onChange={(e) => setNote(e.target.value)} maxLength={280} />
+          </label>
+          <Toolbar><Btn type="submit">Simpan</Btn></Toolbar>
+        </form>
+        {msg && <p style={{ fontWeight: 700 }}>{msg}</p>}
+      </Panel>
+    </>
   );
 }

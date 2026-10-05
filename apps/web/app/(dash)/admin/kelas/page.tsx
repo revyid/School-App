@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { api, useFetch } from "@/app/lib/api";
+import { PageHead, Panel, Toolbar, TextInput, TextSelect, Btn, WarmTable, warmCell, Note, Err } from "@/components/DashUI";
 
 interface ClassRow {
   id: string; name: string; gradeLevel: string | null;
@@ -35,36 +36,38 @@ export default function ClassesPage() {
   }
 
   return (
-    <main>
-      <h1>Kelas</h1>
-      {loading && <p>Memuat…</p>}
-      {error && <p style={{ color: "red" }}>Error: {error}</p>}
-      {data && (
-        <table>
-          <thead><tr><th>Nama</th><th>Wali Kelas</th><th>Siswa</th><th>Aksi</th></tr></thead>
-          <tbody>
+    <>
+      <PageHead kicker="Data master" title="Kelas" desc="Kelola rombel dan wali kelasnya." />
+      <Panel style={{ marginBottom: 16 }}>
+        {loading && <Note>Memuat…</Note>}
+        {error && <Err>Error: {error}</Err>}
+        {data && data.rows.length === 0 && <Note>Belum ada kelas. Tambahkan di bawah.</Note>}
+        {data && data.rows.length > 0 && (
+          <WarmTable head={["Nama", "Wali Kelas", "Siswa", "Aksi"]}>
             {data.rows.map((c) => (
               <tr key={c.id}>
-                <td>{c.name}</td>
-                <td>{c.homeroomTeacher?.name ?? "-"}</td>
-                <td>{c._count.students}</td>
-                <td><button onClick={() => remove(c.id, c.name)}>Hapus</button></td>
+                <td style={warmCell({ fontWeight: 700 })}>{c.name}</td>
+                <td style={warmCell()}>{c.homeroomTeacher?.name ?? "-"}</td>
+                <td style={warmCell()}>{c._count.students}</td>
+                <td style={warmCell()}><Btn kind="ghost" onClick={() => remove(c.id, c.name)}>Hapus</Btn></td>
               </tr>
             ))}
-          </tbody>
-        </table>
-      )}
-      <h2>Tambah Kelas</h2>
-      <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-        <input placeholder="Nama kelas (mis. VII-A)" value={name} onChange={(e) => setName(e.target.value)} />
-        <select value={homeroom} onChange={(e) => setHomeroom(e.target.value)}>
-          <option value="">Tanpa wali kelas</option>
-          {teachers?.rows.map((t) => (
-            <option key={t.id} value={t.id}>{t.name}</option>
-          ))}
-        </select>
-        <button onClick={create}>Tambah</button>
-      </div>
-    </main>
+          </WarmTable>
+        )}
+      </Panel>
+      <Panel>
+        <h2 className="display" style={{ fontSize: 18, margin: "0 0 12px" }}>Tambah kelas</h2>
+        <Toolbar>
+          <TextInput placeholder="Nama kelas (mis. VII-A)" value={name} onChange={(e) => setName(e.target.value)} style={{ maxWidth: 220 }} />
+          <TextSelect value={homeroom} onChange={(e) => setHomeroom(e.target.value)}>
+            <option value="">Tanpa wali kelas</option>
+            {teachers?.rows.map((t) => (
+              <option key={t.id} value={t.id}>{t.name}</option>
+            ))}
+          </TextSelect>
+          <Btn onClick={create}>Tambah</Btn>
+        </Toolbar>
+      </Panel>
+    </>
   );
 }

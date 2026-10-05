@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { api, useFetch } from "@/app/lib/api";
+import { PageHead, Panel, Toolbar, TextInput, TextSelect, Btn, WarmTable, warmCell, Note, Err } from "@/components/DashUI";
 
 export default function AssignmentsPage() {
   const { data, loading, error, reload } = useFetch<{ rows: { id: string; subject: string | null; teacher: { id: string; name: string }; class: { id: string; name: string } }[] }>(`/api/assignments`);
@@ -29,38 +30,40 @@ export default function AssignmentsPage() {
   }
 
   return (
-    <main>
-      <h1>Penugasan Guru-Kelas</h1>
-      {loading && <p>Memuat…</p>}
-      {error && <p style={{ color: "red" }}>Error: {error}</p>}
-      {data && (
-        <table>
-          <thead><tr><th>Guru</th><th>Kelas</th><th>Mapel</th><th>Aksi</th></tr></thead>
-          <tbody>
+    <>
+      <PageHead kicker="Data master" title="Penugasan guru-kelas" desc="Tautkan guru ke kelas yang diajarnya, plus mapel bila perlu." />
+      <Panel style={{ marginBottom: 16 }}>
+        {loading && <Note>Memuat…</Note>}
+        {error && <Err>Error: {error}</Err>}
+        {data && data.rows.length === 0 && <Note>Belum ada penugasan. Tambahkan di bawah.</Note>}
+        {data && data.rows.length > 0 && (
+          <WarmTable head={["Guru", "Kelas", "Mapel", "Aksi"]}>
             {data.rows.map((r) => (
               <tr key={r.id}>
-                <td>{r.teacher.name}</td>
-                <td>{r.class.name}</td>
-                <td>{r.subject ?? "-"}</td>
-                <td><button onClick={() => remove(r.id)}>Hapus</button></td>
+                <td style={warmCell({ fontWeight: 700 })}>{r.teacher.name}</td>
+                <td style={warmCell()}>{r.class.name}</td>
+                <td style={warmCell()}>{r.subject ?? "-"}</td>
+                <td style={warmCell()}><Btn kind="ghost" onClick={() => remove(r.id)}>Hapus</Btn></td>
               </tr>
             ))}
-          </tbody>
-        </table>
-      )}
-      <h2>Tambah Penugasan</h2>
-      <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-        <select value={teacherId} onChange={(e) => setTeacherId(e.target.value)}>
-          <option value="">Pilih guru</option>
-          {teachers?.rows.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
-        </select>
-        <select value={classId} onChange={(e) => setClassId(e.target.value)}>
-          <option value="">Pilih kelas</option>
-          {classes?.rows.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
-        </select>
-        <input placeholder="Mapel (opsional)" value={subject} onChange={(e) => setSubject(e.target.value)} />
-        <button onClick={create}>Tambah</button>
-      </div>
-    </main>
+          </WarmTable>
+        )}
+      </Panel>
+      <Panel>
+        <h2 className="display" style={{ fontSize: 18, margin: "0 0 12px" }}>Tambah penugasan</h2>
+        <Toolbar>
+          <TextSelect value={teacherId} onChange={(e) => setTeacherId(e.target.value)}>
+            <option value="">Pilih guru</option>
+            {teachers?.rows.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
+          </TextSelect>
+          <TextSelect value={classId} onChange={(e) => setClassId(e.target.value)}>
+            <option value="">Pilih kelas</option>
+            {classes?.rows.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+          </TextSelect>
+          <TextInput placeholder="Mapel (opsional)" value={subject} onChange={(e) => setSubject(e.target.value)} style={{ maxWidth: 200 }} />
+          <Btn onClick={create}>Tambah</Btn>
+        </Toolbar>
+      </Panel>
+    </>
   );
 }

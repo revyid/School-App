@@ -3,6 +3,7 @@
 // Guru: daftar tugas + buat tugas + progres pengumpulan.
 import { useState } from "react";
 import { api, useFetch } from "@/app/lib/api";
+import { PageHead, Panel, Toolbar, TextInput, TextSelect, Btn, WarmTable, warmCell, Badge, Note, Err } from "@/components/DashUI";
 
 interface TaskRow {
   id: string;
@@ -50,43 +51,59 @@ export default function GuruTugasPage() {
   }
 
   return (
-    <main>
-      <h1>Tugas (Guru)</h1>
-      <label>Kelas:
-        <select value={classId} onChange={(e) => setClassId(e.target.value)}>
-          <option value="">Semua kelas saya</option>
-          {classes.data?.rows.map((r) => (
-            <option key={r.id} value={r.id}>{r.class.name}</option>
-          ))}
-        </select>
-      </label>
-      {tasks.loading && <p>Memuat…</p>}
-      {tasks.error && <p>Gagal: {tasks.error}</p>}
-      {tasks.data && (
-        <table>
-          <thead><tr><th>Judul</th><th>Kelas</th><th>Deadline</th><th>Terlihat</th><th>Terkumpul</th></tr></thead>
-          <tbody>
+    <>
+      <PageHead kicker="Belajar" title="Tugas kelas" desc="Buat tugas dan pantau siapa saja yang sudah mengumpulkan." />
+      <Panel style={{ marginBottom: 16 }}>
+        <Toolbar>
+          <label style={{ display: "flex", gap: 8, alignItems: "center", fontSize: 13, color: "#74746d" }}>
+            Kelas:
+            <TextSelect value={classId} onChange={(e) => setClassId(e.target.value)}>
+              <option value="">Semua kelas saya</option>
+              {classes.data?.rows.map((r) => (
+                <option key={r.id} value={r.id}>{r.class.name}</option>
+              ))}
+            </TextSelect>
+          </label>
+        </Toolbar>
+        {tasks.loading && <Note>Memuat…</Note>}
+        {tasks.error && <Err>Gagal: {tasks.error}</Err>}
+        {tasks.data && tasks.data.rows.length === 0 && <Note>Belum ada tugas di kelas ini. Buat yang pertama di bawah.</Note>}
+        {tasks.data && tasks.data.rows.length > 0 && (
+          <WarmTable head={["Judul", "Kelas", "Deadline", "Terlihat", "Terkumpul"]}>
             {tasks.data.rows.map((t) => (
               <tr key={t.id}>
-                <td><a href={`/guru/tugas/${t.id}`}>{t.title}</a></td>
-                <td>{t.class.name}</td>
-                <td>{t.deadline ? new Date(t.deadline).toLocaleString("id-ID") : "-"}</td>
-                <td>{t.visible ? "Ya" : "Terjadwal"}</td>
-                <td>{t._count.submissions}</td>
+                <td style={warmCell()}><a href={`/guru/tugas/${t.id}`} style={{ fontWeight: 700, color: "#171716" }}>{t.title}</a></td>
+                <td style={warmCell()}>{t.class.name}</td>
+                <td style={warmCell({ whiteSpace: "nowrap" })}>{t.deadline ? new Date(t.deadline).toLocaleString("id-ID") : "-"}</td>
+                <td style={warmCell()}><Badge status={t.visible ? "AKTIF" : "PENDING"}>{t.visible ? "Ya" : "Terjadwal"}</Badge></td>
+                <td style={warmCell()}>{t._count.submissions}</td>
               </tr>
             ))}
-          </tbody>
-        </table>
-      )}
-      <h2>Buat tugas baru</h2>
-      <form onSubmit={buat}>
-        <label>Judul: <input value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} required maxLength={200} /></label>
-        <label>Instruksi: <textarea value={form.instruction} onChange={(e) => setForm({ ...form, instruction: e.target.value })} required /></label>
-        <label>Deadline: <input type="datetime-local" value={form.deadline} onChange={(e) => setForm({ ...form, deadline: e.target.value })} /></label>
-        <label><input type="checkbox" checked={form.allowLate} onChange={(e) => setForm({ ...form, allowLate: e.target.checked })} /> Boleh terlambat</label>
-        <button type="submit">Buat</button>
-      </form>
-      {msg && <p>{msg}</p>}
-    </main>
+          </WarmTable>
+        )}
+      </Panel>
+      <Panel>
+        <h2 className="display" style={{ fontSize: 18, margin: "0 0 12px" }}>Buat tugas baru</h2>
+        <form onSubmit={buat} style={{ display: "grid", gap: 12, maxWidth: 560 }}>
+          <label style={{ display: "grid", gap: 6, fontSize: 13, color: "#74746d" }}>
+            Judul:
+            <TextInput value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} required maxLength={200} />
+          </label>
+          <label style={{ display: "grid", gap: 6, fontSize: 13, color: "#74746d" }}>
+            Instruksi:
+            <textarea value={form.instruction} onChange={(e) => setForm({ ...form, instruction: e.target.value })} required rows={3} style={{ borderRadius: 14, border: "1px solid rgba(23,23,22,.25)", background: "#fffdf8", padding: "9px 14px", fontSize: 14 }} />
+          </label>
+          <label style={{ display: "grid", gap: 6, fontSize: 13, color: "#74746d" }}>
+            Deadline:
+            <TextInput type="datetime-local" value={form.deadline} onChange={(e) => setForm({ ...form, deadline: e.target.value })} style={{ width: "auto" }} />
+          </label>
+          <label style={{ display: "flex", gap: 8, alignItems: "center", fontSize: 14 }}>
+            <input type="checkbox" checked={form.allowLate} onChange={(e) => setForm({ ...form, allowLate: e.target.checked })} /> Boleh terlambat
+          </label>
+          <Toolbar><Btn type="submit">Buat tugas</Btn></Toolbar>
+        </form>
+        {msg && <p style={{ fontWeight: 700 }}>{msg}</p>}
+      </Panel>
+    </>
   );
 }
