@@ -240,3 +240,14 @@
   Verifikasi: 32/32 halaman peran 200, silang 307 ke rumah sendiri,
   markup baru ter-render, screenshot dasbor rapi tanpa elemen rusak.
 - tsc 0, test 126 hijau (20 file), build 49/49 sukses.
+
+## Rak ebook ala contoh (DONE)
+- CSS `.ebook-shelf/.ebook-card` tiru `landing-fixes.css` contoh: 4 kartu
+  warna (terracotta/biru/kuning/hijau), tinggi + rotasi selang-seling,
+  shadow keras, hover terangkat, responsif 2 kolom di HP. stagger nth-child
+  menarget anak langsung (tiap kartu dibungkus Reveal).
+- `PopularBooks` landing + `BukuClient` /buku: bentuk kartu = tag kategori +
+  judul + "oleh penulis" + panah lingkaran (tanpa sampul, sesuai contoh).
+  Data tetap asli Open Library (judul/penulis/tahun/subjek).
+- Test 126 hijau, tsc 0, build 49/49. Screenshot /buku: zigzag playful
+  terkonfirmasi visual, tanpa elemen rusak.

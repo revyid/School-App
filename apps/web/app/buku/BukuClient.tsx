@@ -1,6 +1,5 @@
 "use client";
 
-import Image from "next/image";
 import PublicLogo from "@/components/PublicLogo";
 import Reveal from "@/components/Reveal";
 import AuthCta from "@/app/(portal)/AuthCta";
@@ -97,7 +96,7 @@ export default function BukuClient({ schoolName }: { schoolName: string }) {
             <p style={{ color: "#74746d", margin: 0 }}>Rak sedang kosong. Coba lagi nanti.</p>
           </div>
         ) : (
-          <div style={{ display: "grid", gap: 16, gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))" }}>
+          <div className="ebook-shelf">
             {items.slice(0, 8).map((b, i) => (
               <Reveal key={`${b.title}-${i}`} delay={(i % 4) * 80}>
                 <BookCard b={b} color={b.color ?? CARD_COLORS[i % CARD_COLORS.length]} />
@@ -111,23 +110,13 @@ export default function BukuClient({ schoolName }: { schoolName: string }) {
 }
 
 function BookCard({ b, color }: { b: Book; color: string }) {
+  const author = (b.authors ?? []).slice(0, 2).join(", ");
   const inner = (
-    <article className="card-lift" style={{ background: color, borderRadius: 24, overflow: "hidden", minHeight: 300, display: "flex", flexDirection: "column" }}>
-      {b.coverUrl ? (
-        <div style={{ position: "relative", height: 170 }}>
-          <Image src={b.coverUrl} alt={`Sampul ${b.title}`} fill style={{ objectFit: "cover" }} sizes="(max-width: 640px) 100vw, 300px" />
-        </div>
-      ) : (
-        <div style={{ height: 170, display: "grid", placeItems: "center", fontSize: 54, borderBottom: "1px solid rgba(23,23,22,.15)" }} aria-hidden="true">
-          ✎
-        </div>
-      )}
-      <div style={{ padding: 18, display: "flex", flexDirection: "column", gap: 6, flex: 1 }}>
-        {b.subject && <span style={{ fontFamily: "var(--font-meta)", fontSize: 10, textTransform: "uppercase", opacity: 0.7 }}>{b.subject}</span>}
-        <strong style={{ fontSize: 15, letterSpacing: "-0.02em", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{b.title}</strong>
-        <span style={{ fontSize: 12.5, opacity: 0.8 }}>{(b.authors ?? []).slice(0, 2).join(", ") || "Pengarang tak tercatat"}{b.year ? ` (${b.year})` : ""}</span>
-        <span style={{ marginTop: "auto", fontSize: 12, fontWeight: 700 }}>Info & baca ↗</span>
-      </div>
+    <article className="ebook-card" style={{ background: color }}>
+      <span className="book-tag">{b.subject ?? "Bacaan"}</span>
+      <strong>{b.title}</strong>
+      <small>{author ? `oleh ${author}${b.year ? ` · ${b.year}` : ""}` : b.year ? `terbit ${b.year}` : "Pengarang tak tercatat"}</small>
+      <span className="book-arrow">↗</span>
     </article>
   );
   return b.infoUrl ? (

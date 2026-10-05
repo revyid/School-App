@@ -172,6 +172,31 @@ input, select, button, textarea {
   .card-lift:hover, .btn-sticker:hover { transform: none; }
 }
 
+/* --- Rak ebook ala contoh: 4 kartu warna, tinggi/rotasi selang-seling ---
+   Catatan: tiap kartu dibungkus <Reveal> (div), jadi stagger nth-child
+   menarget anak langsung .ebook-shelf, bukan .ebook-card. */
+.ebook-shelf { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); align-items: end; gap: 12px; }
+.ebook-card { position: relative; display: flex; flex-direction: column; justify-content: space-between; gap: 8px; min-height: 265px; padding: 17px 15px 44px; border: 1px solid rgba(23,23,22,.15); border-radius: 12px; overflow: hidden; color: #171716; box-shadow: 6px 7px 0 rgba(23,23,22,.12); transition: transform .35s cubic-bezier(.2,.8,.2,1), box-shadow .35s; }
+.ebook-shelf > :nth-child(2) .ebook-card { min-height: 290px; transform: translateY(-22px) rotate(2deg); }
+.ebook-shelf > :nth-child(3) .ebook-card { min-height: 250px; transform: translateY(13px) rotate(-2deg); }
+.ebook-shelf > :nth-child(4) .ebook-card { min-height: 275px; transform: translateY(-10px) rotate(3deg); }
+.ebook-card:hover { z-index: 3; transform: translateY(-15px) rotate(0deg) !important; box-shadow: 10px 13px 0 rgba(23,23,22,.16); }
+.ebook-shelf > :nth-child(2) .ebook-card:hover, .ebook-shelf > :nth-child(3) .ebook-card:hover, .ebook-shelf > :nth-child(4) .ebook-card:hover { transform: translateY(-25px) rotate(0deg) !important; }
+.ebook-card::after { content: "✦"; position: absolute; right: 14px; top: 35%; font-size: 38px; opacity: .18; transform: rotate(18deg); }
+.ebook-card .book-tag { font-family: var(--font-meta); font-size: 10px; letter-spacing: .09em; text-transform: uppercase; opacity: .7; }
+.ebook-card strong { position: relative; z-index: 1; font-size: 17px; line-height: 1.15; letter-spacing: -.04em; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+.ebook-card small { font-size: 11px; opacity: .75; }
+.ebook-card .book-arrow { position: absolute; right: 12px; bottom: 12px; display: grid; place-items: center; width: 27px; height: 27px; border: 1px solid currentColor; border-radius: 50%; font-size: 15px; }
+@media (max-width: 680px) {
+  .ebook-shelf { grid-template-columns: repeat(2, 1fr); gap: 10px; }
+  .ebook-card, .ebook-shelf > :nth-child(2) .ebook-card, .ebook-shelf > :nth-child(3) .ebook-card, .ebook-shelf > :nth-child(4) .ebook-card { min-height: 190px; padding: 14px 12px 40px; transform: none; }
+  .ebook-card strong { font-size: 14px; }
+  .ebook-shelf > :nth-child(2) { margin-top: 18px; }
+  .ebook-shelf > :nth-child(3) { margin-top: -8px; }
+  .ebook-shelf > :nth-child(4) { margin-top: 11px; }
+  .ebook-card:hover, .ebook-shelf > :nth-child(2) .ebook-card:hover, .ebook-shelf > :nth-child(3) .ebook-card:hover, .ebook-shelf > :nth-child(4) .ebook-card:hover { transform: translateY(-7px) !important; }
+}
+
 /* --- Cetak rapor/lembar: hanya isi panel, tanpa sidebar/topbar --- */
 @media print {
   .dash-sidebar, .dash-burger, header, nav, .no-print { display: none !important; }
