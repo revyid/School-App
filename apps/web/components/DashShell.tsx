@@ -5,7 +5,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import Logo from "./Logo";
+import SchoolLogo from "./SchoolLogo";
 import Bell from "./Bell";
 import { LogoutButton } from "./LogoutButton";
 
@@ -89,7 +89,7 @@ export default function DashShell({
         }}
       >
         <div style={{ padding: "2px 8px 14px" }}>
-          <Logo />
+          <SchoolLogo />
         </div>
         <p className="kicker" style={{ padding: "0 8px 4px" }}>Menu utama</p>
         {nav(menus.utama)}
@@ -132,7 +132,7 @@ export default function DashShell({
             }}
           >
             <div style={{ padding: "2px 8px 14px" }}>
-              <Logo />
+              <SchoolLogo />
             </div>
             <p className="kicker" style={{ padding: "0 8px 4px" }}>Menu utama</p>
             {nav(menus.utama)}

@@ -9,6 +9,10 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
     host: req.headers.get("host") ?? "",
     token: req.cookies.get(SESSION_COOKIE)?.value,
     pathname: new URL(req.url).pathname,
+    mutation: req.method !== "GET",
+    origin: req.headers.get("origin"),
+    referer: req.headers.get("referer"),
+    csrf: req.headers.get("x-csrf-token"),
     roles: ["ADMIN", "GURU"],
   });
   if (!a.ok) return NextResponse.json({ error: a.error }, { status: a.status });

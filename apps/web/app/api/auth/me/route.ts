@@ -9,6 +9,10 @@ export async function GET(req: NextRequest) {
     host: req.headers.get("host") ?? "",
     token: req.cookies.get(SESSION_COOKIE)?.value,
     pathname: "/api/auth/me",
+    mutation: req.method !== "GET",
+    origin: req.headers.get("origin"),
+    referer: req.headers.get("referer"),
+    csrf: req.headers.get("x-csrf-token"),
   });
   if (!a.ok) return NextResponse.json({ error: a.error }, { status: a.status });
   if (!a.school) return NextResponse.json({ error: "unauthorized" }, { status: 401 });

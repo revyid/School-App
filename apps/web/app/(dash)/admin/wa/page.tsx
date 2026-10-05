@@ -1,10 +1,10 @@
 "use client";
 
-// Admin: status WA + QR pairing + kuota + antrean.
+// Admin: status WA + QR pairing + kuota + kirim manual + antrean.
 import { useEffect, useState } from "react";
 import QRCode from "qrcode";
-import { useFetch } from "@/app/lib/api";
-import { PageHead, Panel, Toolbar, Btn, Badge, WarmTable, warmCell, SegStat, Note, Err } from "@/components/DashUI";
+import { api, useFetch } from "@/app/lib/api";
+import { PageHead, Panel, Toolbar, TextInput, Btn, Badge, WarmTable, warmCell, SegStat, Note, Err } from "@/components/DashUI";
 
 export default function WaAdminPage() {
   const st = useFetch<{ connected: boolean; detail?: string; qr?: string | null }>("/api/wa/status");
@@ -13,6 +13,32 @@ export default function WaAdminPage() {
     quota: { sentDay: number; dailyCap: number; perMinuteCap: number };
   }>("/api/wa/outbox");
   const [qrImg, setQrImg] = useState<string | null>(null);
+  const [to, setTo] = useState("");
+  const [text, setText] = useState("");
+  const [sendMsg, setSendMsg] = useState<string | null>(null);
+
+  async function sendManual(e: React.FormEvent) {
+    e.preventDefault();
+    setSendMsg("Mengirim…");
+    try {
+      const res = await api("/api/wa/outbox", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ to, text }),
+      });
+      const d = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setSendMsg("Gagal: " + (d.error || res.status));
+        return;
+      }
+      setSendMsg("Masuk antrean — pantau status di tabel bawah.");
+      setTo("");
+      setText("");
+      out.reload();
+    } catch {
+      setSendMsg("Gagal mengirim (offline?).");
+    }
+  }
 
   useEffect(() => {
     const s = st.data?.qr;
@@ -49,6 +75,21 @@ export default function WaAdminPage() {
             <Toolbar><Btn kind="ghost" type="button" onClick={() => st.reload()}>Muat ulang status</Btn></Toolbar>
           </>
         )}
+      </Panel>
+      <Panel style={{ marginBottom: 16 }}>
+        <h2 className="display" style={{ fontSize: 18, margin: "0 0 12px" }}>Kirim manual</h2>
+          <form onSubmit={sendManual} style={{ display: "grid", gap: 10, maxWidth: 520 }}>
+            <label style={{ display: "grid", gap: 6, fontSize: 13, color: "#74746d" }}>
+              Nomor tujuan (08…/62…):
+              <TextInput value={to} onChange={(e) => setTo(e.target.value)} placeholder="08…" required />
+            </label>
+            <label style={{ display: "grid", gap: 6, fontSize: 13, color: "#74746d" }}>
+              Isi pesan:
+              <TextInput value={text} onChange={(e) => setText(e.target.value)} placeholder="Tulis pesan…" required />
+            </label>
+            <Toolbar><Btn type="submit">Masukkan antrean</Btn></Toolbar>
+            {sendMsg && <Note>{sendMsg}</Note>}
+          </form>
       </Panel>
       {out.data && (
         <Panel>

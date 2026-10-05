@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { ROLE_HOME } from "@sms/shared/auth";
-import Logo from "@/components/Logo";
+import PublicLogo from "@/components/PublicLogo";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -88,7 +88,7 @@ export default function LoginPage() {
         }}
       >
         <div style={{ flex: 1, padding: "clamp(24px, 4vw, 48px)", minWidth: 0 }}>
-          <Logo />
+          <PublicLogo />
           <p className="kicker" style={{ marginTop: 22 }}>Masuk ke dasbor sekolah</p>
           <h1 className="display" style={{ fontSize: "clamp(30px, 4vw, 44px)", margin: "8px 0 6px" }}>
             Belajar boleh serius. <span style={{ color: "#e85e43" }}>Serunya jangan hilang.</span>

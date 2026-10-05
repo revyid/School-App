@@ -19,7 +19,12 @@ export default function RaporPage() {
         kicker="Nilai"
         title="Rapor kelas"
         desc="Agregasi nilai tugas dan asesmen per siswa, siap diekspor ke Excel."
-        right={classId ? <LinkBtn kind="dark" href={`/api/gradebook/export?classId=${encodeURIComponent(classId)}`} target="_blank" rel="noreferrer">Ekspor .xlsx</LinkBtn> : undefined}
+        right={classId ? (
+          <span style={{ display: "flex", gap: 8 }}>
+            <LinkBtn kind="ghost" href="#" onClick={(e) => { e.preventDefault(); window.print(); }}>Cetak / PDF</LinkBtn>
+            <LinkBtn kind="dark" href={`/api/gradebook/export?classId=${encodeURIComponent(classId)}`} target="_blank" rel="noreferrer">Ekspor .xlsx</LinkBtn>
+          </span>
+        ) : undefined}
       />
       <Panel>
         <Toolbar>

@@ -8,6 +8,28 @@ export default function SettingsPage() {
   const { data } = useFetch<{ settings: Record<string, unknown> }>(`/api/settings`);
   const [f, setF] = useState<Record<string, string>>({});
   const [msg, setMsg] = useState<string | null>(null);
+  const [logoMsg, setLogoMsg] = useState<string | null>(null);
+  const [logoVer, setLogoVer] = useState(0);
+
+  async function uploadLogo(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setLogoMsg("Mengunggah…");
+    try {
+      const form = new FormData();
+      form.append("file", file);
+      const res = await api("/api/settings/logo", { method: "POST", body: form });
+      const d = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setLogoMsg("Gagal: " + (d.error || res.status));
+        return;
+      }
+      setLogoMsg("Logo tersimpan — tampil di sidebar, landing, dan login.");
+      setLogoVer((v) => v + 1);
+    } catch {
+      setLogoMsg("Gagal mengunggah (offline?).");
+    }
+  }
 
   useEffect(() => {
     if (data?.settings) {
@@ -51,7 +73,25 @@ export default function SettingsPage() {
 
   return (
     <>
-      <PageHead kicker="Sekolah" title="Pengaturan sekolah" desc="Nama portal, jam absensi, kuota WA, retensi data, dan mode password awal." />
+      <PageHead kicker="Sekolah" title="Pengaturan sekolah" desc="Logo, nama portal, jam absensi, kuota WA, retensi data, dan mode password awal." />
+      <Panel style={{ maxWidth: 620, marginBottom: 16 }}>
+        <h2 className="display" style={{ fontSize: 18, margin: "0 0 12px" }}>Logo sekolah</h2>
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          key={logoVer}
+          src="/api/portal/logo"
+          alt="Logo sekolah saat ini"
+          width={56}
+          height={56}
+          style={{ borderRadius: 12, objectFit: "cover", border: "1px solid rgba(23,23,22,.14)", background: "#eeeadd" }}
+          onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
+        />
+        <label style={{ display: "grid", gap: 6, fontSize: 13, color: "#74746d", marginTop: 10 }}>
+          Unggah logo baru (PNG/JPG/WEBP, maks 2MB):
+          <input type="file" accept="image/png,image/jpeg,image/webp" onChange={uploadLogo} />
+        </label>
+        {logoMsg && <Note>{logoMsg}</Note>}
+      </Panel>
       <Panel style={{ maxWidth: 620 }}>
         {!data && <Note>Memuat…</Note>}
         <div style={{ display: "grid", gap: 12 }}>

@@ -15,6 +15,10 @@ async function gate(req: NextRequest, roles: ("ADMIN" | "GURU" | "SISWA")[]) {
     host: req.headers.get("host") ?? "",
     token: req.cookies.get(SESSION_COOKIE)?.value,
     pathname: new URL(req.url).pathname,
+    mutation: req.method !== "GET",
+    origin: req.headers.get("origin"),
+    referer: req.headers.get("referer"),
+    csrf: req.headers.get("x-csrf-token"),
     roles,
   });
 }

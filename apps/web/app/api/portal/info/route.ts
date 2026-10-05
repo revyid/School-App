@@ -36,6 +36,7 @@ export async function GET(req: NextRequest) {
   return NextResponse.json({
     school: { name: school.name, lat: school.lat, lng: school.lng },
     portalName: s?.portalName || school.name,
+    logoUrl: s?.logoUrl ? "/api/portal/logo" : null,
     ctaGtkUrl: s?.ctaGtkUrl ?? null,
     ctaMuridUrl: s?.ctaMuridUrl ?? null,
     announcements,

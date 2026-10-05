@@ -26,8 +26,39 @@ function saveQueue(q: ScanItem[]) {
 }
 
 // Antrean suara: ucapkan satu per satu.
+// iOS Safari: speechSynthesis butuh pemanasan — daftar suara dimuat async,
+// mesin tidur sampai ada gesture, dan suka pause di tengah. Warmup dipanggil
+// dari gesture (tombol "Aktifkan suara" / tombol pindai) agar bunyi keluar.
 const speakQueue: string[] = [];
 let speaking = false;
+let voiceWarmed = false;
+function warmVoice() {
+  try {
+    if (!("speechSynthesis" in window)) return;
+    const synth = window.speechSynthesis;
+    const load = () => {
+      const vs = synth.getVoices();
+      if (vs.length > 0) voiceWarmed = true;
+    };
+    load();
+    synth.onvoiceschanged = load;
+    synth.cancel();
+    // Ucapkan diam-diam untuk membangunkan mesin (tanpa antre).
+    const u = new SpeechSynthesisUtterance(" ");
+    u.volume = 0;
+    u.lang = "id-ID";
+    synth.speak(u);
+  } catch { /* abaikan */ }
+}
+function pickVoice(): SpeechSynthesisVoice | null {
+  try {
+    const vs = window.speechSynthesis.getVoices();
+    if (vs.length === 0) return null;
+    return vs.find((v) => v.lang.toLowerCase().startsWith("id")) ?? vs.find((v) => v.lang.toLowerCase().startsWith("en")) ?? vs[0];
+  } catch {
+    return null;
+  }
+}
 function speak(text: string) {
   if (!("speechSynthesis" in window)) return;
   speakQueue.push(text);
@@ -39,11 +70,18 @@ function speak(text: string) {
       speaking = false;
       return;
     }
-    const u = new SpeechSynthesisUtterance(t);
-    u.lang = "id-ID";
-    u.onend = next;
-    u.onerror = next;
-    window.speechSynthesis.speak(u);
+    try {
+      if (window.speechSynthesis.paused) window.speechSynthesis.resume();
+      const u = new SpeechSynthesisUtterance(t);
+      u.lang = "id-ID";
+      const v = voiceWarmed ? pickVoice() : null;
+      if (v) u.voice = v;
+      u.onend = next;
+      u.onerror = next;
+      window.speechSynthesis.speak(u);
+    } catch {
+      next();
+    }
   };
   next();
 }
@@ -200,9 +238,11 @@ export default function ScannerPage() {
         )}
         <Toolbar>
           {!streaming
-            ? <Btn type="button" kind="dark" onClick={startCamera}>Nyalakan kamera</Btn>
+            ? <Btn type="button" kind="dark" onClick={() => { warmVoice(); void startCamera(); }}>Nyalakan kamera</Btn>
             : <Btn kind="ghost" type="button" onClick={stopCamera}>Matikan kamera</Btn>}
+          <Btn kind="ghost" type="button" onClick={warmVoice}>Aktifkan suara</Btn>
         </Toolbar>
+        <Note>Di iPhone: ketuk “Aktifkan suara” sekali agar nama terbaca lantang saat scan.</Note>
         <video ref={videoRef} playsInline muted style={{ width: "100%", maxWidth: 480, background: "#171716", borderRadius: 16 }} />
         <form onSubmit={(e) => { e.preventDefault(); if (manual.trim()) { void postToken(manual.trim()); setManual(""); } }} style={{ display: "grid", gap: 10, marginTop: 12, maxWidth: 480 }}>
           <label style={{ display: "grid", gap: 6, fontSize: 13, color: "#74746d" }}>

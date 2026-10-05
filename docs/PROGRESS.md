@@ -220,3 +220,23 @@
 - Nol `<main>`/`<h1>` mentah tersisa di (dash). Verifikasi: tsc 0, test penuh
   20 file/126 hijau, build 47/47 sukses, markup gaya baru terkonfirmasi di
   render 3 peran (siswa/tugas, guru/kehadiran, admin/siswa).
+
+## Selesaikan semua: CSRF 59 route + logo + cetak/PDF + suara iOS + kirim WA (DONE)
+- Keamanan: 59 call site `requireRole/authorize` kini teruskan
+  `mutation/origin/referer/csrf`; cek Origin+CSRF aktif untuk semua mutasi.
+  Helper `api()` sudah kirim `x-csrf-token` otomatis.
+- Logo sekolah: `POST /api/settings/logo` (ADMIN, PNG/JPG/WEBP<=2MB, magic
+  bytes, nama acak, `/data/uploads/<schoolId>/branding/`) + publik
+  `GET /api/portal/logo` (scope slug, regex path, nosniff) + `logoUrl` di
+  portal/info + blok upload di `/admin/pengaturan` + tampil di sidebar
+  (SchoolLogo), landing, login, buku (PublicLogo, fallback wordmark).
+  Terverifikasi: upload 201, logo 200 image/png, file palsu 400,
+  siswa upload 403.
+- Cetak/PDF rapor: tombol "Cetak / PDF" (window.print) + CSS `@media print`
+  (sidebar/topbar/nav disembunyikan).
+- Suara scanner iOS: warmup dari gesture + pilih suara id-ID + resume saat
+  pause + tombol "Aktifkan suara".
+- WA admin: form kirim manual (selalu tampil) + QR/status/kuota/antrean.
+  Verifikasi: 32/32 halaman peran 200, silang 307 ke rumah sendiri,
+  markup baru ter-render, screenshot dasbor rapi tanpa elemen rusak.
+- tsc 0, test 126 hijau (20 file), build 49/49 sukses.

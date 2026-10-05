@@ -2,7 +2,7 @@
 
 import dynamic from "next/dynamic";
 import Image from "next/image";
-import Logo from "@/components/Logo";
+import PublicLogo from "@/components/PublicLogo";
 import Reveal from "@/components/Reveal";
 import { useFetch } from "@/app/lib/api";
 
@@ -54,7 +54,7 @@ export default function PortalPage() {
             borderBottom: "1px solid rgba(23,23,22,.14)",
           }}
         >
-          <Logo />
+          <PublicLogo />
           <nav style={{ display: "flex", gap: "clamp(18px, 3vw, 44px)", marginLeft: "auto", fontSize: 12, fontWeight: 600 }} className="portal-nav">
             <a href="#tentang" style={{ color: "#74746d", textDecoration: "none" }}>Tentang</a>
             <a href="#program" style={{ color: "#74746d", textDecoration: "none" }}>Program</a>
@@ -363,7 +363,7 @@ export default function PortalPage() {
         <footer style={{ padding: "80px clamp(24px, 7vw, 112px) 25px", color: "#fffdf8", background: "#171716" }}>
           <div className="portal-footer-top">
             <div>
-              <Logo light />
+              <PublicLogo light />
               <p style={{ marginTop: 30, color: "rgba(255,253,248,.62)", fontSize: 18, lineHeight: 1.35, letterSpacing: "-0.055em" }}>
                 Ruang kecil untuk<br /><strong style={{ color: "#f5c94a" }}>mimpi yang besar.</strong>
               </p>

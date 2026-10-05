@@ -171,3 +171,11 @@ input, select, button, textarea {
   .reveal { opacity: 1; transform: none; transition: none; }
   .card-lift:hover, .btn-sticker:hover { transform: none; }
 }
+
+/* --- Cetak rapor/lembar: hanya isi panel, tanpa sidebar/topbar --- */
+@media print {
+  .dash-sidebar, .dash-burger, header, nav, .no-print { display: none !important; }
+  body { background: #fff; }
+  main { padding: 0 !important; max-width: none !important; }
+  table { font-size: 11px; }
+}
