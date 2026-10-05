@@ -12,6 +12,7 @@ import {
   IconGrid, IconUsers, IconUser, IconSchool, IconCalendar, IconClipboard,
   IconCheck, IconBarChart, IconBook, IconMessage, IconSettings, IconLock,
   IconSearch, IconWhatsapp, IconUpload, IconCamera, IconStar, IconActivity,
+  IconBell,
 } from "./Icons";
 
 export type MenuItem = { href: string; label: string; badge?: number; icon?: React.ReactNode };
@@ -36,6 +37,7 @@ const ICON_MAP: [string, IconFC][] = [
   ["buku",       IconBook],
   ["pesan",      IconMessage],
   ["inbox",      IconMessage],
+  ["notifikasi", IconBell],
   ["pengumuman", IconMessage],
   ["kalender",   IconCalendar],
   ["pengaturan", IconSettings],

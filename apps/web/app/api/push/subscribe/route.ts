@@ -21,13 +21,6 @@ async function gate(req: NextRequest) {
   });
 }
 
-// GET /api/push/vapid-public — kembalikan public key untuk SW subscribe.
-export async function GET() {
-  const pub = process.env.VAPID_PUBLIC;
-  if (!pub) return NextResponse.json({ error: "VAPID not configured" }, { status: 503 });
-  return NextResponse.json({ publicKey: pub });
-}
-
 // POST /api/push/subscribe — simpan subscription (upsert per endpoint).
 export async function POST(req: NextRequest) {
   const a = await gate(req);

@@ -1,7 +1,7 @@
 // BaileysProvider per sekolah: sesi di <WA_ROOT>/<schoolId>/ (volume wa-sessions).
 // Web TIDAK mengimpor file ini (hanya worker). Baileys sungguhan tidak diuji
 // otomatis — cara uji manual ada di docs/wa-manual.md.
-import { mkdir } from "node:fs/promises";
+import { mkdir, readdir } from "node:fs/promises";
 import path from "node:path";
 import type { MessageProvider } from "@sms/shared/notify";
 
@@ -129,5 +129,24 @@ export class BaileysProvider implements MessageProvider {
     } catch (e) {
       return { ok: false as const, error: (e as Error).message.slice(0, 200) };
     }
+  }
+}
+
+// Inisialisasi ulang semua sesi yang sudah tersimpan di disk saat worker boot
+export async function initPersistedSessions(): Promise<void> {
+  try {
+    const root = waRoot();
+    await mkdir(root, { recursive: true });
+    const entries = await readdir(root, { withFileTypes: true });
+    for (const ent of entries) {
+      if (ent.isDirectory()) {
+        const schoolId = ent.name;
+        ensureSession(schoolId).catch((err) =>
+          console.error(`Gagal auto-reconnect WA session ${schoolId}:`, (err as Error).message)
+        );
+      }
+    }
+  } catch (err) {
+    console.error("Gagal membaca folder waRoot:", (err as Error).message);
   }
 }
