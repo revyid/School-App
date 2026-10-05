@@ -176,21 +176,19 @@ export default function DashShell({
             {schoolName}
           </span>
 
-          {/* Star dekoratif topbar — SVG, bukan emoji */}
-          <span aria-hidden="true" className="anim-drift" style={{ opacity: 0.55, flexShrink: 0, display: "grid", placeItems: "center" }}>
-            <IconStar size={16} color={accent} />
-          </span>
+          {/* Kanan: bell + avatar — dikelompok biar rapi */}
+          <div style={{ display: "flex", alignItems: "center", gap: 10, marginLeft: "auto" }}>
+            <Bell />
 
-          <Bell />
-
-          {/* Avatar chip */}
-          <span style={{ display: "flex", alignItems: "center", gap: 9, fontSize: 13 }}>
-            <span style={{ width: 34, height: 34, borderRadius: "50%", background: accent, color: "#fffdf8", display: "inline-flex", alignItems: "center", justifyContent: "center", fontWeight: 800, border: "2px solid #fffdf8", boxShadow: `0 0 0 2px ${accent}` }}>
-              {(userName || "?").slice(0, 1).toUpperCase()}
+            {/* Avatar chip */}
+            <span style={{ display: "flex", alignItems: "center", gap: 9, fontSize: 13, paddingLeft: 4, borderLeft: "1px solid rgba(23,23,22,.12)" }}>
+              <span style={{ width: 34, height: 34, borderRadius: "50%", background: accent, color: "#fffdf8", display: "inline-flex", alignItems: "center", justifyContent: "center", fontWeight: 800, border: "2px solid #fffdf8", boxShadow: `0 0 0 2px ${accent}`, flexShrink: 0 }}>
+                {(userName || "?").slice(0, 1).toUpperCase()}
+              </span>
+              <span style={{ fontWeight: 700 }} className="dash-username">{userName}</span>
+              <LogoutButton />
             </span>
-            <span style={{ fontWeight: 700 }} className="dash-username">{userName}</span>
-            <LogoutButton />
-          </span>
+          </div>
         </header>
 
         <main style={{ padding: "clamp(16px, 3vw, 36px) clamp(16px, 4vw, 40px) 64px", maxWidth: 1200 }}>

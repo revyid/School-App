@@ -153,6 +153,7 @@ model User {
   expBadges          ExpBadge[]
   collabThreads      CollabThread[] @relation("CollabSender")
   auditActions       AuditLog[]     @relation("Actor")
+  pushSubscriptions  PushSubscription[]
   @@unique([schoolId, email])
   @@unique([schoolId, nisn])
   @@index([schoolId, role])
@@ -727,4 +728,20 @@ model CollabMessage {
   fileName  String?      @db.VarChar(255)
   createdAt DateTime     @default(now())
   @@index([schoolId, threadId, createdAt])
+}
+
+// Web Push subscriptions per user/device. Endpoint unik per perangkat.
+// Tidak pakai schoolId RLS karena endpoint = device, bukan tenant.
+model PushSubscription {
+  id           String   @id @default(cuid())
+  userId       String
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  endpoint     String   @db.Text
+  endpointHash String   @db.VarChar(64)  // sha256 hex dari endpoint, untuk unique check
+  p256dh       String   @db.Text
+  auth         String   @db.VarChar(500)
+  userAgent    String?  @db.VarChar(300)
+  createdAt    DateTime @default(now())
+  @@unique([userId, endpointHash])
+  @@index([userId])
 }
