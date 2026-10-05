@@ -182,3 +182,28 @@
   guru OK, admin OK, landing OK. Fix: headline tracking (-0.03em), page guru versi lama,
   sidebar overflow, Reveal pudar, sapaan "Bu Sinta", metrik students pakai rows.
 - Tes 126 hijau, tsc 0, build 44/44.
+
+## UI publik lanjutan (DONE, commit menyusul — landing ala edukids + rak ebook)
+- Root `/` publik untuk guest maupun login: tanpa redirect paksa; CTA adaptif
+  (AuthCta: guest "Masuk", login "Buka dasbor" sesuai ROLE_HOME + SUPER_ADMIN).
+  Proxy: `/buku` publik; CSP img + remotePatterns covers.openlibrary.org (sampul).
+- Ebook ala contoh: section landing = 4 kartu populer (PopularBooks, data
+  /api/portal/popular-books: 1 buku per subjek Cerita/Sains/Aktivitas/Dunia,
+  cache 6 jam) + tombol "Buka rak ebook". Halaman `/buku` publik per sekolah:
+  populer + cari (search-books publik, rate limit 30/mnt/IP + cache 10 mnt),
+  kartu bersampul menaut ke Open Library, CTA adaptif login/dasbor.
+  Verifikasi: /buku 200, popular 4 buku asli + cover, search 200,
+  root login 200 (tanpa redirect), template tanpa sesi 401.
+- Tertunda yg dibereskan: template .xlsx impor siswa
+  (/api/students/import/template ADMIN, header = worker, + tombol unduh di
+  /admin/siswa) + edit inline siswa (dialog nama/kelas/no ortu, PATCH yg sudah
+  ada). Aktif/nonaktif sudah ada sebelumnya.
+- Sisa tertunda (bukan prioritas user, tetap tercatat): logo upload
+  (settings.logoUrl), PDF ekspor (baru .xlsx), suara iOS Safari (perlu gesture),
+  pairing WA sungguhan (docs/wa-manual.md).
+- Finalisasi: /buku pakai AuthCta (hapus CTA hardcode /siswa yg salah utk
+  guru/admin), /api/auth/me dibaca {user.role} (bukan {role}), BookSearch lama
+  dihapus (diganti PopularBooks + /buku). next-env.d.ts/tsbuildinfo di-revert.
+- Verifikasi akhir: 126 tes hijau (shared 64, isolasi 21, web 34, worker 7),
+  tsc 0, build 47/47. Screenshot /buku: 4 kartu bersampul asli (Cerita/Sains/
+  Aktivitas/Dunia) + cari OK.

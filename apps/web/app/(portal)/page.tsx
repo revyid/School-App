@@ -7,7 +7,8 @@ import Reveal from "@/components/Reveal";
 import { useFetch } from "@/app/lib/api";
 
 const Map = dynamic(() => import("./Map"), { ssr: false });
-const BookSearch = dynamic(() => import("./BookSearch"), { ssr: false });
+const PopularBooks = dynamic(() => import("./PopularBooks"), { ssr: false });
+import AuthCta from "./AuthCta";
 
 // Landing publik per sekolah. LAYOUT mengikuti referensi edukids
 // (hero 3 kolom + orbit, intro split, 3 kartu fitur, grid mapel, pengumuman,
@@ -61,9 +62,7 @@ export default function PortalPage() {
             <a href="#pengumuman" style={{ color: "#74746d", textDecoration: "none" }}>Pengumuman</a>
             <a href="#lokasi" style={{ color: "#74746d", textDecoration: "none" }}>Lokasi</a>
           </nav>
-          <a href="/login" className="btn-sticker" style={{ background: "#171716", color: "#fffdf8", textDecoration: "none" }}>
-            Masuk ↗
-          </a>
+          <AuthCta className="btn-sticker" style={{ background: "#171716", color: "#fffdf8", textDecoration: "none" }} />
           <details className="portal-burger" style={{ position: "relative" }}>
             <summary aria-label="Buka menu" style={{ listStyle: "none", cursor: "pointer", display: "grid", placeItems: "center", width: 44, height: 44, border: "1px solid #171716", borderRadius: "50%", background: "#fffdf8", fontSize: 20 }}>☰</summary>
             <nav style={{ position: "absolute", right: 0, top: 52, display: "flex", flexDirection: "column", gap: 4, minWidth: 180, padding: 10, background: "#fffdf8", border: "1px solid #171716", borderRadius: 16, boxShadow: "4px 5px 0 #171716" }}>
@@ -116,7 +115,7 @@ export default function PortalPage() {
                 {nama}: pengumuman, bacaan, dan lokasi dalam satu halaman.
               </p>
               <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 25, marginTop: 32, flexWrap: "wrap" }}>
-                <a href="/login" className="btn-sticker btn-primary" style={{ textDecoration: "none", minHeight: 50, padding: "0 21px" }}>Mulai belajar ↗</a>
+                <AuthCta className="btn-sticker btn-primary" style={{ textDecoration: "none", minHeight: 50, padding: "0 21px" }} loginLabel="Mulai belajar ↗" />
                 <a href="#tentang" style={{ color: "#e85e43", fontSize: 12, fontWeight: 700, textDecoration: "none" }}>Kenalan dulu ↓</a>
               </div>
             </div>
@@ -222,7 +221,7 @@ export default function PortalPage() {
                     ? `Ada ${subjects.length} mata pelajaran aktif semester ini. Masuk untuk melihat tugas dan nilaimu.`
                     : "Jadwal dan mata pelajaran diatur admin sekolah. Masuk untuk melihat kelasmu."}
                 </p>
-                <a href="/login" className="btn-sticker btn-ghost" style={{ textDecoration: "none" }}>Masuk dasbor ↗</a>
+                <AuthCta className="btn-sticker btn-ghost" style={{ textDecoration: "none" }} loginLabel="Masuk dasbor ↗" />
               </div>
             </Reveal>
             <Reveal delay={120}>
@@ -293,13 +292,13 @@ export default function PortalPage() {
             </Reveal>
             <Reveal delay={100}>
               <p style={{ maxWidth: 400, color: "#74746d", fontSize: 14, lineHeight: 1.75 }}>
-                Rak bacaan digital: cari buku lewat katalog terbuka, baca kapan saja.
+                Buku populer minggu ini dari katalog terbuka. Buka halaman rak untuk mencari judul lain.
               </p>
             </Reveal>
           </div>
           <Reveal>
             <div className="card" style={{ padding: "clamp(20px, 3vw, 32px)", background: "#50643e", color: "#fffdf8", borderColor: "#50643e" }}>
-              <BookSearch />
+              <PopularBooks />
             </div>
           </Reveal>
         </section>
@@ -319,7 +318,7 @@ export default function PortalPage() {
                 <p style={{ maxWidth: 310, color: "rgba(255,253,248,.74)", fontSize: 13, lineHeight: 1.7, marginBottom: 28 }}>
                   Masuk ke dasbor {nama}: tugas, nilai, dan kabar kelas dalam genggaman.
                 </p>
-                <a href="/login" className="btn-sticker" style={{ background: "#fffdf8", color: "#171716", borderColor: "#fffdf8", textDecoration: "none" }}>Masuk dasbor ↗</a>
+                <AuthCta className="btn-sticker" style={{ background: "#fffdf8", color: "#171716", borderColor: "#fffdf8", textDecoration: "none" }} loginLabel="Masuk dasbor ↗" />
               </div>
               <div style={{ position: "relative", minHeight: 470, padding: "24px 28px 10px 0" }}>
                 <div style={{ position: "absolute", left: "10%", top: "14%", width: 400, height: 400, maxWidth: "86%", maxHeight: "72%", borderRadius: "50%", background: "#f5c94a" }} />
@@ -384,7 +383,7 @@ export default function PortalPage() {
               </div>
               <div>
                 <span>Aksi</span>
-                <a href="/login">Masuk ↗</a>
+                <AuthCta loginLabel="Masuk ↗" dashLabel="Dasbor ↗" />
               </div>
             </div>
           </div>

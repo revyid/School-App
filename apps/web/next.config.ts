@@ -11,6 +11,9 @@ const nextConfig: NextConfig = {
   // Dev via subdomain *.localtest.me: izinkan HMR/dev resource lintas-origin ini.
   // (Prod tidak pakai next dev, jadi ini tidak berpengaruh di deploy.)
   allowedDevOrigins: ["*.localtest.me", "demo.localtest.me"],
+  images: {
+    remotePatterns: [{ protocol: "https", hostname: "covers.openlibrary.org" }],
+  },
 };
 
 export default nextConfig;

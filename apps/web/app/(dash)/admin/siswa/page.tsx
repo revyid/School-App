@@ -30,6 +30,37 @@ export default function StudentsPage() {
   );
   const { data: classes } = useFetch<{ rows: { id: string; name: string }[] }>(`/api/classes?page=1&perPage=100`);
   const totalPages = data ? Math.max(1, Math.ceil(data.total / data.perPage)) : 1;
+  const [editing, setEditing] = useState<StudentRow | null>(null);
+  const [editName, setEditName] = useState("");
+  const [editClass, setEditClass] = useState("");
+  const [editPhone, setEditPhone] = useState("");
+
+  function startEdit(row: StudentRow) {
+    setEditing(row);
+    setEditName(row.user.name);
+    setEditClass(row.classId ?? "");
+    setEditPhone(row.parentPhone ?? "");
+  }
+
+  async function saveEdit() {
+    if (!editing) return;
+    const res = await api(`/api/students/${editing.userId}`, {
+      method: "PATCH",
+      csrf: true,
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        name: editName.trim(),
+        classId: editClass || null,
+        parentPhone: editPhone.trim() || null,
+      }),
+    });
+    if (!res.ok) {
+      alert("Gagal: " + ((await res.json().catch(() => ({}))).error || res.status));
+      return;
+    }
+    setEditing(null);
+    reload();
+  }
 
   async function toggleActive(row: StudentRow) {
     if (!confirm(`${row.user.isActive ? "Nonaktifkan" : "Aktifkan"} ${row.user.name}?`)) return;
@@ -55,6 +86,7 @@ export default function StudentsPage() {
           ))}
         </select>
         <a href="/admin/import">Import Excel</a>
+        <a href="/api/students/import/template">Unduh template .xlsx</a>
       </div>
       {loading && <p>Memuat…</p>}
       {error && <p style={{ color: "red" }}>Error: {error}</p>}
@@ -71,7 +103,10 @@ export default function StudentsPage() {
                   <td>{r.class?.name ?? "-"}</td>
                   <td>{r.parentPhone ?? "-"}</td>
                   <td>{r.user.isActive ? "Aktif" : "Nonaktif"}</td>
-                  <td><button onClick={() => toggleActive(r)}>{r.user.isActive ? "Nonaktifkan" : "Aktifkan"}</button></td>
+                  <td style={{ display: "flex", gap: 6 }}>
+                    <button onClick={() => startEdit(r)}>Edit</button>
+                    <button onClick={() => toggleActive(r)}>{r.user.isActive ? "Nonaktifkan" : "Aktifkan"}</button>
+                  </td>
                 </tr>
               ))}
             </tbody>
@@ -82,6 +117,27 @@ export default function StudentsPage() {
             <button disabled={page >= totalPages} onClick={() => setPage((p) => p + 1)}>Next ›</button>
           </div>
         </>
+      )}
+      {editing && (
+        <div role="dialog" aria-label="Edit siswa" style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,.4)", display: "grid", placeItems: "center", padding: 16 }}>
+          <div style={{ background: "#fffdf8", borderRadius: 16, padding: 20, minWidth: 300, display: "grid", gap: 10 }}>
+            <h2 style={{ margin: 0 }}>Edit siswa</h2>
+            <label>Nama <input value={editName} onChange={(e) => setEditName(e.target.value)} /></label>
+            <label>Kelas
+              <select value={editClass} onChange={(e) => setEditClass(e.target.value)}>
+                <option value="">Tanpa kelas</option>
+                {classes?.rows.map((c) => (
+                  <option key={c.id} value={c.id}>{c.name}</option>
+                ))}
+              </select>
+            </label>
+            <label>No ortu <input value={editPhone} onChange={(e) => setEditPhone(e.target.value)} placeholder="628…" /></label>
+            <div style={{ display: "flex", gap: 8 }}>
+              <button onClick={saveEdit}>Simpan</button>
+              <button onClick={() => setEditing(null)}>Batal</button>
+            </div>
+          </div>
+        </div>
       )}
     </main>
   );
