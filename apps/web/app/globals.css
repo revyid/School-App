@@ -154,6 +154,21 @@ input, select, button, textarea {
 .anim-breathe { animation: breathe 3.2s ease-in-out infinite; }
 .anim-drift { animation: drift 4.5s ease-in-out infinite; }
 
+/* --- Dot ping (streak/kehadiran) --- */
+@keyframes dot-ping {
+  0%, 100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(232,94,67,0); }
+  50% { transform: scale(1.22); box-shadow: 0 0 0 5px rgba(232,94,67,.12); }
+}
+.anim-dot-ping { animation: dot-ping 2.6s ease-in-out infinite; }
+
+/* --- Spin slow (icon dekoratif) --- */
+@keyframes spin-slow { to { transform: rotate(360deg); } }
+.anim-spin-slow { animation: spin-slow 12s linear infinite; }
+
+/* --- Side icon emoji: rotate on link hover --- */
+.side-icon-emoji { transition: transform .3s; }
+a:hover .side-icon-emoji, button:hover .side-icon-emoji { transform: rotate(15deg) scale(1.2); }
+
 /* Scroll reveal: pembuka section, bukan satu-satunya motion. */
 .reveal {
   opacity: 0;
