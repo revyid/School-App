@@ -14,6 +14,7 @@
     "./notify": { "types": "./dist/notify.d.ts", "default": "./dist/notify.js" },
     "./leave": { "types": "./dist/leave.d.ts", "default": "./dist/leave.js" },
     "./assess": { "types": "./dist/assess.d.ts", "default": "./dist/assess.js" },
+    "./portal": { "types": "./dist/portal.d.ts", "default": "./dist/portal.js" },
     "./package.json": "./package.json"
   },
   "scripts": { "build": "tsc -p tsconfig.json" },

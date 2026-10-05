@@ -7,6 +7,7 @@ import { runAsSchool } from "@sms/db/tenant";
 import { logAuth } from "@/server/audit";
 import { scanSchema, SCAN_COOLDOWN_SEC, parseDay, scanDecision, todayWib } from "@sms/shared/attendance";
 import { publishScan } from "@/server/realtime";
+import { awardExp } from "@/server/exp";
 
 async function gate(req: NextRequest, roles: ("ADMIN" | "GURU")[]) {
   return requireRole({
@@ -93,6 +94,8 @@ export async function POST(req: NextRequest) {
     }),
   );
   await logAuth(a.school.id, "ATT.SCAN", { actorId: a.userId, meta: { studentId: qr.student.id } });
+  // EXP hadir harian (idempoten per record).
+  awardExp(a.school.id, qr.student.id, "hadirHarian", `hadir-${row.id}`).catch(() => {});
   const className = qr.student.studentProfile?.class?.name ?? null;
   publishScan({
     schoolId: a.school.id,

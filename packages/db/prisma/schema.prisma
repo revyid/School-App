@@ -111,6 +111,10 @@ model School {
   studyGroups     StudyGroup[]
   studyGroupMembers StudyGroupMember[]
   expLogs         ExpLog[]
+  expBadges       ExpBadge[]
+  announcements   Announcement[]
+  collabThreads   CollabThread[]
+  collabMessages  CollabMessage[]
 }
 
 model User {
@@ -146,6 +150,8 @@ model User {
   gradedAttempts     AssessAttempt[]  @relation("AssessGrader")
   groupMemberships   StudyGroupMember[]
   expLogs            ExpLog[]
+  expBadges          ExpBadge[]
+  collabThreads      CollabThread[] @relation("CollabSender")
   auditActions       AuditLog[]     @relation("Actor")
   @@unique([schoolId, email])
   @@unique([schoolId, nisn])
@@ -657,4 +663,68 @@ model ExpLog {
   createdAt DateTime @default(now())
   @@unique([schoolId, dedupeKey])
   @@index([schoolId, studentId, createdAt])
+}
+
+// ---------- Phase 8: Portal ----------
+
+model ExpBadge {
+  id        String   @id @default(cuid())
+  schoolId  String
+  school    School   @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  studentId String
+  student   User     @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  // Nama badge stabil (mis. streak-7, rajin-30, nilai-100).
+  name      String   @db.VarChar(100)
+  awardedAt DateTime @default(now())
+  // Satu badge per (siswa, nama).
+  @@unique([studentId, name])
+  @@index([schoolId, studentId])
+}
+
+model Announcement {
+  id        String   @id @default(cuid())
+  schoolId  String
+  school    School   @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  authorId  String
+  title     String   @db.VarChar(200)
+  body      String   @db.Text
+  // Target: ALL | GURU | SISWA | kelas:<classId>.
+  target    String   @default("ALL") @db.VarChar(64)
+  publishAt DateTime @default(now())
+  createdAt DateTime @default(now())
+  @@index([schoolId, publishAt])
+  @@index([schoolId, target])
+}
+
+// Inbox kolaborasi: pengirim selalu disimpan (senderId); anonim hanya disembunyikan
+// di UI guru. Admin boleh reveal (wajib audit COLLAB.REVEAL). Lampiran via TaskFiles-like.
+model CollabThread {
+  id        String   @id @default(cuid())
+  schoolId  String
+  school    School   @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  senderId  String
+  sender    User     @relation("CollabSender", fields: [senderId], references: [id], onDelete: Restrict)
+  subject   String   @db.VarChar(200)
+  anonymous Boolean  @default(false)
+  // Guru tujuan (multi-select disimpan sebagai baris recipient).
+  recipients String[] @db.Text
+  revealedAt DateTime?
+  revealedById String?
+  messages   CollabMessage[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  @@index([schoolId, senderId])
+}
+
+model CollabMessage {
+  id        String       @id @default(cuid())
+  schoolId  String
+  school    School       @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  threadId  String
+  thread    CollabThread @relation(fields: [threadId], references: [id], onDelete: Cascade)
+  authorId  String
+  body      String       @db.Text
+  fileName  String?      @db.VarChar(255)
+  createdAt DateTime     @default(now())
+  @@index([schoolId, threadId, createdAt])
 }

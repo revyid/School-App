@@ -45,11 +45,16 @@ export async function PATCH(req: NextRequest) {
   const body = settingsSchema.safeParse(await req.json().catch(() => null));
   if (!body.success) return NextResponse.json({ error: "input tidak valid" }, { status: 400 });
   const d = body.data;
+  const { expRules, ...rest } = d;
   const row = await runAsSchool(db, a.school.id, (tx) =>
     tx.schoolSettings.upsert({
       where: { schoolId: a.school.id },
-      update: { ...d },
-      create: { schoolId: a.school.id, ...d },
+      // Prisma Json opsional: undefined = tak diubah; object = set; null = set DB NULL.
+      update: {
+        ...rest,
+        ...(expRules === undefined ? {} : expRules === null ? { expRules: undefined } : { expRules }),
+      },
+      create: { schoolId: a.school.id, ...rest, ...(expRules ? { expRules } : {}) },
     }),
   );
   await logAuth(a.school.id, "SETTINGS.UPDATE", { actorId: a.userId });

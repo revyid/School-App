@@ -32,6 +32,13 @@ export const timetableSlotInputSchema = timetableSlotBase
   .omit({ classId: true })
   .refine((v) => v.endTime > v.startTime, { message: "jam selesai harus setelah jam mulai" });
 
+export const expRulesSchema = z.object({
+  submitTepat: z.number().int().min(0).max(1000).default(10),
+  submitTerlambat: z.number().int().min(0).max(1000).default(3),
+  hadirHarian: z.number().int().min(0).max(1000).default(5),
+  streakBonus: z.number().int().min(0).max(10000).default(20),
+}).strict();
+
 export const settingsSchema = z.object({
   portalName: z.string().trim().max(128).optional().default(""),
   startTime: z.string().regex(HHMM_RE).optional().default("07:00"),
@@ -43,6 +50,7 @@ export const settingsSchema = z.object({
   studentRetentionDays: z.number().int().min(7).max(3650).optional().default(90),
   photoRetentionDays: z.number().int().min(1).max(3650).optional().default(30),
   defaultPasswordMode: z.enum(["random", "nisn"]).optional().default("random"),
+  expRules: expRulesSchema.optional().nullable(),
 });
 
 export const teacherCreateSchema = z.object({

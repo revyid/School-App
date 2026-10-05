@@ -3,7 +3,7 @@ import { db } from "../client.js";
 import { runAsSchool } from "../tenant.js";
 import { dbSystemTest } from "../test-utils.js"; // TEST-ONLY
 
-const RLS_TABLES = ["User", "Class", "TeacherClass", "StudentProfile", "AuditLog", "School", "Subject", "SchoolSettings", "TimetableSlot", "ImportBatch", "AttendanceRecord", "AcademicCalendar", "StudentQr", "Task", "TaskMaterial", "Submission", "Notification", "MessageOutbox", "LeaveRequest", "CaptureSession", "ParentalConsent", "PrivacyPolicy", "Assessment", "Question", "AssessQuestion", "AssessAttempt", "AssessAnswer", "StudyGroup", "StudyGroupMember", "ExpLog"];
+const RLS_TABLES = ["User", "Class", "TeacherClass", "StudentProfile", "AuditLog", "School", "Subject", "SchoolSettings", "TimetableSlot", "ImportBatch", "AttendanceRecord", "AcademicCalendar", "StudentQr", "Task", "TaskMaterial", "Submission", "Notification", "MessageOutbox", "LeaveRequest", "CaptureSession", "ParentalConsent", "PrivacyPolicy", "Assessment", "Question", "AssessQuestion", "AssessAttempt", "AssessAnswer", "StudyGroup", "StudyGroupMember", "ExpLog", "ExpBadge", "Announcement", "CollabThread", "CollabMessage"];
 // Aturan: setiap tabel tenant BARU wajib ditambah di RLS_TABLES + satu blok it di bawah.
 
 let A = "", B = "";
@@ -319,5 +319,29 @@ describe("tenant isolation", () => {
     const q = await runAsSchool(db, B, (tx: Tx) =>
       (tx.question as { findFirst: (a: object) => Promise<{ correctIndex: number } | null> }).findFirst({ where: { id: bq.id }, select: { correctIndex: true } }));
     expect(q?.correctIndex).toBe(1);
+  });
+
+  it("ExpBadge/Announcement/CollabThread+Message: scope A buta terhadap B", async () => {
+    const bu = await dbSystemTest.user.create({ data: { schoolId: B, role: "SISWA", name: "SB9", passwordHash: "x" } });
+    const bg = await dbSystemTest.user.create({ data: { schoolId: B, role: "GURU", name: "GB9", passwordHash: "x" } });
+    const be = await dbSystemTest.expBadge.create({
+      data: { schoolId: B, studentId: bu.id, name: "rajin-7" },
+    });
+    const ba = await dbSystemTest.announcement.create({
+      data: { schoolId: B, authorId: bg.id, title: "Libur", body: "besok libur", target: "ALL" },
+    });
+    const bt = await dbSystemTest.collabThread.create({
+      data: { schoolId: B, senderId: bu.id, subject: "Izin bertanya", anonymous: true, recipients: [bg.id] },
+    });
+    const bm = await dbSystemTest.collabMessage.create({
+      data: { schoolId: B, threadId: bt.id, authorId: bu.id, body: "pak, ...?" },
+    });
+    for (const [model, id] of [["expBadge", be.id], ["announcement", ba.id], ["collabThread", bt.id], ["collabMessage", bm.id]] as const) {
+      const rows = await runAsSchool(db, A, (tx: Tx) => (tx[model] as { findMany: (a: object) => Promise<{ id: string }[]> }).findMany({ select: { id: true } }));
+      expect(rows.map((r) => r.id)).not.toContain(id);
+    }
+    await expect(runAsSchool(db, A, (tx: Tx) =>
+      tx.announcement.create({ data: { schoolId: B, authorId: bg.id, title: "x", body: "y" } })
+    )).rejects.toThrow();
   });
 });
