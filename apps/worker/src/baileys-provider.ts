@@ -11,9 +11,12 @@ interface Session {
   status: "connecting" | "open" | "closed";
   qr: string | null;
   sock: unknown;
+  since: number; // timestamp ms mulai connecting — reset setelah QR/open
 }
 
 const sessions = new Map<string, Session>();
+// Satu Promise per sekolah agar concurrent qr() tidak spawn socket ganda.
+const pending = new Map<string, Promise<Session>>();
 
 async function loadBaileys() {
   return import("@whiskeysockets/baileys");
@@ -27,11 +30,11 @@ export async function waDir(schoolId: string): Promise<string> {
   return dir;
 }
 
-async function ensureSession(schoolId: string): Promise<Session> {
-  const cur = sessions.get(schoolId);
-  if (cur && cur.status === "open") return cur;
+const CONNECT_TIMEOUT_MS = 60_000;
+
+async function spawnSession(schoolId: string): Promise<Session> {
   const dir = await waDir(schoolId);
-  const sess: Session = { status: "connecting", qr: null, sock: null };
+  const sess: Session = { status: "connecting", qr: null, sock: null, since: Date.now() }; // since diisi di sini
   sessions.set(schoolId, sess);
   const { makeWASocket, useMultiFileAuthState, DisconnectReason, fetchLatestBaileysVersion } =
     await loadBaileys();
@@ -45,33 +48,43 @@ async function ensureSession(schoolId: string): Promise<Session> {
     connectTimeoutMs: 30_000,
   });
   sess.sock = sock;
-  const ev = (sock as { ev: { on(e: string, f: (...a: unknown[]) => void): void; process(f: (evs: Record<string, unknown>) => void): void } }).ev;
+  const ev = (sock as { ev: { on(e: string, f: (...a: unknown[]) => void): void } }).ev;
   ev.on("creds.update", saveCreds);
   ev.on("connection.update", (u: unknown) => {
     const upd = u as { connection?: string; qr?: string; lastDisconnect?: { error?: { output?: { statusCode?: number } } } };
-    if (upd.qr) sess.qr = upd.qr;
+    if (upd.qr) { sess.qr = upd.qr; sess.since = Date.now(); }
     if (upd.connection === "open") {
       sess.status = "open";
       sess.qr = null;
+      pending.delete(schoolId);
     } else if (upd.connection === "close") {
       sess.status = "closed";
+      sessions.delete(schoolId);
+      pending.delete(schoolId);
       const code = upd.lastDisconnect?.error?.output?.statusCode;
-      const { Boom } = (() => {
-        try {
-          // eslint-disable-next-line @typescript-eslint/no-require-imports
-          return require("@whiskeysockets/baileys");
-        } catch {
-          return { Boom: null as never };
-        }
-      })();
-      void Boom;
-      // Reconnect kecuali logout (401).
+      // Reconnect otomatis kecuali logout (401).
       if (code !== DisconnectReason?.loggedOut) {
-        sessions.delete(schoolId);
+        setTimeout(() => ensureSession(schoolId).catch(() => null), 5_000);
       }
     }
   });
   return sess;
+}
+
+async function ensureSession(schoolId: string): Promise<Session> {
+  const cur = sessions.get(schoolId);
+  if (cur && cur.status === "open") return cur;
+  // Sesi sedang connecting dan belum timeout: pakai yang ada, jangan spawn baru.
+  if (cur && cur.status === "connecting" && Date.now() - cur.since < CONNECT_TIMEOUT_MS) return cur;
+
+  // Satu Promise per sekolah (debounce concurrent qr()).
+  const existing = pending.get(schoolId);
+  if (existing) return existing;
+
+  const p = spawnSession(schoolId);
+  pending.set(schoolId, p);
+  p.catch(() => pending.delete(schoolId));
+  return p;
 }
 
 export class BaileysProvider implements MessageProvider {
@@ -87,6 +100,10 @@ export class BaileysProvider implements MessageProvider {
 
   async qr(): Promise<string | null> {
     await ensureSession(this.schoolId).catch(() => null);
+    // Tunggu sebentar agar QR sempat diterima dari server WA.
+    if (!sessions.get(this.schoolId)?.qr) {
+      await new Promise((r) => setTimeout(r, 5_000));
+    }
     return sessions.get(this.schoolId)?.qr ?? null;
   }
 
@@ -95,6 +112,7 @@ export class BaileysProvider implements MessageProvider {
     const sock = s?.sock as { logout?: () => Promise<void> } | undefined;
     await sock?.logout?.().catch(() => {});
     sessions.delete(this.schoolId);
+    pending.delete(this.schoolId);
   }
 
   async send(to: string, text: string) {
