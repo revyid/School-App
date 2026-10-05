@@ -207,3 +207,16 @@
 - Verifikasi akhir: 126 tes hijau (shared 64, isolasi 21, web 34, worker 7),
   tsc 0, build 47/47. Screenshot /buku: 4 kartu bersampul asli (Cerita/Sains/
   Aktivitas/Dunia) + cari OK.
+
+## UI dasbor: 35 halaman peran gaya edukids (DONE, commit 6f4b1f2)
+- Primitif baru `components/DashUI.tsx`: PageHead, SegStat, Panel, WarmTable,
+  TextInput/TextSelect, Btn/LinkBtn, Badge, Toolbar, Note/Err. `components/ui.tsx`
+  diselaraskan (Button/Input/Select/Table/Pager di atas DashUI, API sama).
+- 35 halaman dipoles: siswa 8 (tugas+[id], asesmen, izin, kartu, leaderboard,
+  profil, inbox via CollabInbox), guru 9 (kelas-saya, tugas+[id], asesmen,
+  kehadiran, scanner, izin, rapor, inbox), admin 15 (siswa, kelas, guru,
+  penugasan, jadwal, kalender, kehadiran, pengaturan, pengumuman, privasi, wa,
+  import, audit, inbox) + change-password, admin-login, pantau.
+- Nol `<main>`/`<h1>` mentah tersisa di (dash). Verifikasi: tsc 0, test penuh
+  20 file/126 hijau, build 47/47 sukses, markup gaya baru terkonfirmasi di
+  render 3 peran (siswa/tugas, guru/kehadiran, admin/siswa).
