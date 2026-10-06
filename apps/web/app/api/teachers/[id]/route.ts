@@ -40,6 +40,26 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
       }),
     );
     if (row.role !== "GURU") return NextResponse.json({ error: "bukan guru" }, { status: 400 });
+
+    if (body.data.homeroomClassId !== undefined) {
+      // Lepaskan jabatan wali kelas di kelas lama jika ada
+      await runAsSchool(db, a.school.id, (tx) =>
+        tx.class.updateMany({
+          where: { homeroomTeacherId: id },
+          data: { homeroomTeacherId: null },
+        }),
+      );
+      // Jika diset kelas baru, pasang sebagai wali kelas
+      if (body.data.homeroomClassId) {
+        await runAsSchool(db, a.school.id, (tx) =>
+          tx.class.update({
+            where: { id: body.data.homeroomClassId! },
+            data: { homeroomTeacherId: id },
+          }),
+        );
+      }
+    }
+
     await logAuth(a.school.id, "TEACHER.UPDATE", { actorId: a.userId, meta: { userId: id } });
     return NextResponse.json({ row });
   } catch {

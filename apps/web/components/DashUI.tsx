@@ -4,6 +4,7 @@
 // icon rotate, metric-bars, streak dots, badge warna cerah.
 import * as React from "react";
 
+import ClickSpark from "./ClickSpark";
 import { IconStar } from "./Icons";
 
 // ---------- PageHead ----------
@@ -155,6 +156,16 @@ export function TextSelect(props: React.SelectHTMLAttributes<HTMLSelectElement>)
 export function Btn({ kind = "primary", ...props }: React.ButtonHTMLAttributes<HTMLButtonElement> & { kind?: "primary" | "ghost" | "dark" }) {
   const cls = kind === "primary" ? "btn-sticker btn-primary" : kind === "dark" ? "btn-sticker" : "btn-sticker btn-ghost";
   const dark = kind === "dark" ? { background: "#171716", color: "#fffdf8" } : {};
+  
+  // Micro-interaction spark hanya untuk tombol primer atau dark (action utama)
+  if (kind === "primary" || kind === "dark") {
+    return (
+      <ClickSpark sparkColor="#e85e43" sparkSize={6} sparkRadius={20} sparkCount={6} duration={400}>
+        <button {...props} className={`${cls} ${props.className ?? ""}`} style={{ textDecoration: "none", ...dark, ...(props.style as object ?? {}) }} />
+      </ClickSpark>
+    );
+  }
+  
   return <button {...props} className={`${cls} ${props.className ?? ""}`} style={{ textDecoration: "none", ...dark, ...(props.style as object ?? {}) }} />;
 }
 

@@ -44,7 +44,20 @@ export async function GET(req: NextRequest) {
   const rows = await runAsSchool(db, a.school.id, (tx) =>
     tx.user.findMany({
       where,
-      select: { id: true, name: true, email: true, nisn: true, isActive: true },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        isActive: true,
+        homeroomOf: { select: { id: true, name: true } },
+        taughtClasses: {
+          select: {
+            id: true,
+            subject: true,
+            class: { select: { id: true, name: true } },
+          },
+        },
+      },
       orderBy: { name: "asc" },
       skip: (page - 1) * perPage,
       take: perPage,
@@ -85,6 +98,31 @@ export async function POST(req: NextRequest) {
     await runAsSchool(db, a.school.id, (tx) =>
       tx.user.update({ where: { id: row.id }, data: { passwordHash: hash } }),
     );
+
+    // Tetapkan wali kelas jika dipilih
+    if (body.data.homeroomClassId) {
+      await runAsSchool(db, a.school.id, (tx) =>
+        tx.class.update({
+          where: { id: body.data.homeroomClassId! },
+          data: { homeroomTeacherId: row.id },
+        }),
+      ).catch(() => {});
+    }
+
+    // Tetapkan penugasan mapel jika dipilih
+    if (body.data.subject && body.data.subjectClassId) {
+      await runAsSchool(db, a.school.id, (tx) =>
+        tx.teacherClass.create({
+          data: {
+            schoolId: a.school.id,
+            teacherId: row.id,
+            classId: body.data.subjectClassId!,
+            subject: body.data.subject!,
+          },
+        }),
+      ).catch(() => {});
+    }
+
     await logAuth(a.school.id, "TEACHER.CREATE", { actorId: a.userId, ip: ip(req), meta: { userId: row.id } });
     return NextResponse.json({ row: { id: row.id, name: row.name, email: row.email }, tempPassword: pw }, { status: 201 });
   } catch {
