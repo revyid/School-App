@@ -57,12 +57,24 @@ export const teacherCreateSchema = z.object({
   email: z.string().trim().email().max(128),
   name: z.string().trim().min(1).max(128),
   nisn: z.string().trim().max(32).optional().nullable(),
+  homeroomClassId: z.string().min(1).max(64).optional().nullable(),
+  subject: z.string().trim().max(128).optional().nullable(),
+  subjectClassId: z.string().min(1).max(64).optional().nullable(),
+});
+
+export const studentCreateSchema = z.object({
+  name: z.string().trim().min(1).max(128),
+  nisn: z.string().trim().min(1).max(32),
+  classId: z.string().min(1).max(64).optional().nullable(),
+  parentPhone: z.string().trim().max(32).optional().nullable(),
+  gender: z.enum(["L", "P"]).optional().nullable(),
 });
 
 export const teacherPatchSchema = z.object({
   name: z.string().trim().min(1).max(128).optional(),
   email: z.string().trim().email().max(128).optional(),
   isActive: z.boolean().optional(),
+  homeroomClassId: z.string().max(64).optional().nullable(),
 });
 
 export const studentPatchSchema = z.object({
