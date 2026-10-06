@@ -84,7 +84,7 @@ export default function SiswaDashboard() {
       </Reveal>
 
       {/* METRIK */}
-      <section style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 14 }} className="dash-metrics">
+      <section style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(148px, 1fr))", gap: 14 }} className="dash-metrics">
         <Reveal delay={60}>
           <div className="card card-lift" style={{ background: "#50643e", color: "#fffdf8", padding: 18, minHeight: 150 }}>
             <p style={{ fontSize: 12, opacity: 0.85, margin: 0 }}>Tugas selesai</p>

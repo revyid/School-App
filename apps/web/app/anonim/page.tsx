@@ -17,7 +17,7 @@ export default function AnonimPage() {
         <div style={{ textAlign: "center", marginBottom: 24 }}>
           <h1
             className="display"
-            style={{ margin: "0 0 8px", fontSize: 28, lineHeight: 1.2 }}
+            style={{ margin: "0 0 8px", fontSize: "clamp(22px, 5vw, 28px)", lineHeight: 1.2 }}
           >
             Sampaikan Aspirasi Anda
           </h1>

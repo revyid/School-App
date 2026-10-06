@@ -21,7 +21,7 @@ export default function KartuQrPage() {
             NISN: {data.qr.student.nisn ?? "-"} · Kelas: {data.qr.student.className ?? "-"}
           </p>
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/api/attendance/qr/png" alt="QR kehadiran" width={256} height={256} style={{ borderRadius: 16, border: "1px solid rgba(23,23,22,.14)" }} />
+          <img src="/api/attendance/qr/png" alt="QR kehadiran" width={256} height={256} style={{ borderRadius: 16, border: "1px solid rgba(23,23,22,.14)", maxWidth: "100%", height: "auto" }} />
           <div style={{ marginTop: 14 }}>
             <Btn kind="dark" type="button" onClick={() => window.print()}>Cetak kartu</Btn>
           </div>

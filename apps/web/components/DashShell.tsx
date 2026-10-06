@@ -193,16 +193,64 @@ export default function DashShell({
           </div>
         </header>
 
-        <main style={{ padding: "clamp(16px, 3vw, 36px) clamp(16px, 4vw, 40px) 64px", maxWidth: 1200 }}>
+        <main style={{ padding: "clamp(16px, 3vw, 36px) clamp(16px, 4vw, 40px) clamp(80px, 12vh, 100px)", maxWidth: 1200 }}>
           {children}
         </main>
       </div>
+
+      {/* Fixed Bottom Navigation Bar untuk Mobile (<860px) */}
+      <nav className="dash-bottom-nav" aria-label="Navigasi cepat" style={{ display: "none" }}>
+        {menus.utama.slice(0, 5).map((m) => {
+          const active = path === m.href || (m.href.length > 1 && path.startsWith(m.href));
+          const Icon = resolveIcon(m.label);
+          return (
+            <Link
+              key={m.href}
+              href={m.href}
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: 3,
+                flex: 1,
+                padding: "6px 0",
+                textDecoration: "none",
+                color: active ? accent : "#74746d",
+                fontWeight: active ? 800 : 500,
+                fontSize: 10,
+                position: "relative",
+              }}
+            >
+              <Icon size={18} color={active ? accent : "#8a8a82"} />
+              <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: 54 }}>{m.label}</span>
+              {typeof m.badge === "number" && m.badge > 0 && (
+                <span style={{ position: "absolute", top: 2, right: "calc(50% - 14px)", background: accent, color: "#fffdf8", borderRadius: 999, fontSize: 9, fontWeight: 800, padding: "0 5px", minWidth: 14, textAlign: "center" }}>
+                  {m.badge}
+                </span>
+              )}
+            </Link>
+          );
+        })}
+      </nav>
 
       <style>{`
         @media (max-width: 860px) {
           .dash-sidebar { display: none; }
           .dash-burger { display: inline-flex !important; }
           .dash-username { display: none; }
+          .dash-bottom-nav {
+            display: flex !important;
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: #fffdf8;
+            border-top: 1px solid rgba(23,23,22,.14);
+            z-index: 35;
+            padding-bottom: env(safe-area-inset-bottom, 4px);
+            box-shadow: 0 -4px 16px rgba(23,23,22,.06);
+          }
         }
         .side-link:hover { background: #f0ede3 !important; color: #171716 !important; }
         .side-link:hover .side-icon { transform: rotate(12deg) scale(1.15); }

@@ -39,12 +39,12 @@ export default function SiswaTugasPage() {
         {error && <Err>Gagal: {error}</Err>}
         {data && data.rows.length === 0 && <Note>Tidak ada tugas pada filter ini.</Note>}
         {data && data.rows.length > 0 && (
-          <WarmTable head={["Judul", "Mapel", "Deadline", "Status", "Nilai"]}>
+          <WarmTable head={["Judul", "Mapel", "Deadline", "Status", "Nilai"]} minW={0}>
             {data.rows.map((t) => (
               <tr key={t.id}>
                 <td style={warmCell()}><a href={`/siswa/tugas/${t.id}`} style={{ fontWeight: 700, color: "#171716" }}>{t.title}</a></td>
                 <td style={warmCell()}>{t.subjectName ?? "-"}</td>
-                <td style={warmCell({ whiteSpace: "nowrap" })}>{t.deadline ? new Date(t.deadline).toLocaleString("id-ID") : "-"}</td>
+                <td style={warmCell()}>{t.deadline ? new Date(t.deadline).toLocaleString("id-ID") : "-"}</td>
                 <td style={warmCell()}><Badge status={t.state} /></td>
                 <td style={warmCell()}>{t.score ?? "-"}</td>
               </tr>

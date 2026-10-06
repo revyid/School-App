@@ -97,7 +97,7 @@ export default function GuruDashboard() {
         </section>
       </Reveal>
 
-      <section style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 14 }} className="dash-metrics">
+      <section style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(148px, 1fr))", gap: 14 }} className="dash-metrics">
         <Reveal delay={60}>
           <div className="card card-lift" style={{ padding: 18, minHeight: 148 }}>
             <p style={{ fontSize: 12, color: "#74746d", margin: 0 }}>Kelas diampu</p>
