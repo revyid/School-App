@@ -44,13 +44,15 @@ export default function PortalPage() {
           style={{
             display: "flex",
             alignItems: "center",
-            gap: 24,
-            padding: "18px clamp(24px, 7vw, 112px)",
-            minHeight: 82,
+            justifyContent: "space-between",
+            gap: 16,
+            padding: "14px clamp(16px, 4vw, 112px)",
+            minHeight: 72,
             position: "sticky",
             top: 0,
-            zIndex: 30,
-            background: "#f7f4ec",
+            zIndex: 40,
+            background: "rgba(247, 244, 236, 0.92)",
+            backdropFilter: "blur(12px)",
             borderBottom: "1px solid rgba(23,23,22,.14)",
           }}
         >
@@ -63,15 +65,18 @@ export default function PortalPage() {
             <a href="#lokasi" style={{ color: "#74746d", textDecoration: "none" }}>Lokasi</a>
             <a href="/siswa/inbox" style={{ color: "#e85e43", textDecoration: "none", fontWeight: 700 }}>Pesan Anonim ✉</a>
           </nav>
-          <AuthCta className="btn-sticker" style={{ background: "#171716", color: "#fffdf8", textDecoration: "none" }} />
-          <details className="portal-burger" style={{ position: "relative" }}>
-            <summary aria-label="Buka menu" style={{ listStyle: "none", cursor: "pointer", display: "grid", placeItems: "center", width: 44, height: 44, border: "1px solid #171716", borderRadius: "50%", background: "#fffdf8", fontSize: 20 }}>☰</summary>
-            <nav style={{ position: "absolute", right: 0, top: 52, display: "flex", flexDirection: "column", gap: 4, minWidth: 180, padding: 10, background: "#fffdf8", border: "1px solid #171716", borderRadius: 16, boxShadow: "4px 5px 0 #171716" }}>
-              {[["Tentang", "#tentang"], ["Program", "#program"], ["Mapel", "#mapel"], ["Pengumuman", "#pengumuman"], ["Lokasi", "#lokasi"], ["Pesan Anonim ✉", "/siswa/inbox"]].map(([label, href]) => (
-                <a key={href} href={href} style={{ padding: "10px 12px", borderRadius: 10, color: "#171716", fontSize: 13, fontWeight: 700, textDecoration: "none" }}>{label}</a>
-              ))}
-            </nav>
-          </details>
+          
+          <div style={{ display: "flex", alignItems: "center", gap: 10, marginLeft: "auto" }} className="portal-header-actions">
+            <AuthCta className="btn-sticker portal-header-cta" style={{ background: "#171716", color: "#fffdf8", textDecoration: "none", padding: "8px 16px", minHeight: 40, fontSize: 12 }} />
+            <details className="portal-burger" style={{ position: "relative" }}>
+              <summary aria-label="Buka menu" style={{ listStyle: "none", cursor: "pointer", display: "grid", placeItems: "center", width: 40, height: 40, border: "1px solid #171716", borderRadius: "50%", background: "#fffdf8", fontSize: 18, userSelect: "none" }}>☰</summary>
+              <nav style={{ position: "absolute", right: 0, top: 48, display: "flex", flexDirection: "column", gap: 4, minWidth: 200, padding: 10, background: "#fffdf8", border: "1px solid #171716", borderRadius: 16, boxShadow: "0 8px 24px rgba(23,23,22,.15)", zIndex: 50 }}>
+                {[["Tentang", "#tentang"], ["Program", "#program"], ["Mapel", "#mapel"], ["Pengumuman", "#pengumuman"], ["Lokasi", "#lokasi"], ["Pesan Anonim ✉", "/siswa/inbox"]].map(([label, href]) => (
+                  <a key={href} href={href} style={{ padding: "10px 14px", borderRadius: 10, color: "#171716", fontSize: 13, fontWeight: 700, textDecoration: "none" }}>{label}</a>
+                ))}
+              </nav>
+            </details>
+          </div>
         </header>
 
         {/* HERO 3 kolom ala contoh */}
@@ -398,21 +403,33 @@ export default function PortalPage() {
 
       <style>{`section[id] { scroll-margin-top: 96px; }
       @media (max-width: 900px) {
-        .portal-nav { display: none; }
+        .portal-nav { display: none !important; }
         .portal-burger { display: grid !important; }
         .portal-hero { grid-template-columns: .7fr 1.5fr .7fr; }
         .portal-hero-side { width: 190px !important; height: 310px !important; }
       }
       @media (max-width: 680px) {
-        .portal-hero { grid-template-columns: 1fr 1fr; grid-template-rows: auto 255px auto; padding-top: 62px; }
-        .portal-hero-copy { grid-column: 1 / -1; grid-row: 1; margin-bottom: 25px; }
-        .portal-hero-side { width: 160px !important; height: 250px !important; margin: 0; }
-        .hero-left { grid-column: 1; grid-row: 2; }
-        .hero-right { grid-column: 2; grid-row: 2; }
-        .portal-hero-bottom { grid-column: 1 / -1; grid-row: 3; display: block; }
+        .portal-hero {
+          display: flex !important;
+          flex-direction: column !important;
+          align-items: center !important;
+          padding: 40px 16px 28px !important;
+          text-align: center !important;
+        }
+        .portal-hero-copy { width: 100% !important; margin-bottom: 20px !important; }
+        .portal-hero-side { display: none !important; }
+        .portal-hero-bottom {
+          grid-column: 1 / -1;
+          display: flex !important;
+          flex-direction: column !important;
+          align-items: center !important;
+          gap: 16px !important;
+          width: 100% !important;
+          padding-top: 24px !important;
+        }
         .portal-split { display: grid !important; gap: 26px; }
         .portal-trio { display: grid !important; gap: 16px; }
-        .portal-duo { display: grid !important; grid-template-columns: 1fr 1fr !important; gap: 10px; margin-top: 28px; }
+        .portal-duo { display: grid !important; grid-template-columns: 1fr !important; gap: 12px; margin-top: 24px; }
         .portal-cta { display: block !important; }
         .portal-footer-top { display: block; padding-bottom: 62px; }
         .portal-footer-links { display: grid; gap: 26px; margin-top: 40px; }
