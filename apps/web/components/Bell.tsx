@@ -4,6 +4,7 @@
 import { useEffect, useRef, useState } from "react";
 import { api, useFetch } from "@/app/lib/api";
 import BellToggle from "./BellToggle";
+import SwipeToast from "./SwipeToast";
 import { IconBell } from "./Icons";
 
 type Notif = {
@@ -233,43 +234,23 @@ export default function Bell() {
   return (
     <>
       <div ref={ref} style={{ position: "relative" }}>
-        {/* Tombol lonceng */}
-        <button
-          type="button"
-          onClick={() => {
+        {/* Tombol lonceng React Bits BellToggle */}
+        <BellToggle
+          count={unread}
+          badge
+          badgeColor="#e85e43"
+          color="#171716"
+          background="#fffdf8"
+          onColor="#fffdf8"
+          onBackground="#171716"
+          size="sm"
+          offLabel="Notifikasi"
+          onLabel="Notifikasi Aktif"
+          onChange={() => {
             setOpen((o) => !o);
             if (!open) reload();
           }}
-          aria-label="Notifikasi"
-          style={{
-            position: "relative",
-            display: "grid",
-            placeItems: "center",
-            width: 38,
-            height: 38,
-            border: "1px solid rgba(23,23,22,.18)",
-            borderRadius: "50%",
-            background: open ? "#eeeadd" : "#fffdf8",
-            cursor: "pointer",
-            transition: "background .18s",
-          }}
-        >
-          <IconBell size={17} color="#171716" />
-          {unread > 0 && (
-            <span
-              style={{
-                position: "absolute",
-                top: 5,
-                right: 5,
-                width: 9,
-                height: 9,
-                borderRadius: "50%",
-                background: "#e85e43",
-                border: "1.5px solid #fffdf8",
-              }}
-            />
-          )}
-        </button>
+        />
 
         {/* Dropdown panel */}
         {open && (
@@ -566,41 +547,30 @@ export default function Bell() {
         </div>
       )}
 
-      {/* TOAST POPUP SAAT NOTIFIKASI BARU MASUK */}
-      {toastNotif && (
-        <div
-          onClick={() => {
+      {/* TOAST POPUP SAAT NOTIFIKASI BARU MASUK (React Bits SwipeToast) */}
+      <SwipeToast
+        open={!!toastNotif}
+        onClose={() => setToastNotif(null)}
+        title={toastNotif?.title ?? ''}
+        description={toastNotif?.body ?? ''}
+        icon={<IconBell size={18} color="#f5c94a" />}
+        actionLabel="Buka"
+        onAction={() => {
+          if (toastNotif) {
             openDetail(toastNotif);
             setToastNotif(null);
-          }}
-          style={{
-            position: "fixed",
-            bottom: 24,
-            right: 24,
-            background: "#171716",
-            color: "#fffdf8",
-            borderRadius: 18,
-            padding: "14px 20px",
-            boxShadow: "0 10px 30px rgba(0,0,0,0.3)",
-            zIndex: 90,
-            maxWidth: 360,
-            cursor: "pointer",
-            border: "2px solid #f5c94a",
-            animation: "slideInUp .3s ease",
-            display: "grid",
-            gap: 4,
-          }}
-        >
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-            <span style={{ fontSize: 11, color: "#f5c94a", fontWeight: 700 }}>Pemberitahuan Baru 🔔</span>
-            <span style={{ fontSize: 10, color: "rgba(255,255,255,0.6)" }}>Klik untuk baca</span>
-          </div>
-          <strong style={{ fontSize: 14 }}>{toastNotif.title}</strong>
-          <p style={{ margin: 0, fontSize: 12, opacity: 0.85, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-            {toastNotif.body}
-          </p>
-        </div>
-      )}
+          }
+        }}
+        background="#171716"
+        color="#fffdf8"
+        fuseColor="#e85e43"
+        width={360}
+        radius={18}
+        duration={6000}
+        fuse="bottom"
+        pauseOnHover
+        closeButton={false}
+      />
     </>
   );
 }
