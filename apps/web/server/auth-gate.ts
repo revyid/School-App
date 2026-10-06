@@ -20,11 +20,17 @@ function allowMustChange(pathname: string | undefined): boolean {
 }
 
 export function originOk(origin: string | null, referer: string | null, slug: string): boolean {
-  const want = `${slug}.${apex()}`.toLowerCase();
   const raw = origin ?? referer;
   if (!raw) return false;
   try {
-    return new URL(raw).hostname.toLowerCase() === want;
+    const got = new URL(raw).hostname.toLowerCase();
+    const target = slug.toLowerCase();
+    return (
+      got === `${target}.${apex()}`.toLowerCase() ||
+      got === `${target}.revy.my.id` ||
+      got === `${target}.dev.revy.my.id` ||
+      got === `${target}.localtest.me`
+    );
   } catch {
     return false;
   }
