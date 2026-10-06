@@ -29,7 +29,7 @@ function isAdminPage(path: string): boolean {
 export function proxy(req: NextRequest) {
   const host = req.headers.get("host") ?? "";
   const bare = host.split(":")[0].trim().toLowerCase();
-  const isAdminHost = bare === `admin.${apex}` || bare === "admin.localtest.me";
+  const isAdminHost = bare === `admin.${apex}` || bare === "admin.localtest.me" || bare === "admin.dev.revy.my.id";
   const slug = schoolSlugFromHost(host, apex);
   if (!slug && !isAdminHost) return new NextResponse("not found", { status: 404 });
   // Nama cookie tergantung env (prod __Host-session, dev sms-session-dev).

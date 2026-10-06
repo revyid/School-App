@@ -20,10 +20,16 @@ export function isValidSlug(slug: string): boolean {
 // format tak valid, atau prefiks xn-- → null.
 export function schoolSlugFromHost(host: string, apex: string = APEX_DOMAIN): string | null {
   const h = host.split(":")[0].trim().toLowerCase();
-  if (h === apex) return null;
-  if (!h.endsWith("." + apex)) return null;
-  const slug = h.slice(0, -(apex.length + 1));
-  if (!slug || slug.includes(".")) return null;
-  if (!isValidSlug(slug)) return null; // mencakup reservasi + xn-- + format
-  return slug;
+  
+  // Dukungan domain tunnel dev.revy.my.id dan revy.my.id otomatis
+  const knownApexes = Array.from(new Set([apex, "dev.revy.my.id", "revy.my.id", "localtest.me"])).filter(Boolean);
+  
+  for (const a of knownApexes) {
+    if (h === a) continue;
+    if (h.endsWith("." + a)) {
+      const slug = h.slice(0, -(a.length + 1));
+      if (slug && !slug.includes(".") && isValidSlug(slug)) return slug;
+    }
+  }
+  return null;
 }
