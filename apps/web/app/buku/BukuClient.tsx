@@ -96,7 +96,7 @@ export default function BukuClient({ schoolName }: { schoolName: string }) {
             <p style={{ color: "#74746d", margin: 0 }}>Rak sedang kosong. Coba lagi nanti.</p>
           </div>
         ) : (
-          <div className="ebook-shelf" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(240px, 1fr))", gap: 20 }}>
+          <div className="ebook-shelf" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(min(200px, 100%), 1fr))", gap: 20 }}>
             {items.map((b, i) => (
               <Reveal key={`${b.title}-${i}`} delay={(i % 4) * 80}>
                 <BookCard b={b} color={b.color ?? CARD_COLORS[i % CARD_COLORS.length]} />

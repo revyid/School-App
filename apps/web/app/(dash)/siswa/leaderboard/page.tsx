@@ -29,7 +29,7 @@ export default function LeaderboardPage() {
       <Panel>
         <form onSubmit={lihat}>
           <Toolbar>
-            <TextInput value={classId} onChange={(e) => setClassId(e.target.value)} required placeholder="ID kelas (tanya wali kelas)" style={{ maxWidth: 320 }} />
+            <TextInput value={classId} onChange={(e) => setClassId(e.target.value)} required placeholder="ID kelas (tanya wali kelas)" style={{ maxWidth: 320, width: "100%" }} />
             <Btn type="submit">Lihat</Btn>
           </Toolbar>
         </form>

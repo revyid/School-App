@@ -25,8 +25,8 @@ export default function SiswaProfilPage() {
               ["Email", data.user.email ?? "-"],
               ["Kelas", data.user.studentProfile?.class?.name ?? "-"],
             ].map(([k, v]) => (
-              <div key={k} style={{ display: "flex", gap: 12 }}>
-                <span style={{ width: 70, color: "#74746d" }}>{k}</span>
+              <div key={k} style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
+                <span style={{ minWidth: 70, color: "#74746d", flexShrink: 0 }}>{k}</span>
                 <strong>{v}</strong>
               </div>
             ))}

@@ -79,9 +79,9 @@ export default function PortalPage() {
           className="portal-hero"
           style={{
             display: "grid",
-            gridTemplateColumns: "0.8fr minmax(360px, 1.4fr) 0.8fr",
+            gridTemplateColumns: "0.8fr minmax(min(280px, 100%), 1.4fr) 0.8fr",
             alignItems: "center",
-            padding: "80px clamp(24px, 7vw, 112px) 34px",
+            padding: "80px clamp(16px, 5vw, 112px) 34px",
             position: "relative",
             isolation: "isolate",
             overflow: "hidden",
@@ -399,6 +399,7 @@ export default function PortalPage() {
       <style>{`section[id] { scroll-margin-top: 96px; }
       @media (max-width: 900px) {
         .portal-nav { display: none; }
+        .portal-burger { display: grid !important; }
         .portal-hero { grid-template-columns: .7fr 1.5fr .7fr; }
         .portal-hero-side { width: 190px !important; height: 310px !important; }
       }
@@ -415,7 +416,6 @@ export default function PortalPage() {
         .portal-cta { display: block !important; }
         .portal-footer-top { display: block; padding-bottom: 62px; }
         .portal-footer-links { display: grid; gap: 26px; margin-top: 40px; }
-        .portal-burger { display: grid !important; }
       }
       @media (min-width: 681px) {
         .portal-split { display: grid; grid-template-columns: minmax(0, 1.3fr) minmax(280px, .7fr); gap: 8vw; align-items: end; }

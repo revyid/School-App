@@ -112,10 +112,10 @@ export function Panel({ children, style, deco }: { children: React.ReactNode; st
 }
 
 // ---------- WarmTable ----------
-export function WarmTable({ head, children }: { head: string[]; children: React.ReactNode }) {
+export function WarmTable({ head, children, minW = 560 }: { head: string[]; children: React.ReactNode; minW?: number }) {
   return (
     <div style={{ overflowX: "auto", border: "1px solid rgba(23,23,22,.14)", borderRadius: 16 }}>
-      <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13.5, minWidth: 560 }}>
+      <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13.5, minWidth: minW > 0 ? minW : undefined }}>
         <thead>
           <tr style={{ background: "#eeeadd" }}>
             {head.map((h) => (

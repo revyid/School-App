@@ -111,6 +111,7 @@ input, select, button, textarea {
   padding: 0.7rem 1.4rem;
   border: 1px solid var(--color-ink);
   transition: transform 0.18s ease, box-shadow 0.18s ease;
+  min-height: 44px;
 }
 .btn-sticker:hover {
   transform: translateY(-2px);
@@ -210,6 +211,22 @@ a:hover .side-icon-emoji, button:hover .side-icon-emoji { transform: rotate(15de
   .ebook-shelf > :nth-child(3) { margin-top: -8px; }
   .ebook-shelf > :nth-child(4) { margin-top: 11px; }
   .ebook-card:hover, .ebook-shelf > :nth-child(2) .ebook-card:hover, .ebook-shelf > :nth-child(3) .ebook-card:hover, .ebook-shelf > :nth-child(4) .ebook-card:hover { transform: translateY(-7px) !important; }
+}
+
+/* --- Mobile input iOS anti-zoom (iOS <16px auto-zoom) --- */
+@media (max-width: 640px) {
+  input, select, textarea {
+    font-size: 16px !important;
+  }
+  .dash-metrics {
+    grid-template-columns: 1fr 1fr !important;
+  }
+}
+
+@media (max-width: 480px) {
+  .dash-metrics {
+    grid-template-columns: 1fr !important;
+  }
 }
 
 /* --- Cetak rapor/lembar: hanya isi panel, tanpa sidebar/topbar --- */
