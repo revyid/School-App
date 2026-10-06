@@ -40,7 +40,7 @@ export default function RaporPage() {
           <WarmTable head={["Nama", ...gb.data.tasks.map((t) => t.title), ...gb.data.assessments.map((x) => x.title), "Rata-rata"]}>
             {gb.data.rows.map((r) => (
               <tr key={r.studentId}>
-                <td style={warmCell({ fontWeight: 700 })}>{r.name}</td>
+                <td style={warmCell({ fontWeight: 700, position: "sticky", left: 0, background: "#fffdf8", zIndex: 1 })}>{r.name}</td>
                 {gb.data!.tasks.map((t) => <td key={t.id} style={warmCell()}>{r.taskScores[t.id] ?? "-"}</td>)}
                 {gb.data!.assessments.map((x) => <td key={x.id} style={warmCell()}>{r.assessScores[x.id] ?? "-"}</td>)}
                 <td style={warmCell({ fontWeight: 800 })}>{r.avg ?? "-"}</td>

@@ -101,14 +101,14 @@ export default function GuruTugasDetail({ params }: { params: Promise<{ id: stri
                 </td>
                 <td style={warmCell({ fontWeight: 700 })}>{s.score ?? "-"}</td>
                 <td style={warmCell()}>
-                  <span style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                  <span style={{ display: "flex", gap: 6, flexWrap: "wrap", flexDirection: "row" }}>
                     <TextInput
                       type="number" min={0} max={100} placeholder="0-100" style={{ width: 80 }}
                       value={grades[s.id]?.score ?? ""}
                       onChange={(e) => setGrades({ ...grades, [s.id]: { score: e.target.value, feedback: grades[s.id]?.feedback ?? "" } })}
                     />
                     <TextInput
-                      placeholder="umpan balik" style={{ minWidth: 140 }}
+                      placeholder="umpan balik" style={{ minWidth: 120, flex: 1 }}
                       value={grades[s.id]?.feedback ?? ""}
                       onChange={(e) => setGrades({ ...grades, [s.id]: { score: grades[s.id]?.score ?? "", feedback: e.target.value } })}
                     />
