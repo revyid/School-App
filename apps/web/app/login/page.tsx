@@ -87,10 +87,10 @@ export default function LoginPage() {
           borderRadius: 34,
         }}
       >
-        <div style={{ flex: 1, padding: "clamp(24px, 4vw, 48px)", minWidth: 0 }}>
+        <div style={{ flex: 1, padding: "clamp(20px, 3vw, 48px)", minWidth: 0 }}>
           <PublicLogo />
           <p className="kicker" style={{ marginTop: 22 }}>Masuk ke dasbor sekolah</p>
-          <h1 className="display" style={{ fontSize: "clamp(30px, 4vw, 44px)", margin: "8px 0 6px" }}>
+          <h1 className="display" style={{ fontSize: "clamp(24px, 3.5vw, 44px)", margin: "8px 0 6px" }}>
             Belajar boleh serius. <span style={{ color: "#e85e43" }}>Serunya jangan hilang.</span>
           </h1>
           <p style={{ color: "#74746d", fontSize: 13.5, margin: "0 0 20px" }}>
@@ -142,7 +142,15 @@ export default function LoginPage() {
         </div>
       </div>
 
-      <style>{`@media (max-width: 760px) { .login-side { display: none; } }`}</style>
+      <style>{`
+        @media (max-width: 760px) {
+          .login-side { display: none; }
+        }
+        @media (max-width: 480px) {
+          .card { border-radius: 24px !important; }
+          .portal-header-cta { font-size: 11px !important; padding: 7px 12px !important; }
+        }
+      `}</style>
     </main>
   );
 }
