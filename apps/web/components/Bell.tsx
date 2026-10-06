@@ -234,7 +234,7 @@ export default function Bell() {
   return (
     <>
       <div ref={ref} style={{ position: "relative" }}>
-        {/* Tombol lonceng React Bits BellToggle */}
+        {/* Tombol lonceng React Bits BellToggle (icon indikator tanpa label teks) */}
         <BellToggle
           count={unread}
           badge
@@ -244,8 +244,9 @@ export default function Bell() {
           onColor="#fffdf8"
           onBackground="#171716"
           size="sm"
-          offLabel="Notifikasi"
-          onLabel="Notifikasi Aktif"
+          offLabel=""
+          onLabel=""
+          pressed={open}
           onChange={() => {
             setOpen((o) => !o);
             if (!open) reload();
@@ -400,7 +401,7 @@ export default function Bell() {
               })}
             </ul>
 
-            {/* Footer: push toggle via React Bits BellToggle */}
+            {/* Footer: push toggle via React Bits BellToggle (realtime state & label) */}
             <div
               style={{
                 padding: "12px 18px",
@@ -417,16 +418,15 @@ export default function Bell() {
               </span>
               <BellToggle
                 offLabel="Aktifkan"
-                onLabel="Tersambung"
+                onLabel="Nonaktifkan"
                 size="sm"
                 color="#fffdf8"
                 background="#e85e43"
                 onColor="#171716"
-                onBackground="#aec6a4"
+                onBackground="#eeeadd"
                 pressed={pushState === "on"}
                 disabled={pushLoading}
-                count={unread}
-                badge={unread > 0}
+                badge={false}
                 onChange={() => togglePush()}
               />
             </div>
@@ -547,13 +547,13 @@ export default function Bell() {
         </div>
       )}
 
-      {/* TOAST POPUP SAAT NOTIFIKASI BARU MASUK (React Bits SwipeToast) */}
+      {/* TOAST POPUP SAAT NOTIFIKASI BARU MASUK (React Bits SwipeToast, tema terang) */}
       <SwipeToast
         open={!!toastNotif}
         onClose={() => setToastNotif(null)}
         title={toastNotif?.title ?? ''}
         description={toastNotif?.body ?? ''}
-        icon={<IconBell size={18} color="#f5c94a" />}
+        icon={<IconBell size={18} color="#e85e43" />}
         actionLabel="Buka"
         onAction={() => {
           if (toastNotif) {
@@ -561,8 +561,8 @@ export default function Bell() {
             setToastNotif(null);
           }
         }}
-        background="#171716"
-        color="#fffdf8"
+        background="#fffdf8"
+        color="#171716"
         fuseColor="#e85e43"
         width={360}
         radius={18}
