@@ -2,6 +2,7 @@
 
 // Dasbor admin: denyut sekolah (jumlah warga, kelas, izin pending, pengumuman,
 // antrean WA) + jalan pintas operasional. Semua angka dari API asli.
+import Image from "next/image";
 import Link from "next/link";
 import Reveal from "@/components/Reveal";
 import { useFetch } from "@/app/lib/api";
@@ -19,7 +20,8 @@ export default function AdminDashboard() {
   return (
     <div style={{ display: "grid", gap: 20 }}>
       <Reveal>
-        <section className="card" style={{ padding: "clamp(20px, 3vw, 32px)", background: "#171716", color: "#fffdf8" }}>
+        <section className="card" style={{ padding: "clamp(20px, 3vw, 32px)", background: "#171716", color: "#fffdf8", display: "flex", alignItems: "center", gap: 24, overflow: "hidden", position: "relative" }}>
+          <div style={{ flex: 1, minWidth: 0, position: "relative", zIndex: 2 }}>
           <p className="kicker" style={{ color: "#f5c94a" }}>Pusat kendali sekolah</p>
           <h1 className="display" style={{ fontSize: "clamp(28px, 4vw, 46px)", margin: "8px 0" }}>
             Semua urusan,<br />satu meja.
@@ -37,6 +39,17 @@ export default function AdminDashboard() {
             <Link href="/admin/wa" className="btn-sticker" style={{ background: "#fffdf8", color: "#171716", borderColor: "#fffdf8" }}>
               Status WhatsApp
             </Link>
+          </div>
+          </div>
+          <div className="dash-hero-char" style={{ position: "relative", flexShrink: 0, width: 180, height: 180 }}>
+            <Image
+              src="/assets/student-books.png"
+              alt="Operasional sekolah"
+              fill
+              className="anim-floaty"
+              style={{ objectFit: "contain", borderRadius: 16, zIndex: 1 }}
+              priority
+            />
           </div>
         </section>
       </Reveal>

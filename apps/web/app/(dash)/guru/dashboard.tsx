@@ -85,12 +85,12 @@ export default function GuruDashboard() {
               }}
             />
             <Image
-              src="/assets/char-girl.png"
-              alt="Ilustrasi pendidik"
+              src="/assets/classroom-illustration.png"
+              alt="Ilustrasi ruang kelas"
               width={200}
               height={240}
               className="anim-floaty"
-              style={{ position: "relative", zIndex: 1, objectFit: "contain" }}
+              style={{ position: "relative", zIndex: 1, objectFit: "cover", borderRadius: 16 }}
               priority
             />
           </div>

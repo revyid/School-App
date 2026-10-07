@@ -71,7 +71,7 @@ export default function SiswaDashboard() {
               }}
             />
             <Image
-              src="/assets/char-student.png"
+              src="/assets/student-hero-transparent.png"
               alt="Maskot siswa"
               width={220}
               height={260}
