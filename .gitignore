@@ -7,3 +7,8 @@ packages/db/src/generated/
 .env.example
 !apps/*/.env.example
 !packages/*/.env.example
+
+# local-only
+data/
+*.tsbuildinfo
+doublecheck-*.md
