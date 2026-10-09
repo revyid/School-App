@@ -255,21 +255,38 @@ export default function Bell() {
 
         {/* Dropdown panel */}
         {open && (
-          <div
-            style={{
-              position: "absolute",
-              top: "calc(100% + 10px)",
-              right: 0,
-              width: 380,
-              maxWidth: "95vw",
-              background: "#fffdf8",
-              border: "1px solid rgba(23,23,22,.14)",
-              borderRadius: 20,
-              boxShadow: "0 12px 40px rgba(23,23,22,.12)",
-              zIndex: 50,
-              overflow: "hidden",
-            }}
-          >
+          <>
+            <div
+              className="bell-panel"
+              style={{
+                position: "absolute",
+                top: "calc(100% + 10px)",
+                right: 0,
+                width: "min(380px, calc(100vw - 24px))",
+                maxWidth: "calc(100vw - 24px)",
+                background: "#fffdf8",
+                border: "1px solid rgba(23,23,22,.14)",
+                borderRadius: 20,
+                boxShadow: "0 12px 40px rgba(23,23,22,.12)",
+                zIndex: 50,
+                overflow: "hidden",
+              }}
+            >
+              <style>{`
+                @media (max-width: 640px) {
+                  .bell-panel {
+                    position: fixed !important;
+                    top: 60px !important;
+                    left: 12px !important;
+                    right: 12px !important;
+                    width: auto !important;
+                    max-width: calc(100vw - 24px) !important;
+                    margin: 0 auto !important;
+                    box-shadow: 0 16px 48px rgba(23,23,22,.25) !important;
+                    z-index: 9999 !important;
+                  }
+                }
+              `}</style>
             {/* Header panel */}
             <div
               style={{
@@ -430,7 +447,8 @@ export default function Bell() {
                 onChange={() => togglePush()}
               />
             </div>
-          </div>
+            </div>
+          </>
         )}
       </div>
 
@@ -445,7 +463,7 @@ export default function Bell() {
             background: "rgba(23,23,22,.45)",
             display: "grid",
             placeItems: "center",
-            padding: 16,
+            padding: "clamp(12px, 3vw, 20px)",
             zIndex: 100,
           }}
           onClick={() => setActiveNotif(null)}
@@ -454,13 +472,15 @@ export default function Bell() {
             style={{
               background: "#fffdf8",
               borderRadius: 24,
-              padding: "24px 28px",
-              maxWidth: 480,
+              padding: "clamp(16px, 4vw, 28px)",
+              maxWidth: "min(480px, 94vw)",
               width: "100%",
               boxShadow: "0 20px 60px rgba(23,23,22,.2)",
               border: "2px solid #171716",
               display: "grid",
               gap: 14,
+              maxHeight: "90vh",
+              overflowY: "auto",
             }}
             onClick={(e) => e.stopPropagation()}
           >

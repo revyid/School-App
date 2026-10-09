@@ -43,7 +43,7 @@ export default function AdminDashboard() {
           </div>
           <div className="dash-hero-char" style={{ position: "relative", flexShrink: 0, width: 180, height: 180 }}>
             <Image
-              src="/assets/student-books.png"
+              src="/assets/student-book.png"
               alt="Operasional sekolah"
               fill
               className="anim-floaty"
@@ -138,6 +138,17 @@ export default function AdminDashboard() {
       <style>{`@media (max-width: 860px) {
         .dash-metrics { grid-template-columns: 1fr 1fr !important; }
         .dash-bottom { grid-template-columns: 1fr !important; }
+        .dash-hero-char {
+          display: block !important;
+          position: absolute !important;
+          right: -14px !important;
+          bottom: -14px !important;
+          width: 140px !important;
+          height: 140px !important;
+          opacity: 0.25 !important;
+          pointer-events: none !important;
+          z-index: 1 !important;
+        }
       }`}</style>
     </div>
   );

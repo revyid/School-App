@@ -32,8 +32,8 @@ export default function AdminLoginPage() {
   }
 
   return (
-    <main className="auth-wrap">
-      <div className="card" style={{ width: "100%", maxWidth: 400, padding: 28 }}>
+    <main style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", padding: "clamp(12px, 4vw, 24px)" }}>
+      <div className="card" style={{ width: "100%", maxWidth: 400, padding: "clamp(18px, 5vw, 28px)" }}>
         <p className="kicker" style={{ margin: "0 0 8px" }}>Super-admin</p>
         <h1 className="display" style={{ fontSize: 28, margin: "0 0 6px" }}>Masuk pengelola</h1>
         <p style={{ color: "#74746d", fontSize: 13.5, margin: "0 0 18px" }}>Hanya untuk pengelola platform, bukan warga sekolah.</p>

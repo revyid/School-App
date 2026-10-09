@@ -12,6 +12,7 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
+  const [schoolName, setSchoolName] = useState<string | undefined>(undefined);
 
   useEffect(() => {
     fetch("/api/auth/me").then(async (r) => {
@@ -19,6 +20,11 @@ export default function LoginPage() {
       const d = await r.json();
       if (d.user?.mustChangePassword) router.replace("/change-password");
       else if (d.user?.role) router.replace(ROLE_HOME[d.user.role as keyof typeof ROLE_HOME] ?? "/siswa");
+    }).catch(() => {});
+    fetch("/api/portal/info").then(async (r) => {
+      if (!r.ok) return;
+      const d = await r.json().catch(() => null);
+      if (d?.school?.name) setSchoolName(d.school.name);
     }).catch(() => {});
   }, [router]);
 
@@ -48,8 +54,10 @@ export default function LoginPage() {
     border: "1px solid rgba(23,23,22,.2)",
     background: "#fffdf8",
     padding: "12px 16px",
-    fontSize: 14,
+    fontSize: 15,
+    minHeight: 48,
     marginTop: 6,
+    boxSizing: "border-box",
   };
 
   return (
@@ -64,19 +72,19 @@ export default function LoginPage() {
         overflow: "hidden",
       }}
     >
-      <div style={{ position: "absolute", top: "8%", left: "6%", zIndex: 0 }} className="anim-drift" aria-hidden="true">
+      <div className="login-deco anim-drift" style={{ position: "absolute", top: "8%", left: "6%", zIndex: 0 }} aria-hidden="true">
         <svg width="90" height="46" viewBox="0 0 90 46" fill="none">
           <ellipse cx="45" cy="23" rx="40" ry="18" stroke="#e85e43" strokeWidth="2" strokeDasharray="7 6" transform="rotate(-12 45 23)" />
         </svg>
       </div>
-      <div style={{ position: "absolute", bottom: "10%", right: "8%", zIndex: 0 }} className="anim-drift" aria-hidden="true">
+      <div className="login-deco anim-drift" style={{ position: "absolute", bottom: "10%", right: "8%", zIndex: 0 }} aria-hidden="true">
         <svg width="46" height="46" viewBox="0 0 46 46" fill="none">
           <path d="M23 4v38M4 23h38M9 9l28 28M37 9L9 37" stroke="#f5c94a" strokeWidth="4" strokeLinecap="round" />
         </svg>
       </div>
 
       <div
-        className="card"
+        className="card login-card"
         style={{
           position: "relative",
           zIndex: 1,
@@ -87,10 +95,10 @@ export default function LoginPage() {
           borderRadius: 34,
         }}
       >
-        <div style={{ flex: 1, padding: "clamp(20px, 3vw, 48px)", minWidth: 0 }}>
-          <PublicLogo />
+        <div className="login-form" style={{ flex: 1, padding: "clamp(20px, 3vw, 48px)", minWidth: 0 }}>
+          <PublicLogo name={schoolName} />
           <p className="kicker" style={{ marginTop: 22 }}>Masuk ke dasbor sekolah</p>
-          <h1 className="display" style={{ fontSize: "clamp(24px, 3.5vw, 44px)", margin: "8px 0 6px" }}>
+          <h1 className="display login-heading" style={{ fontSize: "clamp(24px, 3.5vw, 44px)", margin: "8px 0 6px" }}>
             Belajar boleh serius. <span style={{ color: "#e85e43" }}>Serunya jangan hilang.</span>
           </h1>
           <p style={{ color: "#74746d", fontSize: 13.5, margin: "0 0 20px" }}>
@@ -144,11 +152,42 @@ export default function LoginPage() {
 
       <style>{`
         @media (max-width: 760px) {
-          .login-side { display: none; }
+          .login-card { position: relative !important; max-width: 440px !important; border-radius: 24px !important; overflow: hidden !important; }
+          .login-side {
+            display: flex !important;
+            position: absolute !important;
+            inset: 0 !important;
+            opacity: 0.18 !important;
+            pointer-events: none !important;
+            z-index: 0 !important;
+            padding: 0 !important;
+            justify-content: flex-end !important;
+            align-items: flex-end !important;
+            background: transparent !important;
+          }
+          .login-side img {
+            width: 200px !important;
+            height: 220px !important;
+            opacity: 0.85 !important;
+            transform: translate(24px, 24px) !important;
+          }
+          .login-side p { display: none !important; }
+          .login-form { position: relative !important; z-index: 1 !important; padding: 24px 20px 28px !important; }
+          .login-heading { font-size: 24px !important; line-height: 1.2 !important; }
+          .login-deco { display: none !important; }
         }
         @media (max-width: 480px) {
-          .card { border-radius: 24px !important; }
+          main { padding: 12px !important; }
+          .card { border-radius: 22px !important; }
+          .login-form { padding: 22px 16px 24px !important; }
+          .login-heading { font-size: 21px !important; }
           .portal-header-cta { font-size: 11px !important; padding: 7px 12px !important; }
+          input { font-size: 16px !important; }
+          .login-side img {
+            width: 170px !important;
+            height: 190px !important;
+            transform: translate(16px, 16px) !important;
+          }
         }
       `}</style>
     </main>

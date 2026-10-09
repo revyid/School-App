@@ -54,8 +54,7 @@ export default function BukuClient({ schoolName }: { schoolName: string }) {
   return (
     <div style={{ background: "#f7f4ec", minHeight: "100vh" }}>
       <header style={{ display: "flex", alignItems: "center", gap: 16, padding: "16px clamp(20px, 6vw, 88px)", borderBottom: "1px solid rgba(23,23,22,.14)" }}>
-        <a href="/" style={{ textDecoration: "none", color: "inherit" }}><PublicLogo /></a>
-        <span style={{ color: "#74746d", fontSize: 13 }}>{schoolName}</span>
+        <a href="/" style={{ textDecoration: "none", color: "inherit" }}><PublicLogo name={schoolName} /></a>
         <AuthCta className="btn-sticker" style={{ marginLeft: "auto", background: "#171716", color: "#fffdf8", textDecoration: "none" }} loginLabel="Masuk ↗" dashLabel="Buka dasbor ↗" />
       </header>
 

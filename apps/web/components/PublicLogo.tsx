@@ -5,9 +5,9 @@
 import { useState } from "react";
 import Logo from "./Logo";
 
-export default function PublicLogo({ compact = false, light = false }: { compact?: boolean; light?: boolean }) {
+export default function PublicLogo({ compact = false, light = false, name }: { compact?: boolean; light?: boolean; name?: string }) {
   const [ok, setOk] = useState(true);
-  if (!ok) return <Logo compact={compact} light={light} />;
+  if (!ok) return <Logo compact={compact} light={light} name={name} />;
   return (
     // eslint-disable-next-line @next/next/no-img-element
     <img

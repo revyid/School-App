@@ -17,7 +17,7 @@ export function detectCollab(buf: Buffer): string | null {
 
 function dir(schoolId: string): string {
   const root = process.env.UPLOADS_ROOT ?? "/data/uploads";
-  return path.join(root, schoolId, "collab");
+  return path.join(/*turbopackIgnore: true*/ root, schoolId, "collab");
 }
 
 export async function saveCollabFile(schoolId: string, threadId: string, buf: Buffer): Promise<string> {
@@ -25,14 +25,14 @@ export async function saveCollabFile(schoolId: string, threadId: string, buf: Bu
   if (!ext) throw new Error("lampiran harus jpg/png/pdf/zip (maks 5MB)");
   const name = `${threadId.slice(0, 12)}-${randomBytes(6).toString("hex")}.${ext}`;
   await mkdir(dir(schoolId), { recursive: true });
-  await writeFile(path.join(dir(schoolId), name), buf);
+  await writeFile(path.join(/*turbopackIgnore: true*/ dir(schoolId), name), buf);
   return name;
 }
 
 export function collabFilePath(schoolId: string, name: string): string {
   const base = path.basename(name);
   if (base !== name || base.includes("..")) throw new Error("nama file tidak valid");
-  const p = path.join(dir(schoolId), base);
+  const p = path.join(/*turbopackIgnore: true*/ dir(schoolId), base);
   if (!p.startsWith(dir(schoolId))) throw new Error("path tidak valid");
   return p;
 }

@@ -23,9 +23,9 @@ export async function saveLeavePhoto(
   if (buf.length > MAX_LEAVE_PHOTO) throw new Error("foto maksimal 3MB");
   const name = `${owner}-${randomBytes(8).toString("hex")}.${kind === "png" ? "png" : "jpg"}`;
   const root = process.env.UPLOADS_ROOT ?? "/data/uploads";
-  const dir = path.join(root, schoolId, "leave");
+  const dir = path.join(/*turbopackIgnore: true*/ root, schoolId, "leave");
   await mkdir(dir, { recursive: true });
-  await writeFile(path.join(dir, name), buf);
+  await writeFile(path.join(/*turbopackIgnore: true*/ dir, name), buf);
   return name;
 }
 
@@ -33,8 +33,8 @@ export function leavePhotoPath(schoolId: string, name: string): string {
   const root = process.env.UPLOADS_ROOT ?? "/data/uploads";
   const base = path.basename(name);
   if (base !== name || base.includes("..")) throw new Error("nama file tidak valid");
-  const p = path.join(root, schoolId, "leave", base);
-  if (!p.startsWith(path.join(root, schoolId))) throw new Error("path tidak valid");
+  const p = path.join(/*turbopackIgnore: true*/ root, schoolId, "leave", base);
+  if (!p.startsWith(path.join(/*turbopackIgnore: true*/ root, schoolId))) throw new Error("path tidak valid");
   return p;
 }
 

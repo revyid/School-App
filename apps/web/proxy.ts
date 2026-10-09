@@ -13,12 +13,12 @@ const PWA_ASSETS = new Set([
 ]);
 
 // Cocokkan SEGMEN penuh: /publicity tidak lolos sebagai /public.
-// Root "/" + "/buku" = publik per sekolah (guest maupun login boleh melihat).
+// Root "/" + "/buku" + "/tools" = publik per sekolah (guest maupun login boleh melihat).
 function isPublic(path: string): boolean {
   if (path === "/" || path === "/buku" || path === "/login" || path === "/change-password" || path === "/anonim" || path.startsWith("/api/anonim")) return true;
   if (PWA_ASSETS.has(path)) return true;
   const seg = path.split("/").filter(Boolean)[0] ?? "";
-  return seg === "portal" || seg === "public";
+  return seg === "portal" || seg === "public" || seg === "tools";
 }
 
 // Halaman super-admin (hanya di admin.<apex>). Data tetap dijaga API requireRole.
@@ -43,15 +43,18 @@ export function proxy(req: NextRequest) {
   const nonce = Buffer.from(crypto.randomUUID()).toString("base64");
   const connectHost = isAdminHost ? `admin.${apex}` : `${slug}.${apex}`;
   const isDev = process.env.NODE_ENV === "development";
+  const path = req.nextUrl.pathname;
+  // /tools/peta memuat tile peta + routing publik (tanpa login, client-side).
+  const isTools = path === "/tools" || path.startsWith("/tools/");
   const csp = [
     "default-src 'self'",
     `script-src 'self' 'nonce-${nonce}'${isDev ? " 'unsafe-eval'" : ""}`,
     "style-src 'self' 'unsafe-inline'",
-    "img-src 'self' data: blob: https://covers.openlibrary.org",
+    `img-src 'self' data: blob: https://covers.openlibrary.org${isTools ? " https://tile.openstreetmap.org" : ""}`,
     // Dev (next dev): HMR pakai ws:// + port; prod: hanya wss:// apex.
     isDev
       ? `connect-src 'self' ws: wss: http: https:`
-      : `connect-src 'self' wss://${connectHost}`,
+      : `connect-src 'self' wss://${connectHost}${isTools ? " https://router.project-osrm.org https://nominatim.openstreetmap.org" : ""}`,
     "frame-ancestors 'none'",
     "base-uri 'self'",
     "form-action 'self'",
@@ -61,8 +64,6 @@ export function proxy(req: NextRequest) {
   reqHeaders.set("x-nonce", nonce);
   reqHeaders.set("x-pathname", req.nextUrl.pathname);
   reqHeaders.set("Content-Security-Policy", csp);
-
-  const path = req.nextUrl.pathname;
 
   // Tanpa sesi, /change-password tidak berguna (API menolak) -> arahkan ke /login.
   // (Halaman /login sendiri tetap publik.)

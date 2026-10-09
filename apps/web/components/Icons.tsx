@@ -26,4 +26,5 @@ export const IconCamera     = (p: P) => <svg {...d(p.size, p.color, p.strokeWidt
 export const IconStar       = (p: P) => <svg {...d(p.size, p.color, p.strokeWidth)}><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>;
 export const IconMapPin     = (p: P) => <svg {...d(p.size, p.color, p.strokeWidth)}><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>;
 export const IconActivity   = (p: P) => <svg {...d(p.size, p.color, p.strokeWidth)}><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>;
+export const IconLogout     = (p: P) => <svg {...d(p.size, p.color, p.strokeWidth)}><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>;
 export const IconGlobe      = (p: P) => <svg {...d(p.size, p.color, p.strokeWidth)}><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>;
