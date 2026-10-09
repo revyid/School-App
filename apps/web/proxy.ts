@@ -7,6 +7,8 @@ const apex = process.env.APEX_DOMAIN ?? "domainmu.id";
 
 const PWA_ASSETS = new Set([
   "/manifest.webmanifest",
+  "/robots.txt",
+  "/sitemap.xml",
   "/sw.js",
   "/sw-push.js",
   "/icon-192.png",
