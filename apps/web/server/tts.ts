@@ -91,11 +91,36 @@ export function cleanText(text: string): string {
   return text.replace(/\s+/g, " ").trim().slice(0, MAX_TEXT);
 }
 
+// Piper medium ID keluar pelan — naikkan amplitudo PCM 16-bit ~2.2x
+// (dengan clamping anti-clipping) agar lantang di speaker HP.
+const GAIN = 2.2;
+
+function amplifyWav(wav: Buffer): Buffer {
+  try {
+    if (wav.length < 44 || wav.toString("ascii", 0, 4) !== "RIFF") return wav;
+    const audioFormat = wav.readUInt16LE(20);
+    const bitsPerSample = wav.readUInt16LE(34);
+    if (audioFormat !== 1 || bitsPerSample !== 16) return wav;
+    const out = Buffer.from(wav);
+    for (let i = 44; i + 1 < out.length; i += 2) {
+      const s = out.readInt16LE(i);
+      let v = Math.round(s * GAIN);
+      if (v > 32767) v = 32767;
+      else if (v < -32768) v = -32768;
+      out.writeInt16LE(v, i);
+    }
+    return out;
+  } catch {
+    return wav;
+  }
+}
+
 export async function synthesize(text: string): Promise<Buffer> {
   const clean = cleanText(text);
   if (!clean) throw new Error("teks kosong");
   const key = createHash("sha256").update(clean).digest("hex");
-  const cached = path.join(cacheDir(), "audio", `${key}.wav`);
+  // v2 = dengan gain 2.2x (cache v1 lama otomatis tidak terpakai).
+  const cached = path.join(cacheDir(), "audio", `${key}.v2.wav`);
   try {
     await access(cached, constants.R_OK);
     return await readFile(cached);
@@ -106,7 +131,7 @@ export async function synthesize(text: string): Promise<Buffer> {
   if (existing) return existing;
   const p = (async () => {
     await ensureModel();
-    const wav = await runPiper(clean);
+    const wav = amplifyWav(await runPiper(clean));
     await mkdir(path.dirname(cached), { recursive: true });
     await writeFile(cached, wav).catch(() => {});
     return wav;

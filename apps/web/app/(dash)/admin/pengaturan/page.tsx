@@ -46,6 +46,7 @@ export default function SettingsPage() {
         photoRetentionDays: String(s.photoRetentionDays ?? 30),
         defaultPasswordMode: String(s.defaultPasswordMode ?? "random"),
         ttsPhrase: String(s.ttsPhrase ?? "{{name}} sudah hadir"),
+        ttsPhraseDup: String(s.ttsPhraseDup ?? "{{name}} sudah di catat"),
       });
     }
   }, [data]);
@@ -65,6 +66,7 @@ export default function SettingsPage() {
         photoRetentionDays: Number(f.photoRetentionDays),
         defaultPasswordMode: f.defaultPasswordMode === "nisn" ? "nisn" : "random",
         ttsPhrase: (f.ttsPhrase ?? "").trim() || "{{name}} sudah hadir",
+        ttsPhraseDup: (f.ttsPhraseDup ?? "").trim() || "{{name}} sudah di catat",
       }),
     });
     const d = await res.json().catch(() => ({}));
@@ -118,8 +120,11 @@ export default function SettingsPage() {
               <option value="nisn">NISN (minta ganti saat login pertama)</option>
             </TextSelect>
           </label>
-          <label style={{ display: "grid", gap: 6, fontSize: 13, color: "#74746d" }}>Ucapan suara absensi (TTS scanner) — pakai {"{{name}}"} dan {"{{class}}"}
+          <label style={{ display: "grid", gap: 6, fontSize: 13, color: "#74746d" }}>Ucapan suara absensi — scan BERHASIL (TTS scanner) — pakai {"{{name}}"} dan {"{{class}}"}
             <TextInput value={f.ttsPhrase ?? ""} onChange={set("ttsPhrase")} placeholder="{{name}} sudah hadir" />
+          </label>
+          <label style={{ display: "grid", gap: 6, fontSize: 13, color: "#74746d" }}>Ucapan suara absensi — scan SUDAH DICATAT / duplikat — pakai {"{{name}}"} dan {"{{class}}"}
+            <TextInput value={f.ttsPhraseDup ?? ""} onChange={set("ttsPhraseDup")} placeholder="{{name}} sudah di catat" />
           </label>
           <Note>Contoh: {"{{name}}"} sudah hadir → “Revy sudah hadir”. Berlaku untuk scan lokal & scanner lain via realtime.</Note>
           <Toolbar><Btn onClick={save}>Simpan</Btn></Toolbar>
