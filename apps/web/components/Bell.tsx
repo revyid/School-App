@@ -49,16 +49,20 @@ function playNotificationSound() {
   } catch {}
 }
 
-// Subscribe SW push
-async function subscribePush(): Promise<boolean> {
-  if (!("serviceWorker" in navigator) || !("PushManager" in window)) return false;
+// Subscribe SW push — kembalikan {ok} atau {ok:false, reason} agar UI bisa
+// menampilkan langkah perbaikan yang tepat, bukan pesan generik.
+async function subscribePush(): Promise<{ ok: true } | { ok: false; reason: string }> {
+  if (!("serviceWorker" in navigator) || !("PushManager" in window))
+    return { ok: false, reason: "Browser ini tidak mendukung Web Push." };
   try {
+    if (typeof Notification !== "undefined" && Notification.permission === "denied")
+      return { ok: false, reason: "Izin notifikasi diblokir. Buka info situs (ikon gembok) → Izin → Notifikasi → Izinkan." };
     const perm = await Notification.requestPermission();
-    if (perm !== "granted") return false;
+    if (perm !== "granted") return { ok: false, reason: "Izin notifikasi belum diberikan. Ketuk Izinkan saat browser meminta." };
 
     const r = await fetch("/api/push/vapid-public");
-    const { publicKey } = await r.json();
-    if (!r.ok || !publicKey) throw new Error("VAPID public key belum dikonfigurasi");
+    const { publicKey } = await r.json().catch(() => ({}));
+    if (!r.ok || !publicKey) return { ok: false, reason: "VAPID server belum tersedia (hubungi admin)." };
 
     // WAJIB satu worker: /sw.js (cache + push). Jangan /sw-push.js scope "/" —
     // itu menggantikan worker utama, subscription mati, Android tidak bunyi.
@@ -69,20 +73,31 @@ async function subscribePush(): Promise<boolean> {
     const existing = await reg.pushManager.getSubscription();
     if (existing) await existing.unsubscribe();
 
-    const sub = await reg.pushManager.subscribe({
-      userVisibleOnly: true,
-      applicationServerKey: urlBase64ToUint8Array(publicKey) as unknown as ArrayBuffer,
-    });
+    let sub: PushSubscription;
+    try {
+      sub = await reg.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: urlBase64ToUint8Array(publicKey) as unknown as ArrayBuffer,
+      });
+    } catch (e) {
+      console.warn("pushManager.subscribe gagal", e);
+      return { ok: false, reason: "Browser menolak langganan push (koneksi ke layanan push Google/Firefox gagal atau SW kedaluwarsa). Coba: 1) reload halaman, 2) matikan mode hemat data/VPN, 3) Chrome Android butuh akun Google & Play Services aktif." };
+    }
 
-    await api("/api/push/subscribe", {
+    const res = await api("/api/push/subscribe", {
       method: "POST",
       headers: { "content-type": "application/json" },
       body: JSON.stringify(sub.toJSON()),
     });
-    return true;
+    if (!res.ok) {
+      const d = await res.json().catch(() => ({}));
+      await sub.unsubscribe().catch(() => {});
+      return { ok: false, reason: `Server menolak subscription (${res.status}: ${d.error ?? "coba login ulang"}).` };
+    }
+    return { ok: true };
   } catch (e) {
     console.warn("push subscribe gagal", e);
-    return false;
+    return { ok: false, reason: "Gagal tak terduga saat mengaktifkan. Reload halaman lalu coba lagi." };
   }
 }
 
@@ -229,9 +244,9 @@ export default function Bell() {
       await unsubscribePush().catch(() => {});
       setPushState("off");
     } else {
-      const ok = await subscribePush();
-      setPushState(ok ? "on" : "off");
-      if (!ok) setPushError("Notifikasi gagal diaktifkan. Pastikan HTTPS, izin browser, dan VAPID server tersedia.");
+      const r = await subscribePush();
+      setPushState(r.ok ? "on" : "off");
+      setPushError(r.ok ? null : r.reason);
     }
     setPushLoading(false);
   }
