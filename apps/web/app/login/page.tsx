@@ -13,11 +13,28 @@ export default function LoginPage() {
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
   const [schoolName, setSchoolName] = useState<string | undefined>(undefined);
+  const [notice, setNotice] = useState("");
+
+  function safeNext(): string | null {
+    try {
+      const q = new URLSearchParams(window.location.search);
+      if (q.get("expired") === "1") setNotice("Sesi berakhir, silakan login ulang.");
+      const next = q.get("next") ?? "";
+      // Hanya path internal — tolak //evil, http:, javascript:.
+      if (/^\/[A-Za-z0-9._~!$&'()*+,;=:@%/-]*$/.test(next) && !next.startsWith("//")) return next || null;
+    } catch { /* abaikan */ }
+    return null;
+  }
 
   useEffect(() => {
     fetch("/api/auth/me").then(async (r) => {
       if (!r.ok) return;
       const d = await r.json();
+      const back = safeNext();
+      if (back) {
+        router.replace(back);
+        return;
+      }
       if (d.user?.mustChangePassword) router.replace("/change-password");
       else if (d.user?.role) router.replace(ROLE_HOME[d.user.role as keyof typeof ROLE_HOME] ?? "/siswa");
     }).catch(() => {});
@@ -26,6 +43,7 @@ export default function LoginPage() {
       const d = await r.json().catch(() => null);
       if (d?.school?.name) setSchoolName(d.school.name);
     }).catch(() => {});
+    safeNext();
   }, [router]);
 
   async function submit(e: React.FormEvent) {
@@ -44,7 +62,9 @@ export default function LoginPage() {
       return;
     }
     if (d.csrfToken) sessionStorage.setItem("csrf", d.csrfToken);
+    const back = safeNext();
     if (d.mustChangePassword) router.replace("/change-password");
+    else if (back) router.replace(back);
     else router.replace(ROLE_HOME[d.user.role as keyof typeof ROLE_HOME] ?? "/siswa");
   }
 
@@ -105,6 +125,7 @@ export default function LoginPage() {
             Masuk dengan email atau NISN yang diberikan sekolah.
           </p>
           <form onSubmit={submit} style={{ display: "grid", gap: 14 }}>
+            {notice && <p role="status" style={{ color: "#8a6d1b", background: "#f5c94a33", border: "1px solid #f5c94a", borderRadius: 12, padding: "8px 12px", fontSize: 13, margin: 0 }}>{notice}</p>}
             <label style={{ fontSize: 13, fontWeight: 700 }}>
               Email atau NISN
               <input value={identifier} onChange={(e) => setIdentifier(e.target.value)} autoComplete="username" required style={input} />

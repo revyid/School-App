@@ -1,38 +1,45 @@
 "use client";
 
 // Leaderboard EXP per kelas (semua role; guru/siswa dibatasi kelasnya server-side).
-import { useState } from "react";
-import { api } from "@/app/lib/api";
-import { PageHead, Panel, Toolbar, TextInput, Btn, Note, Err } from "@/components/DashUI";
+// Siswa: otomatis memakai kelas aktifnya — tanpa mengetik ID.
+import { useEffect, useState } from "react";
+import { api, useFetch } from "@/app/lib/api";
+import { PageHead, Panel, Note, Err } from "@/components/DashUI";
 
 const MEDAL = ["🥇", "🥈", "🥉"];
 
 export default function LeaderboardPage() {
-  const [classId, setClassId] = useState("");
   const [rows, setRows] = useState<{ studentId: string; name: string; points: number }[]>([]);
   const [msg, setMsg] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+  const profile = useFetch<{ user: { studentProfile?: { class: { name: string } | null } } }>("/api/profile");
 
-  async function lihat(e: React.FormEvent) {
-    e.preventDefault();
-    const res = await api(`/api/exp/leaderboard?classId=${encodeURIComponent(classId)}`);
-    const d = await res.json().catch(() => ({}));
-    if (!res.ok) setMsg(d.error || `Gagal (${res.status})`);
-    else {
-      setRows(d.rows ?? []);
-      setMsg((d.rows ?? []).length === 0 ? "Belum ada poin di kelas ini." : null);
-    }
-  }
+  useEffect(() => {
+    let alive = true;
+    (async () => {
+      const res = await api("/api/exp/leaderboard");
+      const d = await res.json().catch(() => ({}));
+      if (!alive) return;
+      setLoading(false);
+      if (!res.ok) setMsg(d.error || `Gagal (${res.status})`);
+      else {
+        setRows(d.rows ?? []);
+        setMsg((d.rows ?? []).length === 0 ? "Belum ada poin di kelas ini." : null);
+      }
+    })();
+    return () => { alive = false; };
+  }, []);
 
   return (
     <>
       <PageHead kicker="Gamifikasi" title="Leaderboard EXP" desc="Peringkat poin pengalaman per kelas. Kumpulkan XP dari tugas tepat waktu dan kehadiran." />
       <Panel>
-        <form onSubmit={lihat}>
-          <Toolbar>
-            <TextInput value={classId} onChange={(e) => setClassId(e.target.value)} required placeholder="ID kelas (tanya wali kelas)" style={{ maxWidth: 320, width: "100%" }} />
-            <Btn type="submit">Lihat</Btn>
-          </Toolbar>
-        </form>
+        {(loading || profile.loading) && <Note>Memuat…</Note>}
+        {profile.data?.user.studentProfile?.class && (
+          <p style={{ fontSize: 13, color: "#74746d", margin: "0 0 8px" }}>
+            Kelas: <strong>{profile.data.user.studentProfile.class.name}</strong>
+          </p>
+        )}
         {msg && (rows.length === 0 ? <Note>{msg}</Note> : <Err>{msg}</Err>)}
         {rows.length > 0 && (
           <ol style={{ listStyle: "none", margin: "8px 0 0", padding: 0, display: "grid", gap: 8 }}>

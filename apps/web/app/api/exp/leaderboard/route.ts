@@ -19,7 +19,12 @@ export async function GET(req: NextRequest) {
   });
   if (!a.ok) return NextResponse.json({ error: a.error }, { status: a.status });
   const url = new URL(req.url);
-  const classId = (url.searchParams.get("classId") ?? "").slice(0, 64);
+  let classId = (url.searchParams.get("classId") ?? "").slice(0, 64);
+  if (!classId && a.role === "SISWA") {
+    const p = await runAsSchool(db, a.school.id, (tx) =>
+      tx.studentProfile.findUnique({ where: { userId: a.userId }, select: { classId: true } }));
+    if (p?.classId) classId = p.classId;
+  }
   if (!classId) return NextResponse.json({ error: "classId wajib diisi" }, { status: 400 });
   if (a.role === "GURU") {
     const { guruClassIds } = await import("@/server/lms-scope");

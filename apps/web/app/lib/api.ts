@@ -17,6 +17,10 @@ export async function api(path: string, init?: RequestInit & { csrf?: boolean })
     if (token) headers.set("x-csrf-token", token);
   }
   const res = await fetch(path, { ...init, headers });
+  if (res.status === 401 && typeof window !== "undefined" && !window.location.pathname.startsWith("/login")) {
+    sessionStorage.removeItem("csrf");
+    window.location.href = `/login?expired=1&next=${encodeURIComponent(window.location.pathname)}`;
+  }
   return res;
 }
 
@@ -31,6 +35,11 @@ export function useFetch<T>(path: string | null) {
     try {
       const res = await fetch(path, { cache: "no-store" });
       const d = await res.json().catch(() => ({}));
+      if (res.status === 401 && typeof window !== "undefined" && !window.location.pathname.startsWith("/login")) {
+        sessionStorage.removeItem("csrf");
+        window.location.href = `/login?expired=1&next=${encodeURIComponent(window.location.pathname)}`;
+        return;
+      }
       if (!res.ok) throw new Error(d.error || `HTTP ${res.status}`);
       setData(d);
     } catch (e) {

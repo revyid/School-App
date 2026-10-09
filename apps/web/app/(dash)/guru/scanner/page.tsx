@@ -94,6 +94,8 @@ export default function ScannerPage() {
   const [offlineCount, setOfflineCount] = useState(0);
   const [lastScan, setLastScan] = useState<{ name: string; className: string | null; duplicate: boolean } | null>(null);
   const scanning = useRef(false);
+  // Cegah suara ganda: event socket untuk scan yang sama tiba <3 dtk setelah suara lokal.
+  const lastSpokeAt = useRef(0);
 
   const postToken = useCallback(async (token: string): Promise<boolean> => {
     try {
@@ -107,8 +109,14 @@ export default function ScannerPage() {
         setMsg(d.error || `Gagal (${res.status})`);
         return false;
       }
-      setLastScan({ name: d.student?.name ?? "-", className: d.student?.className ?? null, duplicate: !!d.duplicate });
+      const nama: string = d.student?.name ?? "-";
+      setLastScan({ name: nama, className: d.student?.className ?? null, duplicate: !!d.duplicate });
       setMsg(d.duplicate ? `Sudah tercatat (${d.reason === "cooldown" ? "baru saja" : "hari ini"})` : null);
+      // Bunyi langsung dari respons lokal — tidak menunggu socket/worker.
+      if (!d.duplicate && nama !== "-") {
+        lastSpokeAt.current = Date.now();
+        speak(`${nama} sudah hadir`);
+      }
       return true;
     } catch {
       // offline -> antrekan
@@ -152,13 +160,16 @@ export default function ScannerPage() {
     };
   }, []);
 
-  // Socket.io realtime (dibroadcast worker): dengar scan sekolah ini.
+  // Socket.io realtime (dibroadcast worker): untuk scanner lain.
+  // Scan lokal sudah bersuara dari respons — lewati bila <3 dtk.
   useEffect(() => {
     let sock: Socket | null = null;
     try {
       sock = io({ path: "/socket.io/" });
       sock.on("att:scan", (ev: { name: string }) => {
-        if (ev?.name) speak(`${ev.name} sudah hadir`);
+        if (!ev?.name) return;
+        if (Date.now() - lastSpokeAt.current < 3000) return;
+        speak(`${ev.name} sudah hadir`);
       });
     } catch { /* abaikan bila socket gagal */ }
     return () => {
