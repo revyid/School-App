@@ -12,6 +12,17 @@ const nextConfig: NextConfig = {
   images: {
     remotePatterns: [{ protocol: "https", hostname: "covers.openlibrary.org" }],
   },
+  // Socket.io worker (realtime att:scan + notif:new) diekspos satu origin
+  // agar browser tidak perlu konek langsung ke port worker.
+  async rewrites() {
+    const workerPort = process.env.WORKER_PORT ?? "3201";
+    return [
+      {
+        source: "/socket.io/:path*",
+        destination: `http://127.0.0.1:${workerPort}/socket.io/:path*`,
+      },
+    ];
+  },
 };
 
 export default nextConfig;

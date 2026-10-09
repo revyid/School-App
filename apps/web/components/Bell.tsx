@@ -2,6 +2,7 @@
 
 // Bell: lonceng notifikasi in-app + push notification + toast banner + suara audio chime.
 import { useEffect, useRef, useState } from "react";
+import { io, type Socket } from "socket.io-client";
 import { api, useFetch } from "@/app/lib/api";
 import BellToggle from "./BellToggle";
 import SwipeToast from "./SwipeToast";
@@ -166,11 +167,25 @@ export default function Bell() {
     }
   }, [data]);
 
-  // Polling notifikasi setiap 20 detik secara otomatis
+  // Realtime WS (dibroadcast worker): notifikasi baru langsung reload seketika
+  // + chime + toast via efek sinkron di atas — tanpa tunggu polling.
+  // Filter user otomatis: chime hanya bunyi bila unread benar-benar bertambah.
+  const reloadRef = useRef(reload);
+  useEffect(() => { reloadRef.current = reload; }, [reload]);
+  useEffect(() => {
+    let sock: Socket | null = null;
+    try {
+      sock = io({ path: "/socket.io/" });
+      sock.on("notif:new", () => { reloadRef.current(); });
+    } catch { /* abaikan bila socket gagal */ }
+    return () => { sock?.disconnect(); };
+  }, []);
+
+  // Polling cadangan tiap 60 detik (bila WS terputus)
   useEffect(() => {
     const timer = setInterval(() => {
       reload();
-    }, 20_000);
+    }, 60_000);
     return () => clearInterval(timer);
   }, [reload]);
 
