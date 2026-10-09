@@ -30,6 +30,9 @@ function saveQueue(q: ScanItem[]) {
 // Perangkat iOS/Android tetap aman karena .play() dibuka saat pemanasan (warmVoice).
 const speakQueue: string[] = [];
 let speaking = false;
+// Kontrol output suara (diatur dari slider di dashboard, tersimpan di localStorage).
+let voiceVol = 1;
+let voiceRate = 1;
 
 function warmVoice() {
   try {
@@ -54,6 +57,8 @@ function speak(text: string) {
     try {
       const url = "/api/tts?text=" + encodeURIComponent(t);
       const a = new Audio(url);
+      a.volume = Math.min(1, Math.max(0, voiceVol));
+      a.playbackRate = Math.min(2, Math.max(0.5, voiceRate));
       a.onended = next;
       a.onerror = next;
       a.play().catch(() => next());
@@ -76,6 +81,17 @@ export default function ScannerPage() {
   const [offlineCount, setOfflineCount] = useState(0);
   const [lastScan, setLastScan] = useState<{ name: string; className: string | null; duplicate: boolean } | null>(null);
   const [toastScan, setToastScan] = useState<{ title: string; desc: string; duplicate: boolean } | null>(null);
+  // Kontrol volume (0–100%) & kecepatan suara TTS (0.5–2x). Tersimpan per perangkat.
+  const [vol, setVol] = useState(100);
+  const [rate, setRate] = useState(1);
+  useEffect(() => {
+    try {
+      const v = Number(localStorage.getItem("tts-vol") ?? 100);
+      const r = Number(localStorage.getItem("tts-rate") ?? 1);
+      if (Number.isFinite(v)) { setVol(Math.min(100, Math.max(0, v))); voiceVol = Math.min(1, Math.max(0, v / 100)); }
+      if (Number.isFinite(r)) { setRate(Math.min(2, Math.max(0.5, r))); voiceRate = Math.min(2, Math.max(0.5, r)); }
+    } catch { /* abaikan */ }
+  }, []);
   const scanning = useRef(false);
   // Cegah suara ganda: event socket untuk scan yang sama tiba <3 dtk setelah suara lokal.
   const lastSpokeAt = useRef(0);
@@ -252,6 +268,45 @@ export default function ScannerPage() {
             : <Btn kind="ghost" type="button" onClick={stopCamera}>Matikan kamera</Btn>}
           <Btn kind="ghost" type="button" onClick={warmVoice}>Aktifkan suara</Btn>
         </Toolbar>
+
+        {/* KONTROL VOLUME & KECEPATAN SUARA TTS */}
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 14, background: "rgba(23,23,22,.04)", border: "1px solid rgba(23,23,22,.1)", borderRadius: 14, padding: "12px 16px", margin: "12px 0 16px" }}>
+          <label style={{ display: "grid", gap: 6, fontSize: 13, fontWeight: 700, color: "#171716" }}>
+            <span>Volume TTS: <span style={{ color: "#e85e43" }}>{vol}%</span></span>
+            <input
+              type="range"
+              min="0"
+              max="100"
+              step="5"
+              value={vol}
+              onChange={(e) => {
+                const nv = Number(e.target.value);
+                setVol(nv);
+                voiceVol = nv / 100;
+                try { localStorage.setItem("tts-vol", String(nv)); } catch {}
+              }}
+              style={{ accentColor: "#e85e43", cursor: "pointer" }}
+            />
+          </label>
+
+          <label style={{ display: "grid", gap: 6, fontSize: 13, fontWeight: 700, color: "#171716" }}>
+            <span>Kecepatan: <span style={{ color: "#e85e43" }}>{rate}x</span></span>
+            <input
+              type="range"
+              min="0.5"
+              max="2.0"
+              step="0.1"
+              value={rate}
+              onChange={(e) => {
+                const nr = Math.round(Number(e.target.value) * 10) / 10;
+                setRate(nr);
+                voiceRate = nr;
+                try { localStorage.setItem("tts-rate", String(nr)); } catch {}
+              }}
+              style={{ accentColor: "#e85e43", cursor: "pointer" }}
+            />
+          </label>
+        </div>
         <Note>Di iPhone: ketuk “Aktifkan suara” sekali agar nama terbaca lantang saat scan.</Note>
         <video ref={videoRef} playsInline muted style={{ width: "100%", maxWidth: 480, background: "#171716", borderRadius: 16 }} />
         <form onSubmit={(e) => { e.preventDefault(); if (manual.trim()) { void postToken(manual.trim()); setManual(""); } }} style={{ display: "grid", gap: 10, marginTop: 12, maxWidth: 480 }}>
