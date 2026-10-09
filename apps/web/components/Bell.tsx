@@ -2,7 +2,7 @@
 
 // Bell: lonceng notifikasi in-app + push notification + toast banner + suara audio chime.
 import { useEffect, useRef, useState } from "react";
-import { io, type Socket } from "socket.io-client";
+import type { Socket } from "socket.io-client";
 import { api, useFetch } from "@/app/lib/api";
 import BellToggle from "./BellToggle";
 import SwipeToast from "./SwipeToast";
@@ -174,11 +174,15 @@ export default function Bell() {
   useEffect(() => { reloadRef.current = reload; }, [reload]);
   useEffect(() => {
     let sock: Socket | null = null;
-    try {
-      sock = io({ path: "/socket.io/" });
-      sock.on("notif:new", () => { reloadRef.current(); });
-    } catch { /* abaikan bila socket gagal */ }
-    return () => { sock?.disconnect(); };
+    let active = true;
+    import("socket.io-client")
+      .then(({ io }) => {
+        if (!active) return;
+        sock = io({ path: "/socket.io/" });
+        sock.on("notif:new", () => { reloadRef.current(); });
+      })
+      .catch(() => { /* abaikan bila socket gagal */ });
+    return () => { active = false; sock?.disconnect(); };
   }, []);
 
   // Polling cadangan tiap 60 detik (bila WS terputus)
