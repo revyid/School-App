@@ -52,6 +52,7 @@ export const settingsSchema = z.object({
   defaultPasswordMode: z.enum(["random", "nisn"]).optional().default("random"),
   // Template ucapan TTS scanner absensi (variabel: {{name}}, {{class}}).
   ttsPhrase: z.string().trim().min(1).max(200).optional().default("{{name}} sudah hadir"),
+  ttsPhraseDup: z.string().trim().min(1).max(200).optional().default("{{name}} sudah di catat"),
   expRules: expRulesSchema.optional().nullable(),
 });
 

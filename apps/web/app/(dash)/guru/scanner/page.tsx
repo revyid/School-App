@@ -8,6 +8,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { io, type Socket } from "socket.io-client";
 import { api, useFetch } from "@/app/lib/api";
 import { PageHead, Panel, Toolbar, TextInput, Btn, Badge, Note, LinkBtn } from "@/components/DashUI";
+import SwipeToast from "@/components/SwipeToast";
 
 interface ScanItem { token: string; at: number; tries: number }
 const QUEUE_KEY = "att-offline-queue";
@@ -64,8 +65,9 @@ function speak(text: string) {
 }
 
 export default function ScannerPage() {
-  const { data: settingsData } = useFetch<{ settings: { ttsPhrase?: string } }>("/api/settings");
+  const { data: settingsData } = useFetch<{ settings: { ttsPhrase?: string; ttsPhraseDup?: string } }>("/api/settings");
   const ttsTemplate = settingsData?.settings?.ttsPhrase || "{{name}} sudah hadir";
+  const ttsTemplateDup = settingsData?.settings?.ttsPhraseDup || "{{name}} sudah di catat";
 
   const videoRef = useRef<HTMLVideoElement>(null);
   const [streaming, setStreaming] = useState(false);
@@ -73,15 +75,16 @@ export default function ScannerPage() {
   const [msg, setMsg] = useState<string | null>(null);
   const [offlineCount, setOfflineCount] = useState(0);
   const [lastScan, setLastScan] = useState<{ name: string; className: string | null; duplicate: boolean } | null>(null);
+  const [toastScan, setToastScan] = useState<{ title: string; desc: string; duplicate: boolean } | null>(null);
   const scanning = useRef(false);
   // Cegah suara ganda: event socket untuk scan yang sama tiba <3 dtk setelah suara lokal.
   const lastSpokeAt = useRef(0);
 
-  const formatText = useCallback((name: string, className?: string | null) => {
-    return ttsTemplate
+  const formatText = useCallback((tmpl: string, name: string, className?: string | null) => {
+    return tmpl
       .replace(/\{\{\s*name\s*\}\}/gi, name)
       .replace(/\{\{\s*class\s*\}\}/gi, className || "");
-  }, [ttsTemplate]);
+  }, []);
 
   const postToken = useCallback(async (token: string): Promise<boolean> => {
     try {
@@ -97,12 +100,21 @@ export default function ScannerPage() {
       }
       const nama: string = d.student?.name ?? "-";
       const cls: string | null = d.student?.className ?? null;
-      setLastScan({ name: nama, className: cls, duplicate: !!d.duplicate });
-      setMsg(d.duplicate ? `Sudah tercatat (${d.reason === "cooldown" ? "baru saja" : "hari ini"})` : null);
-      // Bunyi langsung dari respons lokal — tidak menunggu socket/worker.
-      if (!d.duplicate && nama !== "-") {
+      const isDup = !!d.duplicate;
+      const reason: string = typeof d.reason === "string" ? d.reason : "";
+      setLastScan({ name: nama, className: cls, duplicate: isDup });
+      setMsg(isDup ? `Sudah tercatat (${reason === "cooldown" ? "baru saja" : "hari ini"})` : null);
+
+      if (nama !== "-") {
         lastSpokeAt.current = Date.now();
-        speak(formatText(nama, cls));
+        const tmpl = isDup ? ttsTemplateDup : ttsTemplate;
+        speak(formatText(tmpl, nama, cls));
+
+        setToastScan({
+          title: isDup ? "Sudah Dicatat" : "Absensi Berhasil",
+          desc: `${nama}${cls ? ` (${cls})` : ""} — ${isDup ? "kehadiran sudah terekam" : "hadir"}`,
+          duplicate: isDup,
+        });
       }
       return true;
     } catch {
@@ -114,7 +126,7 @@ export default function ScannerPage() {
       setMsg("Offline — scan diantrekan, otomatis dikirim saat online");
       return false;
     }
-  }, [formatText]);
+  }, [formatText, ttsTemplate, ttsTemplateDup]);
 
   // Retry antrean offline tiap 10 detik + saat online kembali.
   useEffect(() => {
@@ -156,13 +168,13 @@ export default function ScannerPage() {
       sock.on("att:scan", (ev: { name: string; className?: string | null }) => {
         if (!ev?.name) return;
         if (Date.now() - lastSpokeAt.current < 3000) return;
-        speak(formatText(ev.name, ev.className ?? null));
+        speak(formatText(ttsTemplate, ev.name, ev.className ?? null));
       });
     } catch { /* abaikan bila socket gagal */ }
     return () => {
       sock?.disconnect();
     };
-  }, [formatText]);
+  }, [formatText, ttsTemplate]);
 
   const startCamera = useCallback(async () => {
     if (streaming) return;
@@ -257,6 +269,22 @@ export default function ScannerPage() {
           </p>
         )}
       </Panel>
+
+      {/* TOAST POPUP NOTIFIKASI HASIL SCAN */}
+      <SwipeToast
+        open={!!toastScan}
+        onClose={() => setToastScan(null)}
+        title={toastScan?.title ?? ""}
+        description={toastScan?.desc ?? ""}
+        background={toastScan?.duplicate ? "#3d3215" : "#1a3b1e"}
+        color="#fff"
+        fuseColor={toastScan?.duplicate ? "#f5c94a" : "#4ade80"}
+        width={360}
+        radius={18}
+        duration={4000}
+        fuse="bottom"
+        closeButton={false}
+      />
     </>
   );
 }

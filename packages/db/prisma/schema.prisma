@@ -255,6 +255,8 @@ model SchoolSettings {
   defaultPasswordMode  String   @default("random")
   // Template ucapan TTS saat scan absensi berhasil (variabel: {{name}}, {{class}}).
   ttsPhrase            String   @default("{{name}} sudah hadir")
+  // Template ucapan TTS saat scan sudah dicatat/duplikat.
+  ttsPhraseDup         String   @default("{{name}} sudah di catat")
   // Aturan EXP per sekolah (JSON: {submitOnTime, hadirHarian, streakBonus, ...}).
   expRules             Json?
   updatedAt            DateTime @updatedAt
