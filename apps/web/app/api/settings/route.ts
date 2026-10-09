@@ -38,6 +38,7 @@ export async function GET(req: NextRequest) {
       studentRetentionDays: 90,
       photoRetentionDays: 30,
       defaultPasswordMode: "random",
+      ttsPhrase: "{{name}} sudah hadir",
     },
   });
 }

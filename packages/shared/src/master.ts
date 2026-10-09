@@ -50,6 +50,8 @@ export const settingsSchema = z.object({
   studentRetentionDays: z.number().int().min(7).max(3650).optional().default(90),
   photoRetentionDays: z.number().int().min(1).max(3650).optional().default(30),
   defaultPasswordMode: z.enum(["random", "nisn"]).optional().default("random"),
+  // Template ucapan TTS scanner absensi (variabel: {{name}}, {{class}}).
+  ttsPhrase: z.string().trim().min(1).max(200).optional().default("{{name}} sudah hadir"),
   expRules: expRulesSchema.optional().nullable(),
 });
 

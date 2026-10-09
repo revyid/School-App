@@ -45,6 +45,7 @@ export default function SettingsPage() {
         studentRetentionDays: String(s.studentRetentionDays ?? 90),
         photoRetentionDays: String(s.photoRetentionDays ?? 30),
         defaultPasswordMode: String(s.defaultPasswordMode ?? "random"),
+        ttsPhrase: String(s.ttsPhrase ?? "{{name}} sudah hadir"),
       });
     }
   }, [data]);
@@ -63,6 +64,7 @@ export default function SettingsPage() {
         studentRetentionDays: Number(f.studentRetentionDays),
         photoRetentionDays: Number(f.photoRetentionDays),
         defaultPasswordMode: f.defaultPasswordMode === "nisn" ? "nisn" : "random",
+        ttsPhrase: (f.ttsPhrase ?? "").trim() || "{{name}} sudah hadir",
       }),
     });
     const d = await res.json().catch(() => ({}));
@@ -116,6 +118,10 @@ export default function SettingsPage() {
               <option value="nisn">NISN (minta ganti saat login pertama)</option>
             </TextSelect>
           </label>
+          <label style={{ display: "grid", gap: 6, fontSize: 13, color: "#74746d" }}>Ucapan suara absensi (TTS scanner) — pakai {"{{name}}"} dan {"{{class}}"}
+            <TextInput value={f.ttsPhrase ?? ""} onChange={set("ttsPhrase")} placeholder="{{name}} sudah hadir" />
+          </label>
+          <Note>Contoh: {"{{name}}"} sudah hadir → “Revy sudah hadir”. Berlaku untuk scan lokal & scanner lain via realtime.</Note>
           <Toolbar><Btn onClick={save}>Simpan</Btn></Toolbar>
           {msg && <p style={{ fontWeight: 700 }}>{msg}</p>}
         </div>

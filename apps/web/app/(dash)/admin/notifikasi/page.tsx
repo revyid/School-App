@@ -9,6 +9,7 @@ export default function NotifikasiAdminPage() {
   const [body, setBody] = useState("");
   const [targetRole, setTargetRole] = useState<"ALL" | "SISWA" | "GURU">("ALL");
   const [busy, setBusy] = useState(false);
+  const [testBusy, setTestBusy] = useState(false);
   const [msg, setMsg] = useState<{ type: "ok" | "err"; text: string } | null>(null);
 
   async function handleSend(e: React.FormEvent) {
@@ -41,6 +42,24 @@ export default function NotifikasiAdminPage() {
     }
   }
 
+  async function handleTestPush() {
+    setTestBusy(true);
+    setMsg(null);
+    try {
+      const res = await api("/api/push/test", { method: "POST" });
+      const d = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setMsg({ type: "err", text: d.error || "Uji push gagal." });
+      } else {
+        setMsg({ type: "ok", text: "Notifikasi uji terkirim — cek lonceng, toast, dan push HP/browser." });
+      }
+    } catch {
+      setMsg({ type: "err", text: "Koneksi bermasalah." });
+    } finally {
+      setTestBusy(false);
+    }
+  }
+
   return (
     <>
       <PageHead
@@ -50,7 +69,12 @@ export default function NotifikasiAdminPage() {
       />
 
       <Panel style={{ maxWidth: 640 }}>
-        <h2 className="display" style={{ fontSize: 18, margin: "0 0 16px" }}>Buat Pesan Notifikasi</h2>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16, gap: 12, flexWrap: "wrap" }}>
+          <h2 className="display" style={{ fontSize: 18, margin: 0 }}>Buat Pesan Notifikasi</h2>
+          <Btn type="button" kind="ghost" onClick={handleTestPush} disabled={testBusy}>
+            {testBusy ? "Menguji…" : "Kirim notifikasi uji ke saya"}
+          </Btn>
+        </div>
         <form onSubmit={handleSend} style={{ display: "grid", gap: 14 }}>
           <label style={{ display: "grid", gap: 6, fontSize: 13, color: "#74746d" }}>
             Target Penerima:

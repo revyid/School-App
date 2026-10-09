@@ -59,7 +59,9 @@ async function subscribePush(): Promise<boolean> {
     const r = await fetch("/api/push/vapid-public");
     const { publicKey } = await r.json();
 
-    const reg = await navigator.serviceWorker.register("/sw-push.js", { scope: "/" });
+    // WAJIB satu worker: /sw.js (cache + push). Jangan /sw-push.js scope "/" —
+    // itu menggantikan worker utama, subscription mati, Android tidak bunyi.
+    const reg = await navigator.serviceWorker.register("/sw.js", { scope: "/" });
     await navigator.serviceWorker.ready;
 
     const existing = await reg.pushManager.getSubscription();
@@ -464,7 +466,8 @@ export default function Bell() {
             display: "grid",
             placeItems: "center",
             padding: "clamp(12px, 3vw, 20px)",
-            zIndex: 100,
+            // Di atas dropdown bell (z 9999 di mobile) + header sticky.
+            zIndex: 10000,
           }}
           onClick={() => setActiveNotif(null)}
         >

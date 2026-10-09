@@ -151,9 +151,23 @@ input, select, button, textarea {
   from { transform: scaleX(0); }
   to { transform: scaleX(1); }
 }
-.anim-floaty { animation: floaty 3.6s ease-in-out infinite; }
+/* Karakter/statis: jangan melayang — diam agar tenang & hemat baterai. */
+.anim-floaty { animation: none !important; transform: none !important; }
 .anim-breathe { animation: breathe 3.2s ease-in-out infinite; }
 .anim-drift { animation: drift 4.5s ease-in-out infinite; }
+
+/* --- Efek tekan tactile di semua halaman (ringan, tanpa JS) --- */
+button, a, .btn-sticker, .card-lift, .ebook-card {
+  -webkit-tap-highlight-color: transparent;
+}
+button:active, a:active, .btn-sticker:active {
+  transform: scale(0.965) translateY(1px);
+  transition: transform 0.08s ease-out;
+}
+.card-lift:active, .ebook-card:active {
+  transform: scale(0.985);
+  transition: transform 0.08s ease-out;
+}
 
 /* --- Dot ping (streak/kehadiran) --- */
 @keyframes dot-ping {

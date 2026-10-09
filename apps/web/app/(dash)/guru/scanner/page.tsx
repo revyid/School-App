@@ -6,7 +6,7 @@
 // (antre agar tidak tumpang tindih) saat event realtime Socket.io tiba.
 import { useCallback, useEffect, useRef, useState } from "react";
 import { io, type Socket } from "socket.io-client";
-import { api } from "@/app/lib/api";
+import { api, useFetch } from "@/app/lib/api";
 import { PageHead, Panel, Toolbar, TextInput, Btn, Badge, Note, LinkBtn } from "@/components/DashUI";
 
 interface ScanItem { token: string; at: number; tries: number }
@@ -87,6 +87,9 @@ function speak(text: string) {
 }
 
 export default function ScannerPage() {
+  const { data: settingsData } = useFetch<{ settings: { ttsPhrase?: string } }>("/api/settings");
+  const ttsTemplate = settingsData?.settings?.ttsPhrase || "{{name}} sudah hadir";
+
   const videoRef = useRef<HTMLVideoElement>(null);
   const [streaming, setStreaming] = useState(false);
   const [manual, setManual] = useState("");
@@ -96,6 +99,12 @@ export default function ScannerPage() {
   const scanning = useRef(false);
   // Cegah suara ganda: event socket untuk scan yang sama tiba <3 dtk setelah suara lokal.
   const lastSpokeAt = useRef(0);
+
+  const formatText = useCallback((name: string, className?: string | null) => {
+    return ttsTemplate
+      .replace(/\{\{\s*name\s*\}\}/gi, name)
+      .replace(/\{\{\s*class\s*\}\}/gi, className || "");
+  }, [ttsTemplate]);
 
   const postToken = useCallback(async (token: string): Promise<boolean> => {
     try {
@@ -110,12 +119,13 @@ export default function ScannerPage() {
         return false;
       }
       const nama: string = d.student?.name ?? "-";
-      setLastScan({ name: nama, className: d.student?.className ?? null, duplicate: !!d.duplicate });
+      const cls: string | null = d.student?.className ?? null;
+      setLastScan({ name: nama, className: cls, duplicate: !!d.duplicate });
       setMsg(d.duplicate ? `Sudah tercatat (${d.reason === "cooldown" ? "baru saja" : "hari ini"})` : null);
       // Bunyi langsung dari respons lokal — tidak menunggu socket/worker.
       if (!d.duplicate && nama !== "-") {
         lastSpokeAt.current = Date.now();
-        speak(`${nama} sudah hadir`);
+        speak(formatText(nama, cls));
       }
       return true;
     } catch {
@@ -127,7 +137,7 @@ export default function ScannerPage() {
       setMsg("Offline — scan diantrekan, otomatis dikirim saat online");
       return false;
     }
-  }, []);
+  }, [formatText]);
 
   // Retry antrean offline tiap 10 detik + saat online kembali.
   useEffect(() => {
@@ -166,16 +176,16 @@ export default function ScannerPage() {
     let sock: Socket | null = null;
     try {
       sock = io({ path: "/socket.io/" });
-      sock.on("att:scan", (ev: { name: string }) => {
+      sock.on("att:scan", (ev: { name: string; className?: string | null }) => {
         if (!ev?.name) return;
         if (Date.now() - lastSpokeAt.current < 3000) return;
-        speak(`${ev.name} sudah hadir`);
+        speak(formatText(ev.name, ev.className ?? null));
       });
     } catch { /* abaikan bila socket gagal */ }
     return () => {
       sock?.disconnect();
     };
-  }, []);
+  }, [formatText]);
 
   const startCamera = useCallback(async () => {
     if (streaming) return;
