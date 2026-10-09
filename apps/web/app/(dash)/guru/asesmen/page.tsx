@@ -19,6 +19,7 @@ export default function AsesmenGuruPage() {
   const [classId, setClassId] = useState("");
   const [title, setTitle] = useState("");
   const [kind, setKind] = useState("REGULAR");
+  const [questionType, setQuestionType] = useState<"MCQ" | "SORTING">("MCQ");
   const [stem, setStem] = useState("");
   const [options, setOptions] = useState("A\nB\nC\nD");
   const [correct, setCorrect] = useState(0);
@@ -43,7 +44,7 @@ export default function AsesmenGuruPage() {
       headers: { "content-type": "application/json" },
       body: JSON.stringify({
         classId, title, kind,
-        inline: [{ type: "MCQ", stem, options: opsiList, correctIndex: correct }],
+        inline: [{ type: questionType, stem, options: opsiList, correctIndex: questionType === "MCQ" ? correct : null }],
       }),
     });
     const d = await res.json().catch(() => ({}));
@@ -58,9 +59,9 @@ export default function AsesmenGuruPage() {
 
   return (
     <>
-      <PageHead kicker="Ujian" title="Asesmen kelas" desc="Buat ujian baru, lalu lihat analisis butir soal dan sebaran nilai." />
+      <PageHead kicker="Ujian" title="Asesmen kelas" desc="Buat ujian baru dengan soal pilihan ganda atau mengurutkan item." />
       <Panel style={{ marginBottom: 16 }}>
-        <h2 className="display" style={{ fontSize: 18, margin: "0 0 12px" }}>Buat baru (1 soal MCQ inline)</h2>
+        <h2 className="display" style={{ fontSize: 18, margin: "0 0 12px" }}>Buat baru (1 soal)</h2>
         <form onSubmit={buat} style={{ display: "grid", gap: 12, maxWidth: 560 }}>
           <label style={{ display: "grid", gap: 6, fontSize: 13, color: "#74746d" }}>
             Kelas:
@@ -83,6 +84,13 @@ export default function AsesmenGuruPage() {
             </TextSelect>
           </label>
           <label style={{ display: "grid", gap: 6, fontSize: 13, color: "#74746d" }}>
+            Tipe soal:
+            <TextSelect value={questionType} onChange={(e) => setQuestionType(e.target.value as "MCQ" | "SORTING")}>
+              <option value="MCQ">Pilihan ganda</option>
+              <option value="SORTING">Urutkan item</option>
+            </TextSelect>
+          </label>
+          <label style={{ display: "grid", gap: 6, fontSize: 13, color: "#74746d" }}>
             Soal:
             <textarea value={stem} onChange={(e) => setStem(e.target.value)} required rows={3} style={{ borderRadius: 14, border: "1px solid rgba(23,23,22,.25)", background: "#fffdf8", padding: "9px 14px", fontSize: 14 }} />
           </label>
@@ -91,14 +99,16 @@ export default function AsesmenGuruPage() {
             <textarea value={options} onChange={(e) => setOptions(e.target.value)} rows={4} style={{ borderRadius: 14, border: "1px solid rgba(23,23,22,.25)", background: "#fffdf8", padding: "9px 14px", fontSize: 14 }} />
           </label>
           <div style={{ display: "grid", gap: 6, fontSize: 13, color: "#74746d" }}>
-            <span>Jawaban benar:</span>
-            {opsiList.length === 0 && <span style={{ fontSize: 12 }}>Isi opsi dulu di atas.</span>}
-            {opsiList.map((o, i) => (
-              <label key={i} style={{ display: "flex", gap: 8, alignItems: "center", fontSize: 14, color: "#171716" }}>
-                <input type="radio" name="correct" checked={correct === i} onChange={() => setCorrect(i)} />
-                Opsi {i + 1}{o ? `: ${o.slice(0, 60)}` : ""}
-              </label>
-            ))}
+            {questionType === "MCQ" ? <>
+              <span>Jawaban benar:</span>
+              {opsiList.length === 0 && <span style={{ fontSize: 12 }}>Isi opsi dulu di atas.</span>}
+              {opsiList.map((o, i) => (
+                <label key={i} style={{ display: "flex", gap: 8, alignItems: "center", fontSize: 14, color: "#171716" }}>
+                  <input type="radio" name="correct" checked={correct === i} onChange={() => setCorrect(i)} />
+                  Opsi {i + 1}{o ? `: ${o.slice(0, 60)}` : ""}
+                </label>
+              ))}
+            </> : <span style={{ fontSize: 12 }}>Urutan item pada kolom opsi akan menjadi urutan jawaban yang benar.</span>}
           </div>
           <Toolbar><Btn type="submit">Buat asesmen</Btn></Toolbar>
         </form>

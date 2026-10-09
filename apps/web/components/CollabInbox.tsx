@@ -5,7 +5,7 @@ import { useState } from "react";
 import { api, useFetch } from "@/app/lib/api";
 import { PageHead, Panel, Toolbar, TextInput, Btn, Badge, Note } from "@/components/DashUI";
 
-interface Msg { id: string; authorId: string; body: string; fileName: string | null; createdAt: string }
+interface Msg { id: string; authorId: string; body: string; fileName: string | null; fileMime?: string | null; createdAt: string }
 interface Thread {
   id: string; subject: string; anonymous: boolean; sender: string; revealed: boolean;
   messages: Msg[];
@@ -124,7 +124,13 @@ export default function CollabPage({ role }: { role: "GURU" | "SISWA" }) {
                   {t.messages.map((m) => (
                     <li key={m.id}>
                       {m.body}{" "}
-                      {m.fileName && <a href={`/api/collab/${t.id}/file?m=${m.id}`} target="_blank" rel="noreferrer">[lampiran]</a>}
+                      {m.fileName && (
+                        <span style={{ display: "grid", gap: 6, marginTop: 8, maxWidth: "100%" }}>
+                          <a href={`/api/collab/${t.id}/file?m=${m.id}`} target="_blank" rel="noreferrer">Buka/unduh {m.fileName}</a>
+                          {m.fileMime?.startsWith("image/") && <img src={`/api/collab/${t.id}/file?m=${m.id}`} alt={`Lampiran ${m.fileName}`} style={{ maxWidth: "100%", width: "min(420px, 100%)", maxHeight: 360, objectFit: "contain", borderRadius: 10, border: "1px solid rgba(23,23,22,.14)" }} />}
+                          {m.fileMime === "application/pdf" && <iframe title={`Preview ${m.fileName}`} src={`/api/collab/${t.id}/file?m=${m.id}`} style={{ width: "100%", minHeight: 280, border: "1px solid rgba(23,23,22,.14)", borderRadius: 10 }} />}
+                        </span>
+                      )}
                     </li>
                   ))}
                 </ul>

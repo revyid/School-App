@@ -58,10 +58,12 @@ async function subscribePush(): Promise<boolean> {
 
     const r = await fetch("/api/push/vapid-public");
     const { publicKey } = await r.json();
+    if (!r.ok || !publicKey) throw new Error("VAPID public key belum dikonfigurasi");
 
     // WAJIB satu worker: /sw.js (cache + push). Jangan /sw-push.js scope "/" —
     // itu menggantikan worker utama, subscription mati, Android tidak bunyi.
     const reg = await navigator.serviceWorker.register("/sw.js", { scope: "/" });
+    await reg.update().catch(() => {});
     await navigator.serviceWorker.ready;
 
     const existing = await reg.pushManager.getSubscription();
@@ -124,6 +126,7 @@ export default function Bell() {
 
   const [pushState, setPushState] = useState<"unknown" | "on" | "off">("unknown");
   const [pushLoading, setPushLoading] = useState(false);
+  const [pushError, setPushError] = useState<string | null>(null);
 
   const ref = useRef<HTMLDivElement>(null);
   const lastUnreadRef = useRef<number | null>(null);
@@ -221,12 +224,14 @@ export default function Bell() {
 
   async function togglePush() {
     setPushLoading(true);
+    setPushError(null);
     if (pushState === "on") {
       await unsubscribePush().catch(() => {});
       setPushState("off");
     } else {
       const ok = await subscribePush();
       setPushState(ok ? "on" : "off");
+      if (!ok) setPushError("Notifikasi gagal diaktifkan. Pastikan HTTPS, izin browser, dan VAPID server tersedia.");
     }
     setPushLoading(false);
   }
@@ -360,7 +365,7 @@ export default function Bell() {
                       padding: "12px 18px",
                       borderBottom: "1px solid rgba(23,23,22,.07)",
                       display: "grid",
-                      gridTemplateColumns: "10px 1fr auto",
+                      gridTemplateColumns: "10px minmax(0, 1fr) auto",
                       gap: "0 10px",
                       alignItems: "start",
                       background: isUnread ? "rgba(232,94,67,.05)" : "transparent",
@@ -407,6 +412,8 @@ export default function Bell() {
                           WebkitLineClamp: 2,
                           WebkitBoxOrient: "vertical",
                           overflow: "hidden",
+                          overflowWrap: "anywhere",
+                          wordBreak: "break-word",
                         }}
                       >
                         {n.body}
@@ -449,6 +456,7 @@ export default function Bell() {
                 onChange={() => togglePush()}
               />
             </div>
+            {pushError && <p style={{ margin: "0", padding: "0 18px 12px", color: "#c94b35", fontSize: 11, overflowWrap: "anywhere" }}>{pushError}</p>}
             </div>
           </>
         )}
@@ -541,7 +549,9 @@ export default function Bell() {
                 fontSize: 14,
                 lineHeight: 1.65,
                 color: "#171716",
-                whiteSpace: "pre-wrap",
+                  whiteSpace: "pre-wrap",
+                  overflowWrap: "anywhere",
+                  wordBreak: "break-word",
                 border: "1px solid rgba(23,23,22,.1)",
               }}
             >

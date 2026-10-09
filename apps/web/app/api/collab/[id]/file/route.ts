@@ -43,17 +43,20 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
     return NextResponse.json({ error: "file tidak ditemukan" }, { status: 404 });
   }
   const buf = await readFile(abs);
-  const ext = m.fileName.split(".").pop() ?? "bin";
+  const ext = (m.fileName.split(".").pop() ?? "bin").toLowerCase();
   const ctype =
     ext === "pdf" ? "application/pdf"
     : ext === "png" ? "image/png"
+    : ext === "jpg" || ext === "jpeg" ? "image/jpeg"
+    : ext === "gif" ? "image/gif"
+    : ext === "webp" ? "image/webp"
     : ext === "zip" ? "application/zip"
-    : "image/jpeg";
+    : "application/octet-stream";
   return new NextResponse(new Uint8Array(buf), {
     headers: {
       "content-type": ctype,
       "content-length": String(st.size),
-      "content-disposition": 'attachment; filename="lampiran"',
+      "content-disposition": `inline; filename="${m.fileName.replace(/[^a-zA-Z0-9._-]/g, "_")}"`,
       "x-content-type-options": "nosniff",
       "cache-control": "private, max-age=3600",
     },
