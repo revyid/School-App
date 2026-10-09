@@ -25,6 +25,13 @@ export interface ScanEvent {
   scannedAt: string;
 }
 
+export interface NotifEvent {
+  schoolId: string;
+  userId?: string | null;
+  title: string;
+  body: string;
+}
+
 export async function publishScan(ev: ScanEvent): Promise<void> {
   await pubRedis.connect().catch(() => {});
   await pubRedis.publish("att:scan", JSON.stringify(ev));
@@ -61,12 +68,18 @@ export function attachRealtime(io: SocketServer): void {
   });
 
   sub.connect().catch(() => {});
-  sub.subscribe("att:scan").catch(() => {});
-  sub.on("message", (_ch, raw) => {
+  sub.subscribe("att:scan", "att:notif").catch(() => {});
+  sub.on("message", (ch, raw) => {
     try {
-      const ev = JSON.parse(raw) as ScanEvent;
-      if (!ev.schoolId) return;
-      io.to(`school:${ev.schoolId}`).emit("att:scan", ev);
+      if (ch === "att:scan") {
+        const ev = JSON.parse(raw) as ScanEvent;
+        if (!ev.schoolId) return;
+        io.to(`school:${ev.schoolId}`).emit("att:scan", ev);
+      } else if (ch === "att:notif") {
+        const ev = JSON.parse(raw) as NotifEvent;
+        if (!ev.schoolId) return;
+        io.to(`school:${ev.schoolId}`).emit("notif:new", ev);
+      }
     } catch {
       // abaikan payload rusak
     }
