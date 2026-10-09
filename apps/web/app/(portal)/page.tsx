@@ -37,7 +37,7 @@ export default function PortalPage() {
 
   return (
     <div style={{ background: "#eeeadd", minHeight: "100vh" }}>
-      <div style={{ maxWidth: 1600, margin: "0 auto", background: "#f7f4ec", overflow: "clip" }}>
+      <main style={{ maxWidth: 1600, margin: "0 auto", background: "#f7f4ec", overflow: "clip" }}>
 
         {/* NAVBAR */}
         <header
@@ -58,12 +58,12 @@ export default function PortalPage() {
         >
           <PublicLogo name={nama} />
           <nav style={{ display: "flex", gap: "clamp(18px, 3vw, 44px)", marginLeft: "auto", fontSize: 12, fontWeight: 600 }} className="portal-nav">
-            <a href="#tentang" style={{ color: "#74746d", textDecoration: "none" }}>Tentang</a>
-            <a href="#program" style={{ color: "#74746d", textDecoration: "none" }}>Program</a>
-            <a href="#mapel" style={{ color: "#74746d", textDecoration: "none" }}>Mapel</a>
-            <a href="#pengumuman" style={{ color: "#74746d", textDecoration: "none" }}>Pengumuman</a>
-            <a href="#lokasi" style={{ color: "#74746d", textDecoration: "none" }}>Lokasi</a>
-            <a href="/tools" style={{ color: "#74746d", textDecoration: "none" }}>Tools 🛠️</a>
+            <a href="#tentang" style={{ color: "#575752", textDecoration: "none" }}>Tentang</a>
+            <a href="#program" style={{ color: "#575752", textDecoration: "none" }}>Program</a>
+            <a href="#mapel" style={{ color: "#575752", textDecoration: "none" }}>Mapel</a>
+            <a href="#pengumuman" style={{ color: "#575752", textDecoration: "none" }}>Pengumuman</a>
+            <a href="#lokasi" style={{ color: "#575752", textDecoration: "none" }}>Lokasi</a>
+            <a href="/tools" style={{ color: "#575752", textDecoration: "none" }}>Tools 🛠️</a>
             <a href="/siswa/inbox" style={{ color: "#e85e43", textDecoration: "none", fontWeight: 700 }}>Pesan Anonim ✉</a>
           </nav>
           
@@ -101,7 +101,7 @@ export default function PortalPage() {
           {/* kiri: siswi — student-hero-transparent (aset baru), fallback char-girl */}
           <div className="portal-hero-side hero-left" style={{ position: "relative", zIndex: 2, justifySelf: "start", width: "min(100%, 250px)", height: 370, transform: "rotate(-5deg)" }}>
             <div style={{ position: "absolute", inset: "40px 0 0", background: "#f5c94a", borderRadius: "48% 52% 38% 62% / 52% 41% 59% 48%", transform: "rotate(-10deg)" }} />
-            <Image src="/assets/student-hero-transparent.png" alt="Ilustrasi siswi membawa buku" fill className="anim-floaty" style={{ objectFit: "contain", objectPosition: "center bottom" }} priority />
+            <Image src="/assets/student-hero-transparent.webp" alt="Ilustrasi siswi membawa buku" fill sizes="(max-width: 900px) 0px, 250px" className="anim-floaty" style={{ objectFit: "contain", objectPosition: "center bottom" }} priority />
             <span style={{ position: "absolute", top: 36, left: -28, width: 52, height: 52, display: "grid", placeItems: "center", border: "1px solid #171716", borderRadius: "50%", background: "#fffdf8", boxShadow: "4px 5px 0 #171716", fontSize: 25 }} aria-hidden="true">✎</span>
             <span style={{ position: "absolute", bottom: 33, left: -60, padding: "10px 13px", border: "1px solid #171716", borderRadius: 14, background: "#fffdf8", fontFamily: "var(--font-meta)", fontSize: 8, textTransform: "uppercase", boxShadow: "3px 4px 0 #171716", transform: "rotate(-8deg)" }}>
               kelas<br /><strong style={{ fontFamily: "var(--font-display)", fontSize: 12 }}>ceria</strong>
@@ -118,7 +118,7 @@ export default function PortalPage() {
               <h1 className="display" style={{ fontSize: "clamp(44px, 5.4vw, 84px)", margin: "21px auto 19px", maxWidth: 640, lineHeight: 1.02 }}>
                 Belajar seru,<br /><em style={{ fontStyle: "normal", color: "#e85e43" }}>mimpi</em> melaju.
               </h1>
-              <p style={{ maxWidth: 370, margin: "0 auto", color: "#74746d", fontSize: 14, lineHeight: 1.75 }}>
+              <p style={{ maxWidth: 370, margin: "0 auto", color: "#575752", fontSize: 14, lineHeight: 1.75 }}>
                 {nama}: pengumuman, bacaan, dan lokasi dalam satu halaman.
               </p>
               <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 25, marginTop: 32, flexWrap: "wrap" }}>
@@ -132,7 +132,7 @@ export default function PortalPage() {
           {/* kanan: siswa — student-book (aset baru) */}
           <div className="portal-hero-side hero-right" style={{ position: "relative", zIndex: 2, justifySelf: "end", width: "min(100%, 250px)", height: 370, transform: "rotate(6deg)" }}>
             <div style={{ position: "absolute", inset: "40px 0 0", background: "#97c4db", borderRadius: "48% 52% 38% 62% / 52% 41% 59% 48%", transform: "rotate(10deg)" }} />
-            <Image src="/assets/student-book.png" alt="Ilustrasi siswa berkacamata membaca buku" fill className="anim-floaty" style={{ objectFit: "contain", objectPosition: "center bottom" }} priority />
+            <Image src="/assets/student-book.webp" alt="Ilustrasi siswa berkacamata membaca buku" fill sizes="(max-width: 900px) 0px, 250px" loading="lazy" className="anim-floaty" style={{ objectFit: "contain", objectPosition: "center bottom" }} />
             <span style={{ position: "absolute", top: 72, right: -27, width: 52, height: 52, display: "grid", placeItems: "center", border: "1px solid #171716", borderRadius: "50%", background: "#f5c94a", boxShadow: "4px 5px 0 #171716", fontSize: 25 }} aria-hidden="true">✺</span>
             <span style={{ position: "absolute", bottom: 66, right: -74, padding: "10px 13px", border: "1px solid #171716", borderRadius: 14, background: "#fffdf8", fontFamily: "var(--font-meta)", fontSize: 8, textTransform: "uppercase", boxShadow: "3px 4px 0 #171716", transform: "rotate(9deg)" }}>
               <strong style={{ fontFamily: "var(--font-display)", fontSize: 12 }}>{counts ? `${counts.students} siswa` : "…"}</strong><br />belajar di sini
@@ -141,7 +141,7 @@ export default function PortalPage() {
 
           {/* bawah: statistik */}
           <div className="portal-hero-bottom" style={{ gridColumn: "1 / -1", display: "flex", alignItems: "end", justifyContent: "space-between", gap: 20, paddingTop: 32, borderTop: "1px solid rgba(23,23,22,.14)", marginTop: 20 }}>
-            <span style={{ display: "flex", alignItems: "center", gap: 9, color: "#74746d", fontFamily: "var(--font-meta)", fontSize: 9, textTransform: "uppercase" }}>
+            <span style={{ display: "flex", alignItems: "center", gap: 9, color: "#575752", fontFamily: "var(--font-meta)", fontSize: 9, textTransform: "uppercase" }}>
               <span style={{ display: "grid", placeItems: "center", width: 25, height: 25, border: "1px solid rgba(23,23,22,.14)", borderRadius: "50%" }}>↓</span>
               jelajahi sekolah
             </span>
@@ -155,7 +155,7 @@ export default function PortalPage() {
                   <strong style={{ fontSize: 26, letterSpacing: "-0.08em" }}>
                     {n === undefined ? "…" : n}<span style={{ color: "#e85e43" }}>+</span>
                   </strong>
-                  <span style={{ color: "#74746d", fontFamily: "var(--font-meta)", fontSize: 9, textTransform: "uppercase" }}>{label}</span>
+                  <span style={{ color: "#575752", fontFamily: "var(--font-meta)", fontSize: 9, textTransform: "uppercase" }}>{label}</span>
                 </div>
               ))}
             </div>
@@ -171,7 +171,7 @@ export default function PortalPage() {
                 Anak hebat tumbuh dari rasa <span style={{ color: "#e85e43" }}>ingin tahu.</span>
               </h2>
               <div>
-                <p style={{ maxWidth: 400, marginBottom: 27, color: "#74746d", fontSize: 14, lineHeight: 1.75 }}>
+                <p style={{ maxWidth: 400, marginBottom: 27, color: "#575752", fontSize: 14, lineHeight: 1.75 }}>
                   {nama} mendampingi siswa belajar setiap hari: tugas, asesmen, kehadiran,
                   dan kabar sekolah, semua tercatat rapi dalam satu dasbor.
                 </p>
@@ -188,7 +188,7 @@ export default function PortalPage() {
               <h2 className="display" style={{ fontSize: "clamp(38px, 5.2vw, 72px)" }}>
                 Kecil-kecil,<br /><span style={{ color: "#e85e43" }}>berani besar.</span>
               </h2>
-              <p style={{ maxWidth: 245, color: "#74746d", fontSize: 12, lineHeight: 1.7 }}>
+              <p style={{ maxWidth: 245, color: "#575752", fontSize: 12, lineHeight: 1.7 }}>
                 Tiga hal yang membuat belajar di {nama} terasa dekat dan ingin diulang.
               </p>
             </div>
@@ -224,7 +224,7 @@ export default function PortalPage() {
                 <h2 className="display" style={{ fontSize: "clamp(38px, 5.2vw, 72px)" }}>
                   Satu tempat,<br /><span style={{ color: "#e85e43" }}>seribu kemungkinan.</span>
                 </h2>
-                <p style={{ maxWidth: 390, margin: "26px 0 29px", color: "#74746d", fontSize: 13, lineHeight: 1.75 }}>
+                <p style={{ maxWidth: 390, margin: "26px 0 29px", color: "#575752", fontSize: 13, lineHeight: 1.75 }}>
                   {subjects.length > 0
                     ? `Ada ${subjects.length} mata pelajaran aktif semester ini. Masuk untuk melihat tugas dan nilaimu.`
                     : "Jadwal dan mata pelajaran diatur admin sekolah. Masuk untuk melihat kelasmu."}
@@ -259,16 +259,16 @@ export default function PortalPage() {
               <h2 className="display" style={{ fontSize: "clamp(38px, 5.2vw, 72px)" }}>
                 Kabar dari<br /><span style={{ color: "#e85e43" }}>sekolah.</span>
               </h2>
-              <p style={{ maxWidth: 245, color: "#74746d", fontSize: 12, lineHeight: 1.7 }}>
+              <p style={{ maxWidth: 245, color: "#575752", fontSize: 12, lineHeight: 1.7 }}>
                 Pengumuman resmi {nama}. Masuk untuk kabar khusus kelasmu.
               </p>
             </div>
           </Reveal>
           {!info.data ? (
-            <p style={{ color: "#74746d" }}>Memuat…</p>
+            <p style={{ color: "#575752" }}>Memuat…</p>
           ) : ann.length === 0 ? (
             <div className="card" style={{ padding: 28 }}>
-              <p style={{ color: "#74746d", margin: 0 }}>Belum ada pengumuman. Kembali lagi nanti.</p>
+              <p style={{ color: "#575752", margin: 0 }}>Belum ada pengumuman. Kembali lagi nanti.</p>
             </div>
           ) : (
             <div className="portal-trio">
@@ -299,7 +299,7 @@ export default function PortalPage() {
               </h2>
             </Reveal>
             <Reveal delay={100}>
-              <p style={{ maxWidth: 400, color: "#74746d", fontSize: 14, lineHeight: 1.75 }}>
+              <p style={{ maxWidth: 400, color: "#575752", fontSize: 14, lineHeight: 1.75 }}>
                 Buku populer minggu ini dari katalog terbuka. Buka halaman rak untuk mencari judul lain.
               </p>
             </Reveal>
@@ -330,7 +330,7 @@ export default function PortalPage() {
               </div>
               <div style={{ position: "relative", minHeight: 470, padding: "24px 28px 10px 0" }}>
                 <div style={{ position: "absolute", left: "10%", top: "14%", width: 400, height: 400, maxWidth: "86%", maxHeight: "72%", borderRadius: "50%", background: "#f5c94a" }} />
-                <Image src="/assets/classroom-illustration.png" alt="Ilustrasi suasana kelas" fill style={{ objectFit: "cover", borderRadius: 24, zIndex: 2 }} />
+                <Image src="/assets/classroom-illustration.webp" alt="Ilustrasi suasana kelas" fill sizes="(max-width: 900px) 100vw, 600px" style={{ objectFit: "cover", borderRadius: 24, zIndex: 2 }} />
                 <span aria-hidden="true" className="anim-floaty" style={{ position: "absolute", zIndex: 3, top: "18%", right: "13%", display: "grid", placeItems: "center", width: 63, height: 63, border: "1px solid #171716", borderRadius: "50%", color: "#171716", fontSize: 30, background: "#fffdf8", boxShadow: "5px 6px 0 #171716" }}>✳</span>
               </div>
             </div>
@@ -361,7 +361,7 @@ export default function PortalPage() {
               {info.data && info.data.school.lat != null && info.data.school.lng != null ? (
                 <Map lat={info.data.school.lat} lng={info.data.school.lng} />
               ) : (
-                <p style={{ color: "#74746d", margin: 0 }}>Peta belum diatur oleh admin sekolah.</p>
+                <p style={{ color: "#575752", margin: 0 }}>Peta belum diatur oleh admin sekolah.</p>
               )}
             </div>
           </Reveal>
@@ -400,7 +400,7 @@ export default function PortalPage() {
             <span>SMS-LMS</span>
           </div>
         </footer>
-      </div>
+      </main>
 
       <style>{`section[id] { scroll-margin-top: 96px; }
       @media (max-width: 900px) {

@@ -11,6 +11,7 @@ export const metadata = {
   title: "SMS-LMS",
   description: "Sistem Manajemen Sekolah + LMS",
   manifest: "/manifest.webmanifest",
+  robots: { index: true, follow: true },
 };
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
