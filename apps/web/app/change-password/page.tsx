@@ -2,18 +2,8 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { api } from "@/app/lib/api";
 import { PageHead, Panel, Toolbar, TextInput, Btn, Err } from "@/components/DashUI";
-
-async function csrf(): Promise<string> {
-  const cached = sessionStorage.getItem("csrf");
-  if (cached) return cached;
-  const r = await fetch("/api/auth/me");
-  if (!r.ok) throw new Error("sesi tidak valid, silakan login ulang");
-  const d = await r.json();
-  if (!d.csrfToken) throw new Error("sesi tidak valid, silakan login ulang");
-  sessionStorage.setItem("csrf", d.csrfToken);
-  return d.csrfToken as string;
-}
 
 export default function ChangePasswordPage() {
   const router = useRouter();
@@ -21,31 +11,32 @@ export default function ChangePasswordPage() {
   const [p1, setP1] = useState("");
   const [p2, setP2] = useState("");
   const [error, setError] = useState("");
+  const [busy, setBusy] = useState(false);
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
+    if (busy) return;
     if (p1 !== p2) {
       setError("konfirmasi password tidak sama");
       return;
     }
-    let token: string;
+    setBusy(true);
+    setError("");
     try {
-      token = await csrf();
-    } catch (err) {
-      setError((err as Error).message);
-      return;
+      const r = await api("/api/auth/change-password", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ oldPassword, newPassword: p1 }),
+      });
+      const d = await r.json().catch(() => ({}));
+      if (!r.ok) {
+        setError(d.error ?? "gagal mengganti password");
+        return;
+      }
+      router.replace("/login");
+    } finally {
+      setBusy(false);
     }
-    const r = await fetch("/api/auth/change-password", {
-      method: "POST",
-      headers: { "content-type": "application/json", "x-csrf-token": token },
-      body: JSON.stringify({ oldPassword, newPassword: p1 }),
-    });
-    const d = await r.json().catch(() => ({}));
-    if (!r.ok) {
-      setError(d.error ?? "gagal mengganti password");
-      return;
-    }
-    router.replace("/login");
   }
 
   return (
@@ -66,7 +57,7 @@ export default function ChangePasswordPage() {
             <TextInput type="password" value={p2} onChange={(e) => setP2(e.target.value)} autoComplete="new-password" required />
           </label>
           {error && <Err>{error}</Err>}
-          <Toolbar><Btn type="submit">Simpan</Btn></Toolbar>
+          <Toolbar><Btn type="submit" disabled={busy}>{busy ? "Menyimpan…" : "Simpan"}</Btn></Toolbar>
         </form>
       </Panel>
     </>

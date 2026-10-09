@@ -19,8 +19,11 @@ function todayStr(): string {
 
 export default function KehadiranPage() {
   const [date, setDate] = useState(todayStr());
-  const classes = useFetch<{ rows: { id: string; class: { name: string } }[] }>("/api/assignments");
+  const classes = useFetch<{ rows: { id: string; class: { id: string; name: string } }[] }>("/api/assignments");
   const [classId, setClassId] = useState("");
+  const kelasUnik = (classes.data?.rows ?? []).filter(
+    (r, i, a) => a.findIndex((x) => x.class.id === r.class.id) === i,
+  );
   const daily = useFetch<{ rows: Row[]; summary: Record<string, number> }>(
     classId ? `/api/attendance/daily?date=${date}&classId=${classId}` : null,
   );
@@ -61,8 +64,8 @@ export default function KehadiranPage() {
             Kelas:
             <TextSelect value={classId} onChange={(e) => setClassId(e.target.value)}>
               <option value="">— pilih —</option>
-              {classes.data?.rows.map((r) => (
-                <option key={r.id} value={r.id}>{r.class.name}</option>
+              {kelasUnik.map((r) => (
+                <option key={r.class.id} value={r.class.id}>{r.class.name}</option>
               ))}
             </TextSelect>
           </label>

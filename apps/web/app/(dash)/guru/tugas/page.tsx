@@ -18,8 +18,12 @@ interface TaskRow {
 }
 
 export default function GuruTugasPage() {
-  const classes = useFetch<{ rows: { id: string; class: { name: string } }[] }>("/api/assignments");
+  const classes = useFetch<{ rows: { id: string; class: { id: string; name: string } }[] }>("/api/assignments");
   const [classId, setClassId] = useState("");
+  // Satu guru bisa punya >1 penugasan di kelas yang sama (beda mapel) — tampilkan sekali saja.
+  const kelasUnik = (classes.data?.rows ?? []).filter(
+    (r, i, a) => a.findIndex((x) => x.class.id === r.class.id) === i,
+  );
   const tasks = useFetch<{ rows: TaskRow[] }>(`/api/tasks${classId ? `?classId=${classId}` : ""}`);
   const [form, setForm] = useState({ title: "", instruction: "", deadline: "", allowLate: false });
   const [msg, setMsg] = useState<string | null>(null);
@@ -59,8 +63,8 @@ export default function GuruTugasPage() {
             Kelas:
             <TextSelect value={classId} onChange={(e) => setClassId(e.target.value)}>
               <option value="">Semua kelas saya</option>
-              {classes.data?.rows.map((r) => (
-                <option key={r.id} value={r.id}>{r.class.name}</option>
+              {kelasUnik.map((r) => (
+                <option key={r.class.id} value={r.class.id}>{r.class.name}</option>
               ))}
             </TextSelect>
           </label>

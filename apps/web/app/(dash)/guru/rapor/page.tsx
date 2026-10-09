@@ -3,10 +3,14 @@
 // Rapor: tabel agregasi tugas + asesmen per siswa + ekspor .xlsx.
 import { useState } from "react";
 import { useFetch } from "@/app/lib/api";
-import { PageHead, Panel, Toolbar, TextInput, WarmTable, warmCell, Note, Err, LinkBtn } from "@/components/DashUI";
+import { PageHead, Panel, Toolbar, TextInput, TextSelect, WarmTable, warmCell, Note, Err, LinkBtn } from "@/components/DashUI";
 
 export default function RaporPage() {
+  const classes = useFetch<{ rows: { id: string; class: { id: string; name: string } }[] }>("/api/assignments");
   const [classId, setClassId] = useState("");
+  const kelasUnik = (classes.data?.rows ?? []).filter(
+    (r, i, a) => a.findIndex((x) => x.class.id === r.class.id) === i,
+  );
   const gb = useFetch<{
     tasks: { id: string; title: string }[];
     assessments: { id: string; title: string }[];
@@ -29,8 +33,13 @@ export default function RaporPage() {
       <Panel>
         <Toolbar>
           <label style={{ display: "flex", gap: 8, alignItems: "center", fontSize: 13, color: "#74746d" }}>
-            ID kelas:
-            <TextInput value={classId} onChange={(e) => setClassId(e.target.value)} placeholder="classId" style={{ width: 280 }} />
+            Kelas:
+            <TextSelect value={classId} onChange={(e) => setClassId(e.target.value)}>
+              <option value="">— pilih kelas —</option>
+              {kelasUnik.map((r) => (
+                <option key={r.class.id} value={r.class.id}>{r.class.name}</option>
+              ))}
+            </TextSelect>
           </label>
         </Toolbar>
         {gb.loading && <Note>Memuat…</Note>}

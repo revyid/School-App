@@ -18,6 +18,7 @@ export default function AsesmenSiswaPage() {
   const [mcq, setMcq] = useState<Record<string, number>>({});
   const [sort, setSort] = useState<Record<string, string[]>>({});
   const [msg, setMsg] = useState<string | null>(null);
+  const [submitting, setSubmitting] = useState(false);
 
   function move(qid: string, opts: string[], from: number, dir: -1 | 1) {
     const cur = sort[qid] ?? opts;
@@ -29,24 +30,40 @@ export default function AsesmenSiswaPage() {
   }
 
   async function kumpul() {
-    if (!aid || !attempt.data) return;
+    if (!aid || !attempt.data || submitting) return;
+    const total = attempt.data.questions.length;
+    const dijawab = attempt.data.questions.filter((q) =>
+      q.type === "MCQ" ? mcq[q.id] != null : true,
+    ).length;
+    const kosong = total - dijawab;
+    const yakin = window.confirm(
+      kosong > 0
+        ? `Kamu menjawab ${dijawab} dari ${total} soal (${kosong} kosong). Tetap kumpulkan?`
+        : `Kumpulkan ${total} jawaban? Setelah dikumpulkan tidak bisa diubah.`,
+    );
+    if (!yakin) return;
+    setSubmitting(true);
     // Petakan jawaban SORTING (teks) kembali ke indeks koordinat acak.
     const answers = attempt.data.questions.map((q) => {
       if (q.type === "MCQ") return { questionId: q.id, pickedIndex: mcq[q.id] ?? null };
       const cur = sort[q.id] ?? q.options;
       return { questionId: q.id, pickedOrder: cur.map((t) => q.options.indexOf(t)) };
     });
-    const res = await api(`/api/assessments/${aid}/attempt`, {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({ answers }),
-    });
-    const d = await res.json().catch(() => ({}));
-    if (!res.ok) setMsg(d.error || `Gagal (${res.status})`);
-    else {
-      setMsg(`Terkumpul! Skor: ${d.score}/${d.maxScore}`);
-      attempt.reload();
-      reload();
+    try {
+      const res = await api(`/api/assessments/${aid}/attempt`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ answers }),
+      });
+      const d = await res.json().catch(() => ({}));
+      if (!res.ok) setMsg(d.error || `Gagal (${res.status})`);
+      else {
+        setMsg(`Terkumpul! Skor: ${d.score}/${d.maxScore}`);
+        attempt.reload();
+        reload();
+      }
+    } finally {
+      setSubmitting(false);
     }
   }
 
@@ -109,7 +126,7 @@ export default function AsesmenSiswaPage() {
                 </div>
               ))}
               <Toolbar>
-                <Btn type="button" onClick={kumpul}>Kumpulkan jawaban</Btn>
+                <Btn type="button" onClick={kumpul} disabled={submitting}>{submitting ? "Mengumpulkan…" : "Kumpulkan jawaban"}</Btn>
               </Toolbar>
             </>
           )}

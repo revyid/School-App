@@ -14,14 +14,14 @@ function todayStr(): string {
 
 export default function GuruDashboard() {
   const me = useFetch<{ user: { name: string } }>("/api/profile");
-  const assign = useFetch<{ rows: { id: string; class: { name: string } }[] }>("/api/assignments");
+  const assign = useFetch<{ rows: { id: string; class: { id: string; name: string } }[] }>("/api/assignments");
   const tasks = useFetch<{
     rows: { id: string; title: string; class: { name: string }; _count: { submissions: number } }[];
   }>("/api/tasks");
   const leave = useFetch<{ rows: { id: string }[] }>("/api/leave?status=PENDING");
 
   const kelas = assign.data?.rows ?? [];
-  const firstClass = kelas[0]?.id ?? "";
+  const firstClass = kelas[0]?.class.id ?? "";
   const daily = useFetch<{ summary: Record<string, number> }>(
     firstClass ? `/api/attendance/daily?date=${todayStr()}&classId=${firstClass}` : null,
   );

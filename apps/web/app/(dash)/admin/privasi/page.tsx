@@ -3,10 +3,11 @@
 // Admin: flag persetujuan ortu + teks kebijakan privasi.
 import { useState } from "react";
 import { api, useFetch } from "@/app/lib/api";
-import { PageHead, Panel, Toolbar, TextInput, Btn, Badge, Note } from "@/components/DashUI";
+import { PageHead, Panel, Toolbar, TextSelect, Btn, Badge, Note } from "@/components/DashUI";
 
 export default function PrivasiAdminPage() {
   const [studentId, setStudentId] = useState("");
+  const students = useFetch<{ rows: { user: { id: string; name: string; nisn: string | null }; class: { name: string } | null }[] }>("/api/students?perPage=100");
   const consent = useFetch<{ consent: { studentId: string; consented: boolean } }>(
     studentId ? `/api/consent?studentId=${studentId}` : null,
   );
@@ -49,7 +50,14 @@ export default function PrivasiAdminPage() {
       <Panel style={{ marginBottom: 16 }}>
         <h2 className="display" style={{ fontSize: 18, margin: "0 0 12px" }}>Flag persetujuan</h2>
         <Toolbar>
-          <TextInput value={studentId} onChange={(e) => setStudentId(e.target.value)} placeholder="userId siswa" style={{ maxWidth: 280 }} />
+          <TextSelect value={studentId} onChange={(e) => setStudentId(e.target.value)}>
+            <option value="">— pilih siswa —</option>
+            {(students.data?.rows ?? []).map((r) => (
+              <option key={r.user.id} value={r.user.id}>
+                {r.user.name}{r.user.nisn ? ` (${r.user.nisn})` : ""}{r.class ? ` — ${r.class.name}` : ""}
+              </option>
+            ))}
+          </TextSelect>
         </Toolbar>
         {consent.data && (
           <p style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>

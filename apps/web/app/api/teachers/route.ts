@@ -11,7 +11,7 @@ import { teacherCreateSchema, teacherPatchSchema, paginationSchema } from "@sms/
 
 const ip = (r: NextRequest) => r.headers.get("x-real-ip")?.split(",")[0].trim() || "unknown";
 
-async function gate(req: NextRequest) {
+async function gate(req: NextRequest, roles: ("ADMIN" | "GURU" | "SISWA")[] = ["ADMIN"]) {
   return requireRole({
     host: req.headers.get("host") ?? "",
     token: req.cookies.get(SESSION_COOKIE)?.value,
@@ -20,12 +20,12 @@ async function gate(req: NextRequest) {
     origin: req.headers.get("origin"),
     referer: req.headers.get("referer"),
     csrf: req.headers.get("x-csrf-token"),
-    roles: ["ADMIN"],
+    roles,
   });
 }
 
 export async function GET(req: NextRequest) {
-  const a = await gate(req);
+  const a = await gate(req, ["ADMIN", "GURU", "SISWA"]);
   if (!a.ok) return NextResponse.json({ error: a.error }, { status: a.status });
   const url = new URL(req.url);
   const p = paginationSchema.safeParse({

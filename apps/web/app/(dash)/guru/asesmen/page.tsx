@@ -12,12 +12,17 @@ interface Row {
 
 export default function AsesmenGuruPage() {
   const { data, loading, error, reload } = useFetch<{ rows: Row[] }>("/api/assessments");
+  const classes = useFetch<{ rows: { id: string; class: { id: string; name: string } }[] }>("/api/assignments");
+  const kelasUnik = (classes.data?.rows ?? []).filter(
+    (r, i, a) => a.findIndex((x) => x.class.id === r.class.id) === i,
+  );
   const [classId, setClassId] = useState("");
   const [title, setTitle] = useState("");
   const [kind, setKind] = useState("REGULAR");
   const [stem, setStem] = useState("");
   const [options, setOptions] = useState("A\nB\nC\nD");
-  const [correct, setCorrect] = useState("1");
+  const [correct, setCorrect] = useState(0);
+  const opsiList = options.split("\n").map((s) => s.trim()).filter(Boolean);
   const [sel, setSel] = useState<string | null>(null);
   const analysis = useFetch<{ items: { questionId: string; stem: string; n: number; difficulty: number; distractors: Record<string, number> }[]; attempts: number }>(
     sel ? `/api/assessments/${sel}/analysis` : null,
@@ -29,13 +34,16 @@ export default function AsesmenGuruPage() {
 
   async function buat(e: React.FormEvent) {
     e.preventDefault();
-    const opts = options.split("\n").map((s) => s.trim()).filter(Boolean);
+    if (!classId) {
+      setMsg("Pilih kelas dulu");
+      return;
+    }
     const res = await api("/api/assessments", {
       method: "POST",
       headers: { "content-type": "application/json" },
       body: JSON.stringify({
         classId, title, kind,
-        inline: [{ type: "MCQ", stem, options: opts, correctIndex: Number(correct) }],
+        inline: [{ type: "MCQ", stem, options: opsiList, correctIndex: correct }],
       }),
     });
     const d = await res.json().catch(() => ({}));
@@ -55,8 +63,13 @@ export default function AsesmenGuruPage() {
         <h2 className="display" style={{ fontSize: 18, margin: "0 0 12px" }}>Buat baru (1 soal MCQ inline)</h2>
         <form onSubmit={buat} style={{ display: "grid", gap: 12, maxWidth: 560 }}>
           <label style={{ display: "grid", gap: 6, fontSize: 13, color: "#74746d" }}>
-            ID kelas:
-            <TextInput value={classId} onChange={(e) => setClassId(e.target.value)} required placeholder="classId" />
+            Kelas:
+            <TextSelect value={classId} onChange={(e) => setClassId(e.target.value)} required>
+              <option value="">— pilih kelas —</option>
+              {kelasUnik.map((r) => (
+                <option key={r.class.id} value={r.class.id}>{r.class.name}</option>
+              ))}
+            </TextSelect>
           </label>
           <label style={{ display: "grid", gap: 6, fontSize: 13, color: "#74746d" }}>
             Judul:
@@ -77,10 +90,16 @@ export default function AsesmenGuruPage() {
             Opsi (1 baris = 1 opsi):
             <textarea value={options} onChange={(e) => setOptions(e.target.value)} rows={4} style={{ borderRadius: 14, border: "1px solid rgba(23,23,22,.25)", background: "#fffdf8", padding: "9px 14px", fontSize: 14 }} />
           </label>
-          <label style={{ display: "grid", gap: 6, fontSize: 13, color: "#74746d" }}>
-            Index benar (0-based):
-            <TextInput value={correct} onChange={(e) => setCorrect(e.target.value)} required style={{ width: 120 }} />
-          </label>
+          <div style={{ display: "grid", gap: 6, fontSize: 13, color: "#74746d" }}>
+            <span>Jawaban benar:</span>
+            {opsiList.length === 0 && <span style={{ fontSize: 12 }}>Isi opsi dulu di atas.</span>}
+            {opsiList.map((o, i) => (
+              <label key={i} style={{ display: "flex", gap: 8, alignItems: "center", fontSize: 14, color: "#171716" }}>
+                <input type="radio" name="correct" checked={correct === i} onChange={() => setCorrect(i)} />
+                Opsi {i + 1}{o ? `: ${o.slice(0, 60)}` : ""}
+              </label>
+            ))}
+          </div>
           <Toolbar><Btn type="submit">Buat asesmen</Btn></Toolbar>
         </form>
         {msg && <p style={{ fontWeight: 700 }}>{msg}</p>}

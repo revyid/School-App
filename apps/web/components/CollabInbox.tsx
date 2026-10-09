@@ -13,8 +13,9 @@ interface Thread {
 
 export default function CollabPage({ role }: { role: "GURU" | "SISWA" }) {
   const { data, loading, reload } = useFetch<{ rows: Thread[] }>("/api/collab");
+  const gurus = useFetch<{ rows: { id: string; name: string; email: string }[] }>("/api/teachers?perPage=100");
   const [subject, setSubject] = useState("");
-  const [recipients, setRecipients] = useState("");
+  const [selectedGurus, setSelectedGurus] = useState<string[]>([]);
   const [body, setBody] = useState("");
   const [anon, setAnon] = useState(false);
   const [file, setFile] = useState<File | null>(null);
@@ -23,10 +24,14 @@ export default function CollabPage({ role }: { role: "GURU" | "SISWA" }) {
 
   async function kirim(e: React.FormEvent) {
     e.preventDefault();
+    if (selectedGurus.length === 0) {
+      setMsg("Pilih minimal 1 guru tujuan");
+      return;
+    }
     const form = new FormData();
     form.append("subject", subject);
     form.append("anonymous", String(anon));
-    form.append("recipients", JSON.stringify(recipients.split(",").map((s) => s.trim()).filter(Boolean)));
+    form.append("recipients", JSON.stringify(selectedGurus));
     form.append("body", body);
     if (file) form.append("file", file);
     const res = await api("/api/collab", { method: "POST", body: form });
@@ -35,6 +40,7 @@ export default function CollabPage({ role }: { role: "GURU" | "SISWA" }) {
     else {
       setMsg("Terkirim");
       setSubject("");
+      setSelectedGurus([]);
       setBody("");
       setFile(null);
       reload();
@@ -65,10 +71,25 @@ export default function CollabPage({ role }: { role: "GURU" | "SISWA" }) {
             Subjek:
             <TextInput value={subject} onChange={(e) => setSubject(e.target.value)} required />
           </label>
-          <label style={{ display: "grid", gap: 6, fontSize: 13, color: "#74746d" }}>
-            ID guru tujuan (koma):
-            <TextInput value={recipients} onChange={(e) => setRecipients(e.target.value)} required placeholder="userId guru" />
-          </label>
+          <div style={{ display: "grid", gap: 6, fontSize: 13, color: "#74746d" }}>
+            <span>Guru tujuan (centang minimal 1):</span>
+            {gurus.loading && <span style={{ fontSize: 12 }}>Memuat daftar guru…</span>}
+            {(gurus.data?.rows ?? []).map((g) => (
+              <label key={g.id} style={{ display: "flex", gap: 8, alignItems: "center", fontSize: 14, color: "#171716" }}>
+                <input
+                  type="checkbox"
+                  checked={selectedGurus.includes(g.id)}
+                  onChange={(e) => setSelectedGurus(
+                    e.target.checked
+                      ? [...selectedGurus, g.id]
+                      : selectedGurus.filter((x) => x !== g.id),
+                  )}
+                />
+                {g.name}
+              </label>
+            ))}
+            {gurus.data && gurus.data.rows.length === 0 && <span style={{ fontSize: 12 }}>Belum ada guru.</span>}
+          </div>
           <label style={{ display: "grid", gap: 6, fontSize: 13, color: "#74746d" }}>
             Pesan:
             <textarea value={body} onChange={(e) => setBody(e.target.value)} required rows={3} style={{ borderRadius: 14, border: "1px solid rgba(23,23,22,.25)", background: "#fffdf8", padding: "9px 14px", fontSize: 14 }} />
