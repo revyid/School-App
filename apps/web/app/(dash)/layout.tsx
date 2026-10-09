@@ -26,7 +26,6 @@ const MENUS: Record<string, { utama: MenuItem[]; lainnya: MenuItem[] }> = {
       { href: "/guru/tugas", label: "Tugas" },
       { href: "/guru/asesmen", label: "Asesmen" },
       { href: "/guru/kehadiran", label: "Kehadiran" },
-      { href: "/admin/notifikasi", label: "Notifikasi" },
       { href: "/guru/inbox", label: "Pesan" },
     ],
     lainnya: [
