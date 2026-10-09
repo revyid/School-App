@@ -7,6 +7,7 @@ import { hit } from "@/server/rate-limit";
 import { db } from "@sms/db/client";
 import { runAsSchool } from "@sms/db/tenant";
 import { logAuth } from "@/server/audit";
+import { resolveDefaultPassword } from "@/server/password";
 import { teacherCreateSchema, teacherPatchSchema, paginationSchema } from "@sms/shared/master";
 
 const ip = (r: NextRequest) => r.headers.get("x-real-ip")?.split(",")[0].trim() || "unknown";
@@ -74,7 +75,7 @@ export async function POST(req: NextRequest) {
   if (!rl.ok) return NextResponse.json({ error: "Terlalu banyak, coba lagi nanti" }, { status: 429 });
   const body = teacherCreateSchema.safeParse(await req.json().catch(() => null));
   if (!body.success) return NextResponse.json({ error: "input tidak valid" }, { status: 400 });
-  const pw = randomBytes(9).toString("base64url");
+  const { password: pw } = await resolveDefaultPassword(a.school.id, body.data.nisn);
   try {
     const row = await runAsSchool(
       db,

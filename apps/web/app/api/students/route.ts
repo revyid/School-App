@@ -7,6 +7,7 @@ import { hit } from "@/server/rate-limit";
 import { db } from "@sms/db/client";
 import { runAsSchool } from "@sms/db/tenant";
 import { logAuth } from "@/server/audit";
+import { resolveDefaultPassword } from "@/server/password";
 import { saveImportFile } from "@/server/uploads";
 import { enqueueImport } from "@/server/queue";
 import { paginationSchema, studentCreateSchema, normalizePhone } from "@sms/shared/master";
@@ -106,7 +107,7 @@ export async function POST(req: NextRequest) {
     const body = studentCreateSchema.safeParse(await req.json().catch(() => null));
     if (!body.success) return NextResponse.json({ error: "Data siswa tidak lengkap / tidak valid" }, { status: 400 });
 
-    const pw = randomBytes(9).toString("base64url");
+    const { password: pw } = await resolveDefaultPassword(a.school.id, body.data.nisn);
     const hash = await argon2.hash(pw, { type: argon2.argon2id });
 
     try {
