@@ -2,8 +2,8 @@
 
 // Scanner QR absensi (guru): kamera via getUserMedia + BarcodeDetector bila ada,
 // fallback input manual. Antrean offline: scan tersimpan di localStorage dan
-// di-retry otomatis saat koneksi kembali. Bunyi nama via Web Speech API
-// (antre agar tidak tumpang tindih) saat event realtime Socket.io tiba.
+// di-retry otomatis saat koneksi kembali. Bunyi nama via server TTS Piper ID
+// (/api/tts, antre agar tidak tumpang tindih) saat event realtime Socket.io tiba.
 import { useCallback, useEffect, useRef, useState } from "react";
 import { io, type Socket } from "socket.io-client";
 import { api, useFetch } from "@/app/lib/api";
@@ -25,46 +25,25 @@ function saveQueue(q: ScanItem[]) {
   } catch { /* abaikan */ }
 }
 
-// Antrean suara: ucapkan satu per satu.
-// iOS Safari: speechSynthesis butuh pemanasan — daftar suara dimuat async,
-// mesin tidur sampai ada gesture, dan suka pause di tengah. Warmup dipanggil
-// dari gesture (tombol "Aktifkan suara" / tombol pindai) agar bunyi keluar.
+// Antrean suara server: mainkan audio dari /api/tts?text=... satu per satu.
+// Perangkat iOS/Android tetap aman karena .play() dibuka saat pemanasan (warmVoice).
 const speakQueue: string[] = [];
 let speaking = false;
-let voiceWarmed = false;
+
 function warmVoice() {
   try {
-    if (!("speechSynthesis" in window)) return;
-    const synth = window.speechSynthesis;
-    const load = () => {
-      const vs = synth.getVoices();
-      if (vs.length > 0) voiceWarmed = true;
-    };
-    load();
-    synth.onvoiceschanged = load;
-    synth.cancel();
-    // Ucapkan pendek dengan volume sangat kecil. Beberapa Safari/Chrome
-    // mengabaikan utterance volume 0 sehingga mesin tidak pernah ter-unlock.
-    const u = new SpeechSynthesisUtterance("Suara aktif");
-    u.volume = 0.01;
-    u.lang = "id-ID";
-    synth.speak(u);
+    const a = new Audio("/api/tts?text=" + encodeURIComponent("Suara aktif"));
+    a.volume = 0.01;
+    a.play().catch(() => {});
   } catch { /* abaikan */ }
 }
-function pickVoice(): SpeechSynthesisVoice | null {
-  try {
-    const vs = window.speechSynthesis.getVoices();
-    if (vs.length === 0) return null;
-    return vs.find((v) => v.lang.toLowerCase().startsWith("id")) ?? vs.find((v) => v.lang.toLowerCase().startsWith("en")) ?? vs[0];
-  } catch {
-    return null;
-  }
-}
+
 function speak(text: string) {
-  if (!("speechSynthesis" in window)) return;
+  if (!text.trim()) return;
   speakQueue.push(text);
   if (speaking) return;
   speaking = true;
+
   const next = () => {
     const t = speakQueue.shift();
     if (!t) {
@@ -72,14 +51,11 @@ function speak(text: string) {
       return;
     }
     try {
-      if (window.speechSynthesis.paused) window.speechSynthesis.resume();
-      const u = new SpeechSynthesisUtterance(t);
-      u.lang = "id-ID";
-      const v = voiceWarmed ? pickVoice() : null;
-      if (v) u.voice = v;
-      u.onend = next;
-      u.onerror = next;
-      window.speechSynthesis.speak(u);
+      const url = "/api/tts?text=" + encodeURIComponent(t);
+      const a = new Audio(url);
+      a.onended = next;
+      a.onerror = next;
+      a.play().catch(() => next());
     } catch {
       next();
     }
