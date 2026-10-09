@@ -2,7 +2,7 @@
 
 // Shell dasbor ala edukids: sidebar SVG icon (bukan emoji), promo card orb+spark SVG,
 // topbar search pill, avatar aksen per peran, icon rotate on hover.
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import SchoolLogo from "./SchoolLogo";
@@ -74,6 +74,15 @@ export default function DashShell({
   const [open, setOpen] = useState(false);
   const path = usePathname();
 
+  useEffect(() => {
+    if (!open) return;
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setOpen(false);
+    };
+    document.addEventListener("keydown", onKeyDown);
+    return () => document.removeEventListener("keydown", onKeyDown);
+  }, [open]);
+
   const roleAccent: Record<string, string> = { ADMIN: "#e85e43", GURU: "#50643e", SISWA: "#4a8fa8" };
   const accent = roleAccent[role] ?? "#e85e43";
 
@@ -125,7 +134,7 @@ export default function DashShell({
   const sidebar = (
     <>
       <div style={{ padding: "2px 8px 18px" }}>
-        <SchoolLogo />
+        <SchoolLogo name={schoolName} />
       </div>
 
       <p className="kicker" style={{ padding: "0 8px 4px" }}>Menu utama</p>
@@ -151,15 +160,74 @@ export default function DashShell({
 
   return (
     <div style={{ display: "flex", minHeight: "100vh" }}>
-      {/* Sidebar desktop */}
-      <aside className="dash-sidebar" style={{ width: 232, flexShrink: 0, background: "#fffdf8", borderRight: "1px solid rgba(23,23,22,.14)", padding: "20px 14px", display: "flex", flexDirection: "column", gap: 4, position: "sticky", top: 0, height: "100vh", overflowY: "auto" }}>
+      {/* Sidebar Desktop (stasioner) */}
+      <aside
+        className="dash-sidebar-desktop"
+        style={{
+          width: 232,
+          flexShrink: 0,
+          background: "#fffdf8",
+          borderRight: "1px solid rgba(23,23,22,.14)",
+          padding: "20px 14px",
+          display: "flex",
+          flexDirection: "column",
+          gap: 4,
+          position: "sticky",
+          top: 0,
+          height: "100vh",
+          overflowY: "auto",
+        }}
+      >
         {sidebar}
       </aside>
 
-      {/* Drawer HP */}
+      {/* Drawer Mobile (Slide-over saat tombol burger diklik) */}
       {open && (
-        <div onClick={() => setOpen(false)} style={{ position: "fixed", inset: 0, background: "rgba(23,23,22,.4)", zIndex: 40 }}>
-          <aside onClick={(e) => e.stopPropagation()} style={{ width: 264, height: "100%", background: "#fffdf8", padding: "20px 14px", display: "flex", flexDirection: "column", gap: 4, overflowY: "auto" }}>
+        <div
+          className="dash-drawer-backdrop"
+          onClick={() => setOpen(false)}
+          style={{
+            position: "fixed",
+            inset: 0,
+            background: "rgba(23,23,22,.5)",
+            backdropFilter: "blur(2px)",
+            zIndex: 50,
+          }}
+        >
+          <aside
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              width: "min(84vw, 280px)",
+              height: "100%",
+              background: "#fffdf8",
+              padding: "20px 14px",
+              display: "flex",
+              flexDirection: "column",
+              gap: 4,
+              overflowY: "auto",
+              boxShadow: "4px 0 24px rgba(0,0,0,.15)",
+            }}
+          >
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", paddingBottom: 8, marginBottom: 8, borderBottom: "1px solid rgba(23,23,22,.1)" }}>
+              <span style={{ fontSize: 12, fontWeight: 700, color: "#8a8a82", textTransform: "uppercase", letterSpacing: "0.05em" }}>Menu Navigasi</span>
+              <button
+                type="button"
+                onClick={() => setOpen(false)}
+                style={{
+                  background: "transparent",
+                  border: "none",
+                  fontSize: 18,
+                  fontWeight: 700,
+                  cursor: "pointer",
+                  color: "#171716",
+                  padding: "4px 8px",
+                  borderRadius: 6,
+                }}
+                aria-label="Tutup menu"
+              >
+                ✕
+              </button>
+            </div>
             {sidebar}
           </aside>
         </div>
@@ -167,18 +235,51 @@ export default function DashShell({
 
       <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column" }}>
         {/* Topbar */}
-        <header style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px clamp(16px, 4vw, 40px)", borderBottom: "1px solid rgba(23,23,22,.14)", background: "#f7f4ec", position: "sticky", top: 0, zIndex: 20 }}>
-          <button className="dash-burger btn-ghost btn-sticker" onClick={() => setOpen(true)} aria-label="Buka menu" style={{ padding: "8px 12px", display: "none" }}>
-            ☰
+        <header
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 12,
+            padding: "12px clamp(16px, 4vw, 40px)",
+            borderBottom: "1px solid rgba(23,23,22,.14)",
+            background: "#f7f4ec",
+            position: "sticky",
+            top: 0,
+            zIndex: 20,
+          }}
+        >
+          <button
+            className="dash-burger btn-ghost btn-sticker"
+            onClick={() => setOpen(true)}
+            aria-label="Buka menu"
+            style={{ padding: "8px 12px", display: "none", alignItems: "center", gap: 6 }}
+          >
+            <span style={{ fontSize: 16 }}>☰</span>
+            <span style={{ fontSize: 12, fontWeight: 700 }}>Menu</span>
           </button>
 
           {/* Search pill */}
-          <span style={{ flex: 1, background: "#fffdf8", border: "1px solid rgba(23,23,22,.14)", borderRadius: 999, padding: "7px 16px", color: "#74746d", fontSize: 12, maxWidth: 380, display: "flex", alignItems: "center", gap: 8 }}>
+          <span
+            className="dash-search-pill"
+            style={{
+              flex: 1,
+              background: "#fffdf8",
+              border: "1px solid rgba(23,23,22,.14)",
+              borderRadius: 999,
+              padding: "7px 16px",
+              color: "#74746d",
+              fontSize: 12,
+              maxWidth: 380,
+              display: "flex",
+              alignItems: "center",
+              gap: 8,
+            }}
+          >
             <IconSchool size={14} color="#8a8a82" />
             {schoolName}
           </span>
 
-          {/* Kanan: bell + avatar — dikelompok biar rapi */}
+          {/* Kanan: bell + avatar */}
           <div style={{ display: "flex", alignItems: "center", gap: 10, marginLeft: "auto" }}>
             <Bell />
 
@@ -193,64 +294,22 @@ export default function DashShell({
           </div>
         </header>
 
-        <main style={{ padding: "clamp(16px, 3vw, 36px) clamp(16px, 4vw, 40px) clamp(80px, 12vh, 100px)", maxWidth: 1200 }}>
+        <main style={{ padding: "clamp(16px, 3vw, 36px) clamp(16px, 4vw, 40px) clamp(40px, 6vh, 60px)", maxWidth: 1200 }}>
           {children}
         </main>
       </div>
 
-      {/* Fixed Bottom Navigation Bar untuk Mobile (<860px) */}
-      <nav className="dash-bottom-nav" aria-label="Navigasi cepat" style={{ display: "none" }}>
-        {menus.utama.slice(0, 5).map((m) => {
-          const active = path === m.href || (m.href.length > 1 && path.startsWith(m.href));
-          const Icon = resolveIcon(m.label);
-          return (
-            <Link
-              key={m.href}
-              href={m.href}
-              style={{
-                display: "flex",
-                flexDirection: "column",
-                alignItems: "center",
-                justifyContent: "center",
-                gap: 3,
-                flex: 1,
-                padding: "6px 0",
-                textDecoration: "none",
-                color: active ? accent : "#74746d",
-                fontWeight: active ? 800 : 500,
-                fontSize: 10,
-                position: "relative",
-              }}
-            >
-              <Icon size={18} color={active ? accent : "#8a8a82"} />
-              <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: 54 }}>{m.label}</span>
-              {typeof m.badge === "number" && m.badge > 0 && (
-                <span style={{ position: "absolute", top: 2, right: "calc(50% - 14px)", background: accent, color: "#fffdf8", borderRadius: 999, fontSize: 9, fontWeight: 800, padding: "0 5px", minWidth: 14, textAlign: "center" }}>
-                  {m.badge}
-                </span>
-              )}
-            </Link>
-          );
-        })}
-      </nav>
-
       <style>{`
-        @media (max-width: 860px) {
-          .dash-sidebar { display: none; }
+        @media (max-width: 900px) {
+          .dash-sidebar-desktop { display: none !important; }
           .dash-burger { display: inline-flex !important; }
           .dash-username { display: none; }
-          .dash-bottom-nav {
-            display: flex !important;
-            position: fixed;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            background: #fffdf8;
-            border-top: 1px solid rgba(23,23,22,.14);
-            z-index: 35;
-            padding-bottom: env(safe-area-inset-bottom, 4px);
-            box-shadow: 0 -4px 16px rgba(23,23,22,.06);
-          }
+          .dash-search-pill { max-width: 200px !important; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        }
+        @media (max-width: 480px) {
+          .dash-search-pill { display: none !important; }
+          .dash-burger span:last-child { display: none; }
+          .dash-burger { padding: 8px 10px !important; }
         }
         .side-link:hover { background: #f0ede3 !important; color: #171716 !important; }
         .side-link:hover .side-icon { transform: rotate(12deg) scale(1.15); }

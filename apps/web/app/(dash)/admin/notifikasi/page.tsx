@@ -61,8 +61,10 @@ export default function NotifikasiAdminPage() {
                 borderRadius: 14,
                 border: "1px solid rgba(23,23,22,.25)",
                 background: "#fffdf8",
-                padding: "9px 14px",
+                padding: "10px 14px",
                 fontSize: 14,
+                width: "100%",
+                minHeight: 44,
               }}
             >
               <option value="ALL">Semua Warga Sekolah (Guru & Siswa)</option>
@@ -93,16 +95,20 @@ export default function NotifikasiAdminPage() {
                 borderRadius: 14,
                 border: "1px solid rgba(23,23,22,.25)",
                 background: "#fffdf8",
-                padding: "9px 14px",
+                padding: "10px 14px",
                 fontSize: 14,
                 fontFamily: "inherit",
+                width: "100%",
+                minHeight: 110,
+                boxSizing: "border-box",
+                resize: "vertical",
               }}
             />
           </label>
 
-          <div style={{ marginTop: 6 }}>
-            <Btn type="submit" disabled={busy}>
-              {busy ? "Mengirim Notifikasi…" : "Kirim Sekarang 🚀"}
+          <div style={{ marginTop: 6, display: "grid" }}>
+            <Btn type="submit" disabled={busy} style={{ justifyContent: "center", width: "100%" }}>
+              {busy ? "Mengirim Notifikasi…" : "Kirim Sekarang"}
             </Btn>
           </div>
         </form>

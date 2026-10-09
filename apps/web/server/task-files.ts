@@ -43,15 +43,15 @@ export async function saveTaskFile(
   const safe = original.replace(/[^a-zA-Z0-9._-]/g, "_").slice(0, 80) || "file";
   const fileName = `${randomBytes(8).toString("hex")}-${safe}`;
   const root = process.env.UPLOADS_ROOT ?? "/data/uploads";
-  const dir = path.join(root, schoolId, "tasks", taskId);
+  const dir = path.join(/*turbopackIgnore: true*/ root, schoolId, "tasks", taskId);
   await mkdir(dir, { recursive: true });
-  await writeFile(path.join(dir, fileName), buf);
+  await writeFile(path.join(/*turbopackIgnore: true*/ dir, fileName), buf);
   return { fileName, mime: MIME[kind], size: buf.length };
 }
 
 export function taskFilePath(schoolId: string, taskId: string, fileName: string): string {
   const root = process.env.UPLOADS_ROOT ?? "/data/uploads";
-  const p = path.join(root, schoolId, "tasks", taskId, path.basename(fileName));
-  if (!p.startsWith(path.join(root, schoolId))) throw new Error("path tidak valid");
+  const p = path.join(/*turbopackIgnore: true*/ root, schoolId, "tasks", taskId, path.basename(fileName));
+  if (!p.startsWith(path.join(/*turbopackIgnore: true*/ root, schoolId))) throw new Error("path tidak valid");
   return p;
 }

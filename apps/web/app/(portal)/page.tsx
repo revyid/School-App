@@ -56,13 +56,14 @@ export default function PortalPage() {
             borderBottom: "1px solid rgba(23,23,22,.14)",
           }}
         >
-          <PublicLogo />
+          <PublicLogo name={nama} />
           <nav style={{ display: "flex", gap: "clamp(18px, 3vw, 44px)", marginLeft: "auto", fontSize: 12, fontWeight: 600 }} className="portal-nav">
             <a href="#tentang" style={{ color: "#74746d", textDecoration: "none" }}>Tentang</a>
             <a href="#program" style={{ color: "#74746d", textDecoration: "none" }}>Program</a>
             <a href="#mapel" style={{ color: "#74746d", textDecoration: "none" }}>Mapel</a>
             <a href="#pengumuman" style={{ color: "#74746d", textDecoration: "none" }}>Pengumuman</a>
             <a href="#lokasi" style={{ color: "#74746d", textDecoration: "none" }}>Lokasi</a>
+            <a href="/tools" style={{ color: "#74746d", textDecoration: "none" }}>Tools 🛠️</a>
             <a href="/siswa/inbox" style={{ color: "#e85e43", textDecoration: "none", fontWeight: 700 }}>Pesan Anonim ✉</a>
           </nav>
           
@@ -71,7 +72,7 @@ export default function PortalPage() {
             <details className="portal-burger" style={{ position: "relative" }}>
               <summary aria-label="Buka menu" style={{ listStyle: "none", cursor: "pointer", display: "grid", placeItems: "center", width: 40, height: 40, border: "1px solid #171716", borderRadius: "50%", background: "#fffdf8", fontSize: 18, userSelect: "none" }}>☰</summary>
               <nav style={{ position: "absolute", right: 0, top: 48, display: "flex", flexDirection: "column", gap: 4, minWidth: 200, padding: 10, background: "#fffdf8", border: "1px solid #171716", borderRadius: 16, boxShadow: "0 8px 24px rgba(23,23,22,.15)", zIndex: 50 }}>
-                {[["Tentang", "#tentang"], ["Program", "#program"], ["Mapel", "#mapel"], ["Pengumuman", "#pengumuman"], ["Lokasi", "#lokasi"], ["Pesan Anonim ✉", "/siswa/inbox"]].map(([label, href]) => (
+                {[["Tentang", "#tentang"], ["Program", "#program"], ["Mapel", "#mapel"], ["Pengumuman", "#pengumuman"], ["Lokasi", "#lokasi"], ["Tools 🛠️", "/tools"], ["Pesan Anonim ✉", "/siswa/inbox"]].map(([label, href]) => (
                   <a key={href} href={href} style={{ padding: "10px 14px", borderRadius: 10, color: "#171716", fontSize: 13, fontWeight: 700, textDecoration: "none" }}>{label}</a>
                 ))}
               </nav>
@@ -128,10 +129,10 @@ export default function PortalPage() {
             </div>
           </Reveal>
 
-          {/* kanan: siswa — student-books (aset baru) */}
+          {/* kanan: siswa — student-book (aset baru) */}
           <div className="portal-hero-side hero-right" style={{ position: "relative", zIndex: 2, justifySelf: "end", width: "min(100%, 250px)", height: 370, transform: "rotate(6deg)" }}>
             <div style={{ position: "absolute", inset: "40px 0 0", background: "#97c4db", borderRadius: "48% 52% 38% 62% / 52% 41% 59% 48%", transform: "rotate(10deg)" }} />
-            <Image src="/assets/student-books.png" alt="Ilustrasi siswa berkacamata membaca buku" fill className="anim-floaty" style={{ objectFit: "contain", objectPosition: "center bottom" }} priority />
+            <Image src="/assets/student-book.png" alt="Ilustrasi siswa berkacamata membaca buku" fill className="anim-floaty" style={{ objectFit: "contain", objectPosition: "center bottom" }} priority />
             <span style={{ position: "absolute", top: 72, right: -27, width: 52, height: 52, display: "grid", placeItems: "center", border: "1px solid #171716", borderRadius: "50%", background: "#f5c94a", boxShadow: "4px 5px 0 #171716", fontSize: 25 }} aria-hidden="true">✺</span>
             <span style={{ position: "absolute", bottom: 66, right: -74, padding: "10px 13px", border: "1px solid #171716", borderRadius: 14, background: "#fffdf8", fontFamily: "var(--font-meta)", fontSize: 8, textTransform: "uppercase", boxShadow: "3px 4px 0 #171716", transform: "rotate(9deg)" }}>
               <strong style={{ fontFamily: "var(--font-display)", fontSize: 12 }}>{counts ? `${counts.students} siswa` : "…"}</strong><br />belajar di sini
@@ -370,7 +371,7 @@ export default function PortalPage() {
         <footer style={{ padding: "80px clamp(24px, 7vw, 112px) 25px", color: "#fffdf8", background: "#171716" }}>
           <div className="portal-footer-top">
             <div>
-              <PublicLogo light />
+              <PublicLogo light name={nama} />
               <p style={{ marginTop: 30, color: "rgba(255,253,248,.62)", fontSize: 18, lineHeight: 1.35, letterSpacing: "-0.055em" }}>
                 Ruang kecil untuk<br /><strong style={{ color: "#f5c94a" }}>mimpi yang besar.</strong>
               </p>

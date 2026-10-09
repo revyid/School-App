@@ -188,7 +188,17 @@ export default function GuruDashboard() {
       <style>{`@media (max-width: 860px) {
         .dash-metrics { grid-template-columns: 1fr 1fr !important; }
         .dash-bottom { grid-template-columns: 1fr !important; }
-        .dash-hero-char { display: none; }
+        .dash-hero-char {
+          display: block !important;
+          position: absolute !important;
+          right: -14px !important;
+          bottom: -14px !important;
+          width: 150px !important;
+          height: 150px !important;
+          opacity: 0.25 !important;
+          pointer-events: none !important;
+          z-index: 1 !important;
+        }
       }`}</style>
     </div>
   );

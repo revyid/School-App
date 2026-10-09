@@ -15,7 +15,7 @@ export function detectAssessImg(buf: Buffer): "jpg" | "png" | null {
 
 function dir(schoolId: string): string {
   const root = process.env.UPLOADS_ROOT ?? "/data/uploads";
-  return path.join(root, schoolId, "assess");
+  return path.join(/*turbopackIgnore: true*/ root, schoolId, "assess");
 }
 
 export async function saveAssessImg(schoolId: string, buf: Buffer): Promise<string> {
@@ -23,14 +23,14 @@ export async function saveAssessImg(schoolId: string, buf: Buffer): Promise<stri
   if (!ext) throw new Error("gambar harus JPEG/PNG asli (maks 5MB)");
   const name = `q-${randomBytes(8).toString("hex")}.${ext}`;
   await mkdir(dir(schoolId), { recursive: true });
-  await writeFile(path.join(dir(schoolId), name), buf);
+  await writeFile(path.join(/*turbopackIgnore: true*/ dir(schoolId), name), buf);
   return name;
 }
 
 export async function deleteAssessImg(schoolId: string, name: string): Promise<void> {
   const base = path.basename(name);
   if (base !== name || base.includes("..")) return;
-  const p = path.join(dir(schoolId), base);
+  const p = path.join(/*turbopackIgnore: true*/ dir(schoolId), base);
   if (!p.startsWith(dir(schoolId))) return;
   try {
     await unlink(p);
@@ -42,7 +42,7 @@ export async function deleteAssessImg(schoolId: string, name: string): Promise<v
 export function assessImgPath(schoolId: string, name: string): string {
   const base = path.basename(name);
   if (base !== name || base.includes("..")) throw new Error("nama file tidak valid");
-  const p = path.join(dir(schoolId), base);
+  const p = path.join(/*turbopackIgnore: true*/ dir(schoolId), base);
   if (!p.startsWith(dir(schoolId))) throw new Error("path tidak valid");
   return p;
 }
