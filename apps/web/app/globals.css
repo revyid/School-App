@@ -58,12 +58,21 @@ html {
   scroll-behavior: smooth;
 }
 
+*, *::before, *::after { box-sizing: border-box; }
+img, video, iframe { max-width: 100%; }
+
 body {
   background: var(--color-paper);
   color: var(--color-ink);
   font-family: var(--font-display);
   font-size: 15px;
   line-height: 1.6;
+  overflow-x: hidden;
+}
+
+.dash-bottom { grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr) !important; }
+@media (max-width: 860px) {
+  .dash-bottom { grid-template-columns: 1fr !important; }
 }
 
 input, select, button, textarea {

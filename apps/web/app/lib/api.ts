@@ -2,6 +2,12 @@
 
 import { useCallback, useEffect, useState } from "react";
 
+function shouldRedirectSession(): boolean {
+  if (typeof window === "undefined") return false;
+  const p = window.location.pathname;
+  return !(p === "/" || p === "/buku" || p === "/login" || p === "/anonim" || p === "/tools" || p.startsWith("/portal") || p.startsWith("/public") || p.startsWith("/tools/"));
+}
+
 export async function api(path: string, init?: RequestInit & { csrf?: boolean }) {
   const headers = new Headers(init?.headers);
   if (init?.csrf !== false && init?.method && init.method !== "GET") {
@@ -17,7 +23,7 @@ export async function api(path: string, init?: RequestInit & { csrf?: boolean })
     if (token) headers.set("x-csrf-token", token);
   }
   const res = await fetch(path, { ...init, headers });
-  if (res.status === 401 && typeof window !== "undefined" && !window.location.pathname.startsWith("/login")) {
+  if (res.status === 401 && shouldRedirectSession()) {
     sessionStorage.removeItem("csrf");
     window.location.href = `/login?expired=1&next=${encodeURIComponent(window.location.pathname)}`;
   }
@@ -35,7 +41,7 @@ export function useFetch<T>(path: string | null) {
     try {
       const res = await fetch(path, { cache: "no-store" });
       const d = await res.json().catch(() => ({}));
-      if (res.status === 401 && typeof window !== "undefined" && !window.location.pathname.startsWith("/login")) {
+      if (res.status === 401 && shouldRedirectSession()) {
         sessionStorage.removeItem("csrf");
         window.location.href = `/login?expired=1&next=${encodeURIComponent(window.location.pathname)}`;
         return;

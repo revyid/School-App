@@ -43,9 +43,10 @@ function warmVoice() {
     load();
     synth.onvoiceschanged = load;
     synth.cancel();
-    // Ucapkan diam-diam untuk membangunkan mesin (tanpa antre).
-    const u = new SpeechSynthesisUtterance(" ");
-    u.volume = 0;
+    // Ucapkan pendek dengan volume sangat kecil. Beberapa Safari/Chrome
+    // mengabaikan utterance volume 0 sehingga mesin tidak pernah ter-unlock.
+    const u = new SpeechSynthesisUtterance("Suara aktif");
+    u.volume = 0.01;
     u.lang = "id-ID";
     synth.speak(u);
   } catch { /* abaikan */ }
@@ -283,4 +284,3 @@ export default function ScannerPage() {
     </>
   );
 }
-

@@ -25,6 +25,14 @@ function mask(t: { anonymous: boolean; senderId: string; sender: { name: string 
   return shown ? t.sender.name : "Anonim";
 }
 
+function fileMime(fileName: string | null): string | null {
+  if (!fileName) return null;
+  const ext = fileName.split(".").pop()?.toLowerCase();
+  if (ext === "pdf") return "application/pdf";
+  if (["png", "jpg", "jpeg", "gif", "webp"].includes(ext ?? "")) return ext === "jpg" ? "image/jpeg" : `image/${ext}`;
+  return "application/octet-stream";
+}
+
 // GET /api/collab — GURU: thread yang mencantumkannya. SISWA: miliknya. ADMIN: semua.
 export async function GET(req: NextRequest) {
   const a = await gate(req, ["ADMIN", "GURU", "SISWA"]);
@@ -50,7 +58,7 @@ export async function GET(req: NextRequest) {
       id: t.id, subject: t.subject, anonymous: t.anonymous,
       sender: t.revealedAt ? t.sender.name : mask(t, a),
       revealed: !!t.revealedAt,
-      messages: t.messages.map((m) => ({ id: m.id, authorId: m.authorId, body: m.body, fileName: m.fileName, createdAt: m.createdAt })),
+        messages: t.messages.map((m) => ({ id: m.id, authorId: m.authorId, body: m.body, fileName: m.fileName, fileMime: fileMime(m.fileName), createdAt: m.createdAt })),
     })),
   });
 }
