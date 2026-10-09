@@ -259,6 +259,17 @@ export default function StudentsPage() {
     reload();
   }
 
+  async function resetPw(row: StudentRow) {
+    if (!confirm(`Reset password ${row.user.name}?`)) return;
+    const res = await api(`/api/students/${row.userId}/reset-password`, { method: "POST" });
+    const d = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      alert("Gagal reset password: " + (d.error || res.status));
+      return;
+    }
+    setCreatedPw({ name: row.user.name, pw: d.tempPassword });
+  }
+
   // Unduh 1 Kartu QR sebagai PNG
   async function downloadSingleCard(r: StudentRow) {
     try {
@@ -503,6 +514,9 @@ export default function StudentsPage() {
                       </Btn>
                       <Btn kind="ghost" onClick={() => startEdit(r)}>
                         Edit
+                      </Btn>
+                      <Btn kind="ghost" onClick={() => resetPw(r)}>
+                        Reset PW
                       </Btn>
                       <Btn kind="ghost" onClick={() => toggleActive(r)}>
                         {r.user.isActive ? "Nonaktifkan" : "Aktifkan"}
