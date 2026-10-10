@@ -82,7 +82,7 @@ export default function SettingsPage() {
   return (
     <>
       <PageHead kicker="Sekolah" title="Pengaturan sekolah" desc="Logo, nama portal, jam absensi, kuota WA, retensi data, dan mode password awal." />
-      <Panel style={{ maxWidth: 620, marginBottom: 16 }}>
+      <Panel style={{ maxWidth: "100%", marginBottom: 16 }}>
         <h2 className="display" style={{ fontSize: 18, margin: "0 0 12px" }}>Logo sekolah</h2>
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
@@ -100,42 +100,42 @@ export default function SettingsPage() {
         </label>
         {logoMsg && <Note>{logoMsg}</Note>}
       </Panel>
-      <Panel style={{ maxWidth: 620 }}>
+      <Panel style={{ maxWidth: 680 }}>
         {!data && <Note>Memuat…</Note>}
         <div style={{ display: "grid", gap: 12 }}>
-          <label style={{ display: "grid", gap: 6, fontSize: 13, color: "#74746d" }}>Nama portal <TextInput value={f.portalName ?? ""} onChange={set("portalName")} /></label>
-          <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
-            <label style={{ display: "grid", gap: 6, fontSize: 13, color: "#74746d" }}>Jam mulai <TextInput type="time" value={f.startTime ?? ""} onChange={set("startTime")} style={{ width: "auto" }} /></label>
-            <label style={{ display: "grid", gap: 6, fontSize: 13, color: "#74746d" }}>Batas keterlambatan (cutoff) <TextInput type="time" value={f.cutoffTime ?? ""} onChange={set("cutoffTime")} style={{ width: "auto" }} /></label>
+          <label style={{ display: "grid", gap: 6, fontSize: 13, color: "#74746d" }}>Nama portal <TextInput value={f.portalName ?? ""} onChange={set("portalName")} style={{ width: "100%" }} /></label>
+          <div className="settings-row">
+            <label style={{ display: "grid", gap: 6, fontSize: 13, color: "#74746d", flex: "1 1 220px" }}>Jam mulai <TextInput type="time" value={f.startTime ?? ""} onChange={set("startTime")} style={{ width: "100%" }} /></label>
+            <label style={{ display: "grid", gap: 6, fontSize: 13, color: "#74746d", flex: "1 1 220px" }}>Batas keterlambatan (cutoff) <TextInput type="time" value={f.cutoffTime ?? ""} onChange={set("cutoffTime")} style={{ width: "100%" }} /></label>
           </div>
-          <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
-            <label style={{ display: "grid", gap: 6, fontSize: 13, color: "#74746d" }}>Kuota WA harian <TextInput type="number" value={f.waDailyCap ?? ""} onChange={set("waDailyCap")} style={{ width: 140 }} /></label>
-            <label style={{ display: "grid", gap: 6, fontSize: 13, color: "#74746d" }}>Kuota WA per menit <TextInput type="number" value={f.waPerMinuteCap ?? ""} onChange={set("waPerMinuteCap")} style={{ width: 140 }} /></label>
+          <div className="settings-row">
+            <label style={{ display: "grid", gap: 6, fontSize: 13, color: "#74746d", flex: "1 1 220px" }}>Kuota WA harian <TextInput type="number" value={f.waDailyCap ?? ""} onChange={set("waDailyCap")} style={{ width: "100%" }} /></label>
+            <label style={{ display: "grid", gap: 6, fontSize: 13, color: "#74746d", flex: "1 1 220px" }}>Kuota WA per menit <TextInput type="number" value={f.waPerMinuteCap ?? ""} onChange={set("waPerMinuteCap")} style={{ width: "100%" }} /></label>
           </div>
-          <label style={{ display: "grid", gap: 6, fontSize: 13, color: "#74746d" }}>URL Ruang GTK <TextInput value={f.ctaGtkUrl ?? ""} onChange={set("ctaGtkUrl")} /></label>
-          <label style={{ display: "grid", gap: 6, fontSize: 13, color: "#74746d" }}>URL Ruang Murid <TextInput value={f.ctaMuridUrl ?? ""} onChange={set("ctaMuridUrl")} /></label>
-          <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
-            <label style={{ display: "grid", gap: 6, fontSize: 13, color: "#74746d" }}>Retensi data siswa (hari) <TextInput type="number" value={f.studentRetentionDays ?? ""} onChange={set("studentRetentionDays")} style={{ width: 140 }} /></label>
-            <label style={{ display: "grid", gap: 6, fontSize: 13, color: "#74746d" }}>Retensi foto (hari) <TextInput type="number" value={f.photoRetentionDays ?? ""} onChange={set("photoRetentionDays")} style={{ width: 140 }} /></label>
+          <label style={{ display: "grid", gap: 6, fontSize: 13, color: "#74746d" }}>URL Ruang GTK <TextInput value={f.ctaGtkUrl ?? ""} onChange={set("ctaGtkUrl")} style={{ width: "100%" }} /></label>
+          <label style={{ display: "grid", gap: 6, fontSize: 13, color: "#74746d" }}>URL Ruang Murid <TextInput value={f.ctaMuridUrl ?? ""} onChange={set("ctaMuridUrl")} style={{ width: "100%" }} /></label>
+          <div className="settings-row">
+            <label style={{ display: "grid", gap: 6, fontSize: 13, color: "#74746d", flex: "1 1 220px" }}>Retensi data siswa (hari) <TextInput type="number" value={f.studentRetentionDays ?? ""} onChange={set("studentRetentionDays")} style={{ width: "100%" }} /></label>
+            <label style={{ display: "grid", gap: 6, fontSize: 13, color: "#74746d", flex: "1 1 220px" }}>Retensi foto (hari) <TextInput type="number" value={f.photoRetentionDays ?? ""} onChange={set("photoRetentionDays")} style={{ width: "100%" }} /></label>
           </div>
           <label style={{ display: "grid", gap: 6, fontSize: 13, color: "#74746d" }}>Mode password awal{" "}
-            <TextSelect value={f.defaultPasswordMode ?? "random"} onChange={set("defaultPasswordMode")}>
+            <TextSelect value={f.defaultPasswordMode ?? "random"} onChange={set("defaultPasswordMode")} style={{ width: "100%" }}>
               <option value="random">Acak</option>
               <option value="nisn">NISN (minta ganti saat login pertama)</option>
             </TextSelect>
           </label>
           <label style={{ display: "grid", gap: 6, fontSize: 13, color: "#74746d" }}>Ucapan suara absensi — scan BERHASIL (TTS scanner) — pakai {"{{name}}"} dan {"{{class}}"}
-            <TextInput value={f.ttsPhrase ?? ""} onChange={set("ttsPhrase")} placeholder="{{name}} sudah hadir" />
+            <TextInput value={f.ttsPhrase ?? ""} onChange={set("ttsPhrase")} placeholder="{{name}} sudah hadir" style={{ width: "100%" }} />
           </label>
           <label style={{ display: "grid", gap: 6, fontSize: 13, color: "#74746d" }}>Ucapan suara absensi — scan SUDAH DICATAT / duplikat — pakai {"{{name}}"} dan {"{{class}}"}
-            <TextInput value={f.ttsPhraseDup ?? ""} onChange={set("ttsPhraseDup")} placeholder="{{name}} sudah di catat" />
+            <TextInput value={f.ttsPhraseDup ?? ""} onChange={set("ttsPhraseDup")} placeholder="{{name}} sudah di catat" style={{ width: "100%" }} />
           </label>
-          <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
-            <label style={{ display: "grid", gap: 6, fontSize: 13, color: "#74746d" }}>Koordinat Peta (Latitude)
-              <TextInput type="number" step="any" value={f.mapLat ?? ""} onChange={set("mapLat")} placeholder="-6.200000" style={{ width: 170 }} />
+          <div className="settings-row">
+            <label style={{ display: "grid", gap: 6, fontSize: 13, color: "#74746d", flex: "1 1 220px" }}>Koordinat Peta (Latitude)
+              <TextInput type="number" step="any" value={f.mapLat ?? ""} onChange={set("mapLat")} placeholder="-6.200000" style={{ width: "100%" }} />
             </label>
-            <label style={{ display: "grid", gap: 6, fontSize: 13, color: "#74746d" }}>Koordinat Peta (Longitude)
-              <TextInput type="number" step="any" value={f.mapLng ?? ""} onChange={set("mapLng")} placeholder="106.816666" style={{ width: 170 }} />
+            <label style={{ display: "grid", gap: 6, fontSize: 13, color: "#74746d", flex: "1 1 220px" }}>Koordinat Peta (Longitude)
+              <TextInput type="number" step="any" value={f.mapLng ?? ""} onChange={set("mapLng")} placeholder="106.816666" style={{ width: "100%" }} />
             </label>
           </div>
           <Note>Koordinat ini menentukan titik lokasi sekolah pada Peta Digital di halaman depan.</Note>
@@ -143,6 +143,10 @@ export default function SettingsPage() {
           {msg && <p style={{ fontWeight: 700 }}>{msg}</p>}
         </div>
       </Panel>
+      <style>{`.settings-row { display: flex; gap: 12; flex-wrap: wrap; }
+      @media (max-width: 600px) {
+        .settings-row { flex-direction: column; }
+      }`}</style>
     </>
   );
 }

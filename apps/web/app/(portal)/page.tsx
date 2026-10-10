@@ -30,7 +30,7 @@ const SUBJECT_GLYPH = ["∑", "Aa", "✦", "◎"];
 export default function PortalPage() {
   const info = useFetch<PortalInfo>("/api/portal/info");
 
-  const nama = info.data?.school.name ?? "Sekolah";
+  const nama = info.data?.school.name ?? "…";
   const ann = info.data?.announcements ?? [];
   const counts = info.data?.counts;
   const subjects = info.data?.subjects ?? [];

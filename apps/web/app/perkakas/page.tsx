@@ -75,6 +75,51 @@ export default async function ToolsHubPage() {
             </span>
           </Link>
 
+          {/* TOOL 2: Generator Timeline PNG */}
+          <Link
+            href="/perkakas/timeline"
+            className="card"
+            style={{
+              display: "flex",
+              flexDirection: "column",
+              padding: 28,
+              borderRadius: 24,
+              textDecoration: "none",
+              color: "inherit",
+              background: "#fffdf8",
+              border: "2px solid #171716",
+              boxShadow: "6px 8px 0 #171716",
+              transition: "transform 0.15s ease",
+            }}
+          >
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
+              <span className="kicker">Infografis</span>
+              <span
+                style={{
+                  background: "#50643e",
+                  color: "#fffdf8",
+                  fontSize: 10,
+                  fontWeight: 800,
+                  padding: "4px 10px",
+                  borderRadius: 999,
+                  textTransform: "uppercase",
+                  letterSpacing: "0.05em",
+                }}
+              >
+                Baru
+              </span>
+            </div>
+            <h2 style={{ fontSize: 22, fontWeight: 800, margin: "0 0 8px", letterSpacing: "-0.02em" }}>
+              Generator Timeline PNG
+            </h2>
+            <p style={{ color: "#74746d", fontSize: 13.5, lineHeight: 1.55, margin: "0 0 20px", flex: 1 }}>
+              Susun peristiwa bersejarah atau perjalanan proyek jadi infografis timeline vertikal/horizontal (terang, gelap, transparan), lalu unduh sebagai gambar PNG resolusi tinggi.
+            </p>
+            <span style={{ fontWeight: 800, color: "#e85e43", fontSize: 14 }}>
+              Buka Generator Timeline →
+            </span>
+          </Link>
+
           {/* MATERI TERPISAH: katalog buku pindah ke /buku */}
           <Link
             href="/buku"
