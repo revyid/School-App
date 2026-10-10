@@ -186,6 +186,9 @@ export default function StudentsPage() {
   const [zipLoading, setZipLoading] = useState(false);
   const [zipProgress, setZipProgress] = useState<string | null>(null);
 
+  const { data: settingsData } = useFetch<{ settings: { portalName?: string } }>(`/api/settings`);
+  const schoolName = settingsData?.settings?.portalName || "Sekolah";
+
   async function createSingleStudent(e: React.FormEvent) {
     e.preventDefault();
     if (!newName.trim() || !newNisn.trim()) {
@@ -286,7 +289,7 @@ export default function StudentsPage() {
           className: r.class?.name ?? "Umum",
           qrToken: qrData.qr.token,
         },
-        "Sekolah Demo"
+        schoolName
       );
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");

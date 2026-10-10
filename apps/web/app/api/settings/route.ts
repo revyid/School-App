@@ -26,8 +26,11 @@ export async function GET(req: NextRequest) {
   const s = await runAsSchool(db, a.school.id, (tx) =>
     tx.schoolSettings.findUnique({ where: { schoolId: a.school.id } }),
   );
+  const school = await runAsSchool(db, a.school.id, (tx) =>
+    tx.school.findUnique({ where: { id: a.school.id }, select: { lat: true, lng: true } }),
+  );
   return NextResponse.json({
-    settings: s ?? {
+    settings: {
       portalName: a.school.name,
       startTime: "07:00",
       cutoffTime: "07:30",
@@ -40,6 +43,9 @@ export async function GET(req: NextRequest) {
       defaultPasswordMode: "random",
       ttsPhrase: "{{name}} sudah hadir",
       ttsPhraseDup: "{{name}} sudah di catat",
+      ...(s ?? {}),
+      mapLat: school?.lat ?? null,
+      mapLng: school?.lng ?? null,
     },
   });
 }
@@ -50,8 +56,18 @@ export async function PATCH(req: NextRequest) {
   if (!a.ok) return NextResponse.json({ error: a.error }, { status: a.status });
   const body = settingsSchema.safeParse(await req.json().catch(() => null));
   if (!body.success) return NextResponse.json({ error: "input tidak valid" }, { status: 400 });
-  const d = body.data;
-  const { expRules, ...rest } = d;
+  const { expRules, mapLat, mapLng, ...rest } = body.data;
+  if (mapLat !== undefined || mapLng !== undefined) {
+    await runAsSchool(db, a.school.id, (tx) =>
+      tx.school.update({
+        where: { id: a.school.id },
+        data: {
+          ...(mapLat !== undefined ? { lat: mapLat } : {}),
+          ...(mapLng !== undefined ? { lng: mapLng } : {}),
+        },
+      }),
+    );
+  }
   const row = await runAsSchool(db, a.school.id, (tx) =>
     tx.schoolSettings.upsert({
       where: { schoolId: a.school.id },

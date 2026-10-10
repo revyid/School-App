@@ -5,7 +5,7 @@ import { useCallback, useEffect, useState } from "react";
 function shouldRedirectSession(): boolean {
   if (typeof window === "undefined") return false;
   const p = window.location.pathname;
-  return !(p === "/" || p === "/buku" || p === "/login" || p === "/anonim" || p === "/tools" || p.startsWith("/portal") || p.startsWith("/public") || p.startsWith("/tools/"));
+  return !(p === "/" || p === "/perkakas/buku" || p === "/buku" || p === "/login" || p === "/anonim" || p === "/perkakas" || p === "/tools" || p.startsWith("/portal") || p.startsWith("/public") || p.startsWith("/perkakas/") || p.startsWith("/tools/"));
 }
 
 export async function api(path: string, init?: RequestInit & { csrf?: boolean }) {

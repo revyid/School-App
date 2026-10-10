@@ -862,7 +862,7 @@ export default function PetaClient() {
           background: "rgba(247,244,236,.96)",
         }}
       >
-        <Link href="/tools" style={{ textDecoration: "none", color: "#171716", fontWeight: 800, fontSize: 14 }}>
+        <Link href="/perkakas" style={{ textDecoration: "none", color: "#171716", fontWeight: 800, fontSize: 14 }}>
           Kembali
         </Link>
         <div style={{ minWidth: 0 }}>

@@ -1,8 +1,7 @@
 "use client";
 
-import PublicLogo from "@/components/PublicLogo";
+import PublicHeader from "@/components/PublicHeader";
 import Reveal from "@/components/Reveal";
-import AuthCta from "@/app/(portal)/AuthCta";
 import { useFetch } from "@/app/lib/api";
 import { useState } from "react";
 
@@ -53,10 +52,7 @@ export default function BukuClient({ schoolName }: { schoolName: string }) {
 
   return (
     <div style={{ background: "#f7f4ec", minHeight: "100vh" }}>
-      <header style={{ display: "flex", alignItems: "center", gap: 16, padding: "16px clamp(20px, 6vw, 88px)", borderBottom: "1px solid rgba(23,23,22,.14)" }}>
-        <a href="/" style={{ textDecoration: "none", color: "inherit" }}><PublicLogo name={schoolName} /></a>
-        <AuthCta className="btn-sticker" style={{ marginLeft: "auto", background: "#171716", color: "#fffdf8", textDecoration: "none" }} loginLabel="Masuk ↗" dashLabel="Buka dasbor ↗" />
-      </header>
+      <PublicHeader schoolName={schoolName} />
 
       <main style={{ padding: "clamp(28px, 5vw, 64px) clamp(20px, 6vw, 88px) 72px", maxWidth: 1200, margin: "0 auto" }}>
         <Reveal>

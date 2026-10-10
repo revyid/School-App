@@ -53,6 +53,8 @@ export const settingsSchema = z.object({
   // Template ucapan TTS scanner absensi (variabel: {{name}}, {{class}}).
   ttsPhrase: z.string().trim().min(1).max(200).optional().default("{{name}} sudah hadir"),
   ttsPhraseDup: z.string().trim().min(1).max(200).optional().default("{{name}} sudah di catat"),
+  mapLat: z.number().min(-90).max(90).optional().nullable(),
+  mapLng: z.number().min(-180).max(180).optional().nullable(),
   expRules: expRulesSchema.optional().nullable(),
 });
 

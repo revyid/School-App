@@ -1,6 +1,6 @@
 "use client";
 
-// Guru: daftar asesmen + buat baru (dari bank / inline) + analisis + diagnostik.
+// Guru: daftar asesmen + buat baru (multi-soal via teks/preset) + analisis + diagnostik.
 import { useState } from "react";
 import { api, useFetch } from "@/app/lib/api";
 import { PageHead, Panel, Toolbar, TextInput, TextSelect, Btn, Badge, WarmTable, warmCell, Note, Err } from "@/components/DashUI";
@@ -9,6 +9,77 @@ interface Row {
   id: string; kind: string; title: string;
   _count?: { questions: number; attempts: number };
 }
+
+type ParsedQ = {
+  type: "MCQ" | "SORTING";
+  stem: string;
+  options: string[];
+  correctIndex: number | null;
+};
+
+// Parser multi-soal format mudah:
+// 1. Soal MCQ
+// a opsi 1
+// b opsi 2
+// c opsi 3 (BENAR)
+//
+// 2. Urutkan siklus air (SORTING)
+// Evaporasi
+// Kondensasi
+// Presipitasi
+function parseMultiQuestions(raw: string): ParsedQ[] {
+  const blocks = raw.split(/\n\s*\n/).map((b) => b.trim()).filter(Boolean);
+  const result: ParsedQ[] = [];
+
+  for (const block of blocks) {
+    const lines = block.split("\n").map((l) => l.trim()).filter(Boolean);
+    if (lines.length < 2) continue;
+
+    const firstLine = lines[0];
+    const isSorting = firstLine.toLowerCase().includes("(sorting)") || firstLine.toLowerCase().includes("urutkan");
+    const stem = firstLine.replace(/^\d+[\.\)]\s*/, "").replace(/\s*\(sorting\)/i, "").trim();
+
+    const optLines = lines.slice(1);
+    const options: string[] = [];
+    let correctIndex = 0;
+
+    if (isSorting) {
+      for (const line of optLines) {
+        options.push(line.replace(/^[a-zA-Z\d]+[\.\)]\s*/, "").trim());
+      }
+      result.push({ type: "SORTING", stem, options, correctIndex: null });
+    } else {
+      optLines.forEach((line, idx) => {
+        const isMarked = /\s*\(benar\)|\s*\*$/i.test(line);
+        const clean = line
+          .replace(/^[a-zA-Z\d]+[\.\)]\s*/, "")
+          .replace(/\s*\(benar\)|\s*\*$/i, "")
+          .trim();
+        if (clean) {
+          options.push(clean);
+          if (isMarked) correctIndex = options.length - 1;
+        }
+      });
+      if (options.length >= 2) {
+        result.push({ type: "MCQ", stem, options, correctIndex });
+      }
+    }
+  }
+
+  return result;
+}
+
+const PLACEHOLDER_EXAMPLE = `1. Ibu kota negara Indonesia adalah...
+a Surabaya
+b Jakarta (BENAR)
+c Bandung
+d Medan
+
+2. Urutkan planet dari yang terdekat dengan Matahari (SORTING)
+Merkurius
+Venus
+Bumi
+Mars`;
 
 export default function AsesmenGuruPage() {
   const { data, loading, error, reload } = useFetch<{ rows: Row[] }>("/api/assessments");
@@ -19,11 +90,7 @@ export default function AsesmenGuruPage() {
   const [classId, setClassId] = useState("");
   const [title, setTitle] = useState("");
   const [kind, setKind] = useState("REGULAR");
-  const [questionType, setQuestionType] = useState<"MCQ" | "SORTING">("MCQ");
-  const [stem, setStem] = useState("");
-  const [options, setOptions] = useState("A\nB\nC\nD");
-  const [correct, setCorrect] = useState(0);
-  const opsiList = options.split("\n").map((s) => s.trim()).filter(Boolean);
+  const [rawText, setRawText] = useState(PLACEHOLDER_EXAMPLE);
   const [sel, setSel] = useState<string | null>(null);
   const analysis = useFetch<{ items: { questionId: string; stem: string; n: number; difficulty: number; distractors: Record<string, number> }[]; attempts: number }>(
     sel ? `/api/assessments/${sel}/analysis` : null,
@@ -33,37 +100,51 @@ export default function AsesmenGuruPage() {
   );
   const [msg, setMsg] = useState<string | null>(null);
 
+  const parsed = parseMultiQuestions(rawText);
+
   async function buat(e: React.FormEvent) {
     e.preventDefault();
     if (!classId) {
       setMsg("Pilih kelas dulu");
       return;
     }
+    if (parsed.length === 0) {
+      setMsg("Format soal belum terdeteksi. Gunakan contoh format di bawah.");
+      return;
+    }
     const res = await api("/api/assessments", {
       method: "POST",
       headers: { "content-type": "application/json" },
       body: JSON.stringify({
-        classId, title, kind,
-        inline: [{ type: questionType, stem, options: opsiList, correctIndex: questionType === "MCQ" ? correct : null }],
+        classId,
+        title,
+        kind,
+        shuffleQ: true,
+        shuffleOpt: true,
+        inline: parsed.map((q) => ({
+          type: q.type,
+          stem: q.stem,
+          options: q.options,
+          correctIndex: q.type === "MCQ" ? q.correctIndex : null,
+        })),
       }),
     });
     const d = await res.json().catch(() => ({}));
     if (!res.ok) setMsg(d.error || `Gagal (${res.status})`);
     else {
-      setMsg("Asesmen dibuat");
+      setMsg(`Asesmen "${title}" berhasil dibuat dengan ${parsed.length} soal!`);
       setTitle("");
-      setStem("");
       reload();
     }
   }
 
   return (
     <>
-      <PageHead kicker="Ujian" title="Asesmen kelas" desc="Buat ujian baru dengan soal pilihan ganda atau mengurutkan item." />
+      <PageHead kicker="Ujian" title="Asesmen kelas" desc="Buat ujian baru dengan banyak soal sekaligus (pilihan ganda / mengurutkan)." />
       <Panel style={{ marginBottom: 16 }}>
-        <h2 className="display" style={{ fontSize: 18, margin: "0 0 12px" }}>Buat baru (1 soal)</h2>
-        <form onSubmit={buat} style={{ display: "grid", gap: 12, maxWidth: 560 }}>
-          <label style={{ display: "grid", gap: 6, fontSize: 13, color: "#74746d" }}>
+        <h2 className="display" style={{ fontSize: 18, margin: "0 0 12px" }}>Buat Asesmen Baru</h2>
+        <form onSubmit={buat} style={{ display: "grid", gap: 12, maxWidth: 640 }}>
+          <label style={{ display: "grid", gap: 6, fontSize: 13, color: "#575752" }}>
             Kelas:
             <TextSelect value={classId} onChange={(e) => setClassId(e.target.value)} required>
               <option value="">— pilih kelas —</option>
@@ -72,84 +153,77 @@ export default function AsesmenGuruPage() {
               ))}
             </TextSelect>
           </label>
-          <label style={{ display: "grid", gap: 6, fontSize: 13, color: "#74746d" }}>
-            Judul:
-            <TextInput value={title} onChange={(e) => setTitle(e.target.value)} required />
+          <label style={{ display: "grid", gap: 6, fontSize: 13, color: "#575752" }}>
+            Judul Asesmen / Ujian:
+            <TextInput value={title} onChange={(e) => setTitle(e.target.value)} placeholder="misal: Ulangan Harian Bab 1" required />
           </label>
-          <label style={{ display: "grid", gap: 6, fontSize: 13, color: "#74746d" }}>
-            Jenis:
+          <label style={{ display: "grid", gap: 6, fontSize: 13, color: "#575752" }}>
+            Jenis Asesmen:
             <TextSelect value={kind} onChange={(e) => setKind(e.target.value)}>
-              <option value="REGULAR">REGULAR</option>
-              <option value="DIAGNOSTIC">DIAGNOSTIC</option>
+              <option value="REGULAR">REGULAR (Nilai biasa)</option>
+              <option value="DIAGNOSTIC">DIAGNOSTIC (Asesmen awal)</option>
             </TextSelect>
           </label>
-          <label style={{ display: "grid", gap: 6, fontSize: 13, color: "#74746d" }}>
-            Tipe soal:
-            <TextSelect value={questionType} onChange={(e) => setQuestionType(e.target.value as "MCQ" | "SORTING")}>
-              <option value="MCQ">Pilihan ganda</option>
-              <option value="SORTING">Urutkan item</option>
-            </TextSelect>
+          <label style={{ display: "grid", gap: 6, fontSize: 13, color: "#575752" }}>
+            Format Soal Massal (Bisa buat 1 atau banyak soal sekaligus):
+            <textarea
+              value={rawText}
+              onChange={(e) => setRawText(e.target.value)}
+              required
+              rows={12}
+              style={{ borderRadius: 14, border: "1px solid rgba(23,23,22,.25)", background: "#fffdf8", padding: "12px 14px", fontSize: 13, fontFamily: "var(--font-mono, monospace)" }}
+            />
+            <span style={{ fontSize: 11, color: "#8a8a82" }}>
+              * Tulis (BENAR) di samping opsi jawaban benar untuk pilihan ganda. Tulis (SORTING) pada judul soal untuk tipe mengurutkan item.
+            </span>
           </label>
-          <label style={{ display: "grid", gap: 6, fontSize: 13, color: "#74746d" }}>
-            Soal:
-            <textarea value={stem} onChange={(e) => setStem(e.target.value)} required rows={3} style={{ borderRadius: 14, border: "1px solid rgba(23,23,22,.25)", background: "#fffdf8", padding: "9px 14px", fontSize: 14 }} />
-          </label>
-          <label style={{ display: "grid", gap: 6, fontSize: 13, color: "#74746d" }}>
-            Opsi (1 baris = 1 opsi):
-            <textarea value={options} onChange={(e) => setOptions(e.target.value)} rows={4} style={{ borderRadius: 14, border: "1px solid rgba(23,23,22,.25)", background: "#fffdf8", padding: "9px 14px", fontSize: 14 }} />
-          </label>
-          <div style={{ display: "grid", gap: 6, fontSize: 13, color: "#74746d" }}>
-            {questionType === "MCQ" ? <>
-              <span>Jawaban benar:</span>
-              {opsiList.length === 0 && <span style={{ fontSize: 12 }}>Isi opsi dulu di atas.</span>}
-              {opsiList.map((o, i) => (
-                <label key={i} style={{ display: "flex", gap: 8, alignItems: "center", fontSize: 14, color: "#171716" }}>
-                  <input type="radio" name="correct" checked={correct === i} onChange={() => setCorrect(i)} />
-                  Opsi {i + 1}{o ? `: ${o.slice(0, 60)}` : ""}
-                </label>
+
+          <div style={{ background: "#f0ede3", padding: 12, borderRadius: 12, fontSize: 12 }}>
+            <strong>Hasil Parsing: {parsed.length} Soal Terdeteksi</strong>
+            <ul style={{ margin: "6px 0 0", paddingLeft: 18 }}>
+              {parsed.map((q, idx) => (
+                <li key={idx}>
+                  <strong>[{q.type}]</strong> {q.stem} ({q.options.length} opsi{q.type === "MCQ" ? `, Benar: Opsi ${q.correctIndex! + 1}` : ""})
+                </li>
               ))}
-            </> : <span style={{ fontSize: 12 }}>Urutan item pada kolom opsi akan menjadi urutan jawaban yang benar.</span>}
+            </ul>
           </div>
-          <Toolbar><Btn type="submit">Buat asesmen</Btn></Toolbar>
+
+          <Toolbar><Btn type="submit" disabled={parsed.length === 0}>Buat {parsed.length} Soal</Btn></Toolbar>
         </form>
-        {msg && <p style={{ fontWeight: 700 }}>{msg}</p>}
+        {msg && <p style={{ fontWeight: 700, marginTop: 12, color: msg.includes("berhasil") ? "#50643e" : "#e85e43" }}>{msg}</p>}
       </Panel>
+
       <Panel style={{ marginBottom: 16 }}>
-        <h2 className="display" style={{ fontSize: 18, margin: "0 0 12px" }}>Daftar</h2>
+        <h2 className="display" style={{ fontSize: 18, margin: "0 0 12px" }}>Daftar Asesmen</h2>
         {loading && <Note>Memuat…</Note>}
         {error && <Err>Gagal: {error}</Err>}
         {data && data.rows.length === 0 && <Note>Belum ada asesmen. Buat yang pertama di atas.</Note>}
         {data && data.rows.length > 0 && (
-          <WarmTable head={["Judul", "Jenis", "Soal", "Attempt", ""]}>
+          <WarmTable head={["Judul", "Jenis", "Total Soal", "Siswa Mengerjakan", "Aksi"]}>
             {data.rows.map((r) => (
               <tr key={r.id}>
                 <td style={warmCell({ fontWeight: 700 })}>{r.title}</td>
                 <td style={warmCell()}><Badge status={r.kind === "DIAGNOSTIC" ? "IZIN" : "AKTIF"}>{r.kind}</Badge></td>
-                <td style={warmCell()}>{r._count?.questions ?? "?"}</td>
-                <td style={warmCell()}>{r._count?.attempts ?? "?"}</td>
+                <td style={warmCell()}>{r._count?.questions ?? "?"} soal</td>
+                <td style={warmCell()}>{r._count?.attempts ?? "?"} siswa</td>
                 <td style={warmCell()}><Btn kind="ghost" type="button" onClick={() => setSel(r.id)}>Analisis</Btn></td>
               </tr>
             ))}
           </WarmTable>
         )}
       </Panel>
+
       {sel && analysis.data && (
         <Panel style={{ marginBottom: 16 }}>
-          <h3 className="display" style={{ fontSize: 18, margin: "0 0 12px" }}>Analisis butir ({analysis.data.attempts} terkumpul)</h3>
+          <h3 className="display" style={{ fontSize: 18, margin: "0 0 12px" }}>Analisis Butir ({analysis.data.attempts} terkumpul)</h3>
           <ul style={{ margin: 0, paddingLeft: 18, display: "grid", gap: 8, fontSize: 14 }}>
             {analysis.data.items.map((it) => (
               <li key={it.questionId}>
-                {it.stem} — n={it.n}, sulit={Math.round(it.difficulty * 100)}%,
-                distraktor: {Object.entries(it.distractors).map(([k, v]) => `${k}:${v}`).join(" ")}
+                {it.stem} — n={it.n}, tingkat kesulitan={Math.round(it.difficulty * 100)}%
               </li>
             ))}
           </ul>
-        </Panel>
-      )}
-      {sel && diag.data && (
-        <Panel>
-          <h3 className="display" style={{ fontSize: 18, margin: "0 0 12px" }}>Distribusi skor (n={diag.data.n}, rata-rata={diag.data.avg})</h3>
-          <pre style={{ margin: 0, fontSize: 13, overflowX: "auto" }}>{diag.data.buckets.map((b, i) => `${i * 10}-${i * 10 + 10}: ${"#".repeat(b)} (${b})`).join("\n")}</pre>
         </Panel>
       )}
     </>
