@@ -115,6 +115,8 @@ model School {
   announcements   Announcement[]
   collabThreads   CollabThread[]
   collabMessages  CollabMessage[]
+  aiChatSessions  AiChatSession[]
+  aiChatMessages  AiChatMessage[]
 }
 
 model User {
@@ -152,6 +154,7 @@ model User {
   expLogs            ExpLog[]
   expBadges          ExpBadge[]
   collabThreads      CollabThread[] @relation("CollabSender")
+  aiChatSessions     AiChatSession[]
   auditActions       AuditLog[]     @relation("Actor")
   pushSubscriptions  PushSubscription[]
   @@unique([schoolId, email])
@@ -748,4 +751,31 @@ model PushSubscription {
   createdAt    DateTime @default(now())
   @@unique([userId, endpointHash])
   @@index([userId])
+}
+
+// Riwayat chat AI per user (persistensi). Tamu tidak disimpan (tanpa userId).
+// Batas: max 50 pesan per user (pruning FIFO di route). Role user HANYA miliknya.
+model AiChatSession {
+  id        String         @id @default(cuid())
+  schoolId  String
+  school    School         @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  messages  AiChatMessage[]
+  createdAt DateTime       @default(now())
+  updatedAt DateTime       @updatedAt
+  @@unique([schoolId, userId])
+  @@index([schoolId, userId])
+}
+
+model AiChatMessage {
+  id        String        @id @default(cuid())
+  schoolId  String
+  school    School        @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  sessionId String
+  session   AiChatSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  role      String        @db.VarChar(16) // "user" | "assistant"
+  content   String        @db.Text
+  createdAt DateTime      @default(now())
+  @@index([schoolId, sessionId, createdAt])
 }
