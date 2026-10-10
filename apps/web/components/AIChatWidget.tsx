@@ -26,6 +26,18 @@ const PLACEHOLDERS = [
 
 const QUICK_TAGS = ["Jadwal", "Tugas", "Pengumuman"];
 
+function usePrefersReducedMotion() {
+  const [reduced, setReduced] = useState(false);
+  useEffect(() => {
+    const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
+    setReduced(mq.matches);
+    const on = (e: MediaQueryListEvent) => setReduced(e.matches);
+    mq.addEventListener("change", on);
+    return () => mq.removeEventListener("change", on);
+  }, []);
+  return reduced;
+}
+
 export default function AIChatWidget() {
   const [open, setOpen] = useState(false);
   const [messages, setMessages] = useState<ChatMessage[]>([FALLBACK_GREETING]);
@@ -33,6 +45,7 @@ export default function AIChatWidget() {
   const [loading, setLoading] = useState(false);
   const [historyLoaded, setHistoryLoaded] = useState(false);
   const [phIdx, setPhIdx] = useState(0);
+  const reducedMotion = usePrefersReducedMotion();
   const chatEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -128,7 +141,14 @@ export default function AIChatWidget() {
       )}
 
       {open && (
-        <BorderBeam size="md" colorVariant="ocean" strength={0.55} theme="light">
+        <BorderBeam
+          size="md"
+          colorVariant="colorful"
+          strength={0.7}
+          theme="light"
+          borderRadius={20}
+          active={loading && !reducedMotion}
+        >
           <div
             style={{
               width: "clamp(300px, 90vw, 400px)", height: 520,
@@ -139,7 +159,13 @@ export default function AIChatWidget() {
           >
             <div style={{ padding: "12px 16px", display: "flex", alignItems: "center", justifyContent: "space-between", borderBottom: "1px solid rgba(23,23,22,.1)" }}>
               <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                <ThinkingOrb state={loading ? "composing" : "listening"} size={20} theme="light" />
+                <ThinkingOrb
+                  state={loading ? "composing" : "breathing"}
+                  size={20}
+                  theme="light"
+                  paused={!loading}
+                  aria-hidden="true"
+                />
                 <div>
                   <h3 style={{ margin: 0, fontSize: 14, fontWeight: 800, lineHeight: 1.2, color: "#171716" }}>Asisten AI Sekolah</h3>
                   <span style={{ fontSize: 11, color: "#808388" }}>{loading ? "Menjawab…" : "Siap membantu"}</span>
@@ -155,8 +181,8 @@ export default function AIChatWidget() {
               {messages.map((m) => (
                 <div key={m.id} style={{ display: "flex", gap: 8, alignItems: "flex-start", alignSelf: m.sender === "user" ? "flex-end" : "flex-start", maxWidth: "90%" }}>
                   {m.sender === "ai" && (
-                    <span style={{ flexShrink: 0, marginTop: 2 }}>
-                      <ThinkingOrb state="breathing" size={20} theme="light" paused />
+                    <span style={{ flexShrink: 0, marginTop: 2, width: 20, height: 20, borderRadius: "50%", background: "#eef4f3", display: "grid", placeItems: "center", fontSize: 10, fontWeight: 800, color: "#0f766e" }}>
+                      AI
                     </span>
                   )}
                   <div style={{
@@ -172,15 +198,18 @@ export default function AIChatWidget() {
                 </div>
               ))}
               {loading && (
-                <div style={{ display: "flex", gap: 8, alignItems: "center", alignSelf: "flex-start", background: "#fff", border: "1px solid rgba(23,23,22,.12)", borderRadius: "4px 16px 16px 16px", padding: "8px 12px" }}>
-                  <ThinkingOrb state="searching" size={20} theme="light" />
+                <div
+                  role="status"
+                  style={{ display: "flex", gap: 10, alignItems: "center", alignSelf: "flex-start", background: "#fff", border: "1px solid rgba(23,23,22,.12)", borderRadius: "4px 16px 16px 16px", padding: "8px 14px 8px 8px" }}
+                >
+                  <ThinkingOrb state="searching" size={64} theme="light" style={{ width: 44, height: 44 }} aria-label="AI sedang mencari jawaban" />
                   <span style={{ fontSize: 12, color: "#808388" }}>Mencari jawaban…</span>
                 </div>
               )}
               <div ref={chatEndRef} />
             </div>
 
-            <form onSubmit={sendMsg} style={{ padding: 12, background: "#fffdf8", borderTop: "1px solid rgba(23,23,22,.1)", display: "grid", gap: 8 }}>
+            <form onSubmit={sendMsg} aria-busy={loading} style={{ padding: 12, background: "#fffdf8", borderTop: "1px solid rgba(23,23,22,.1)", display: "grid", gap: 8 }}>
               <div style={{ display: "flex", gap: 6 }}>
                 {QUICK_TAGS.map((t) => (
                   <button key={t} type="button" onClick={() => sendText(t)}
