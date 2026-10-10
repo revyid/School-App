@@ -34,26 +34,125 @@ function sanitizeUserInput(text: string): string {
   return s;
 }
 
-async function askAI(systemPrompt: string, userMsg: string): Promise<string> {
-  const aiRes = await fetch(`${AI_ROUTER_BASE}/chat/completions`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${AI_ROUTER_KEY}`,
-    },
-    body: JSON.stringify({
-      model: AI_MODEL,
-      messages: [
-        { role: "system", content: systemPrompt },
-        { role: "user", content: userMsg },
-      ],
-      temperature: 0.6,
-      max_tokens: 600,
-    }),
+async function askAI(
+  systemPrompt: string,
+  userMsg: string,
+  maxTokens = 600,
+  history: { role: "user" | "assistant"; content: string }[] = []
+): Promise<string> {
+  let lastErr = "";
+  for (let attempt = 1; attempt <= 2; attempt++) {
+    try {
+      const ctrl = new AbortController();
+      const timer = setTimeout(() => ctrl.abort(), 25000);
+      const aiRes = await fetch(`${AI_ROUTER_BASE}/chat/completions`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${AI_ROUTER_KEY}`,
+        },
+        body: JSON.stringify({
+          model: AI_MODEL,
+          messages: [
+            { role: "system", content: systemPrompt },
+            ...history,
+            { role: "user", content: userMsg },
+          ],
+          temperature: 0.6,
+          max_tokens: maxTokens,
+        }),
+        signal: ctrl.signal,
+      }).finally(() => clearTimeout(timer));
+      if (aiRes.ok) {
+        const resJson = await aiRes.json();
+        const text = resJson.choices?.[0]?.message?.content;
+        if (typeof text === "string" && text.trim()) return text;
+        lastErr = "empty-choices";
+      } else {
+        lastErr = `router ${aiRes.status}`;
+        // 4xx selain 429 = percuma retry (key salah / payload ditolak)
+        if (aiRes.status < 500 && aiRes.status !== 429) break;
+        await new Promise((r) => setTimeout(r, 800));
+      }
+    } catch (e: any) {
+      lastErr = e?.name === "AbortError" ? "timeout" : "network";
+      await new Promise((r) => setTimeout(r, 800));
+    }
+  }
+  console.error(`[ai-chat] router gagal 2x: ${lastErr} model=${AI_MODEL}`);
+  throw new Error(lastErr || "router gagal");
+}
+
+export const maxDuration = 60;
+
+export async function GET(req: NextRequest) {
+  const a = await gate(req);
+  if (!a.ok || !a.school) return NextResponse.json({ messages: [] });
+  const rows = await runAsSchool(db, a.school.id, async (tx) => {
+    const sess = await tx.aiChatSession.findUnique({
+      where: { schoolId_userId: { schoolId: a.school.id, userId: a.userId } },
+      select: { id: true },
+    });
+    if (!sess) return [];
+    return tx.aiChatMessage.findMany({
+      where: { sessionId: sess.id },
+      select: { role: true, content: true, createdAt: true },
+      orderBy: { createdAt: "asc" },
+      take: 50,
+    });
   });
-  if (!aiRes.ok) throw new Error(`router ${aiRes.status}`);
-  const resJson = await aiRes.json();
-  return resJson.choices?.[0]?.message?.content ?? "Maaf, AI tidak dapat menghasilkan jawaban.";
+  return NextResponse.json({
+    messages: rows.map((r) => ({ sender: r.role === "user" ? "user" : "ai", text: r.content })),
+  });
+}
+
+async function getOrCreateSession(schoolId: string, userId: string) {
+  return runAsSchool(db, schoolId, (tx) =>
+    tx.aiChatSession.upsert({
+      where: { schoolId_userId: { schoolId, userId } },
+      update: {},
+      create: { schoolId, userId },
+      select: { id: true },
+    }));
+}
+
+async function saveMsg(schoolId: string, sessionId: string, role: "user" | "assistant", content: string) {
+  await runAsSchool(db, schoolId, async (tx) => {
+    await tx.aiChatMessage.create({ data: { schoolId, sessionId, role, content: content.slice(0, 4000) } });
+    const count = await tx.aiChatMessage.count({ where: { sessionId } });
+    if (count > 50) {
+      const old = await tx.aiChatMessage.findMany({
+        where: { sessionId }, select: { id: true },
+        orderBy: { createdAt: "asc" }, take: count - 50,
+      });
+      await tx.aiChatMessage.deleteMany({ where: { id: { in: old.map((o) => o.id) } } });
+    }
+  });
+}
+
+// Riwayat singkat (3 pasang terakhir) sebagai konteks lanjutan percakapan
+async function recentHistory(schoolId: string, sessionId: string) {
+  const rows = await runAsSchool(db, schoolId, (tx) =>
+    tx.aiChatMessage.findMany({
+      where: { sessionId },
+      select: { role: true, content: true },
+      orderBy: { createdAt: "desc" },
+      take: 6,
+    }));
+  return rows.reverse().map((r) => ({
+    role: r.role === "user" ? ("user" as const) : ("assistant" as const),
+    content: r.content.slice(0, 800),
+  }));
+}
+
+function honestError(kind: string): { error: string; status: number } {
+  if (kind.includes("429"))
+    return { error: "Model AI sedang penuh (antrean habis). Tunggu ±1 menit lalu coba lagi.", status: 502 };
+  if (kind === "timeout")
+    return { error: "Model AI lambat merespons (>25 dtk). Coba pertanyaan lebih pendek.", status: 504 };
+  if (kind.includes("401") || kind.includes("403"))
+    return { error: "Kunci API AI ditolak server. Hubungi admin untuk periksa key.", status: 502 };
+  return { error: "Layanan AI gagal merespons. Coba lagi sebentar.", status: 502 };
 }
 
 export async function POST(req: NextRequest) {
@@ -190,10 +289,15 @@ KONTEKS DATA PRIBADI SISWA (${contextData.nama}):
 - Pengumuman Terbaru: ${JSON.stringify(contextData.pengumuman)}`;
 
   try {
-    const reply = await askAI(systemPrompt, userMsg);
+    const sess = await getOrCreateSession(a.school.id, a.userId);
+    const hist = await recentHistory(a.school.id, sess.id);
+    const reply = await askAI(systemPrompt, userMsg, 600, hist);
+    await saveMsg(a.school.id, sess.id, "user", userMsg).catch(() => {});
+    await saveMsg(a.school.id, sess.id, "assistant", reply).catch(() => {});
     return NextResponse.json({ reply, mode: "personal" });
-  } catch {
-    return NextResponse.json({ error: "Layanan AI sedang sibuk, coba lagi nanti." }, { status: 502 });
+  } catch (e: any) {
+    const h = honestError(String(e?.message ?? ""));
+    return NextResponse.json({ error: h.error }, { status: h.status });
   }
   }
 
@@ -253,7 +357,8 @@ INFO PUBLIK SEKOLAH:
   try {
     const reply = await askAI(guestPrompt, userMsg);
     return NextResponse.json({ reply, mode: "guest" });
-  } catch {
-    return NextResponse.json({ error: "Layanan AI sedang sibuk, coba lagi nanti." }, { status: 502 });
+  } catch (e: any) {
+    const h = honestError(String(e?.message ?? ""));
+    return NextResponse.json({ error: h.error }, { status: h.status });
   }
 }
