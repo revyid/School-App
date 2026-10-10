@@ -39,7 +39,7 @@ export default function PopularBooks() {
               const author = (b.authors ?? [])[0];
               return (
                 <Reveal key={`${b.title}-${i}`} delay={i * 90}>
-                  <a href="/buku" className="ebook-card" style={{ background: b.color, textDecoration: "none" }}>
+                  <a href="/perkakas/buku" className="ebook-card" style={{ background: b.color, textDecoration: "none" }}>
                     <span className="book-tag">{b.subject}</span>
                     <strong>{b.title}</strong>
                     <small>{author ? `oleh ${author}` : b.year ? `terbit ${b.year}` : " "}</small>
@@ -50,7 +50,7 @@ export default function PopularBooks() {
             })}
       </div>
       <div style={{ marginTop: 18 }}>
-        <a href="/buku" className="btn-sticker" style={{ background: "#fffdf8", color: "#171716", borderColor: "#fffdf8", textDecoration: "none" }}>
+        <a href="/perkakas/buku" className="btn-sticker" style={{ background: "#fffdf8", color: "#171716", borderColor: "#fffdf8", textDecoration: "none" }}>
           Buka rak ebook ↗
         </a>
       </div>

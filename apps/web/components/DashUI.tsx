@@ -26,8 +26,7 @@ export function PageHead({
     <div style={{ display: "flex", flexWrap: "wrap", alignItems: "end", justifyContent: "space-between", gap: 14, marginBottom: 24, position: "relative" }}>
       <div style={{ position: "relative" }}>
         {/* Eyebrow dengan dot hidup */}
-        <p className="kicker" style={{ margin: "0 0 10px", display: "flex", alignItems: "center", gap: 7 }}>
-          <span style={{ width: 7, height: 7, borderRadius: "50%", background: "#e85e43", boxShadow: "0 0 0 4px rgba(232,94,67,.14)", flexShrink: 0 }} />
+        <p className="kicker" style={{ margin: "0 0 10px" }}>
           {kicker}
         </p>
         <h1 className="display" style={{ fontSize: "clamp(28px, 3.4vw, 44px)", margin: 0, letterSpacing: "-0.05em" }}>

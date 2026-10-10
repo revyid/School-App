@@ -16,12 +16,12 @@ const PWA_ASSETS = new Set([
 ]);
 
 // Cocokkan SEGMEN penuh: /publicity tidak lolos sebagai /public.
-// Root "/" + "/buku" + "/tools" = publik per sekolah (guest maupun login boleh melihat).
+// Root "/" + "/perkakas" + "/anonim" = publik per sekolah (guest maupun login boleh melihat).
 function isPublic(path: string): boolean {
-  if (path === "/" || path === "/buku" || path === "/login" || path === "/change-password" || path === "/anonim" || path.startsWith("/api/anonim")) return true;
+  if (path === "/" || path === "/perkakas/buku" || path === "/buku" || path === "/login" || path === "/change-password" || path === "/anonim" || path.startsWith("/api/anonim")) return true;
   if (PWA_ASSETS.has(path)) return true;
   const seg = path.split("/").filter(Boolean)[0] ?? "";
-  return seg === "portal" || seg === "public" || seg === "tools";
+  return seg === "portal" || seg === "public" || seg === "perkakas" || seg === "tools";
 }
 
 // Halaman super-admin (hanya di admin.<apex>). Data tetap dijaga API requireRole.
@@ -47,8 +47,8 @@ export function proxy(req: NextRequest) {
   const connectHost = isAdminHost ? `admin.${apex}` : `${slug}.${apex}`;
   const isDev = process.env.NODE_ENV === "development";
   const path = req.nextUrl.pathname;
-  // /tools/peta memuat tile peta + routing publik (tanpa login, client-side).
-  const isTools = path === "/tools" || path.startsWith("/tools/");
+  // /perkakas/peta memuat tile peta + routing publik (tanpa login, client-side).
+  const isTools = path === "/perkakas" || path.startsWith("/perkakas/") || path === "/tools" || path.startsWith("/tools/");
   const csp = [
     "default-src 'self'",
     `script-src 'self' 'nonce-${nonce}'${isDev ? " 'unsafe-eval'" : ""}`,

@@ -63,8 +63,8 @@ export default function PortalPage() {
             <a href="#mapel" style={{ color: "#575752", textDecoration: "none" }}>Mapel</a>
             <a href="#pengumuman" style={{ color: "#575752", textDecoration: "none" }}>Pengumuman</a>
             <a href="#lokasi" style={{ color: "#575752", textDecoration: "none" }}>Lokasi</a>
-            <a href="/tools" style={{ color: "#575752", textDecoration: "none" }}>Tools 🛠️</a>
-            <a href="/siswa/inbox" style={{ color: "#e85e43", textDecoration: "none", fontWeight: 700 }}>Pesan Anonim ✉</a>
+            <a href="/perkakas" style={{ color: "#575752", textDecoration: "none" }}>Tools 🛠️</a>
+            <a href="/anonim" style={{ color: "#e85e43", textDecoration: "none", fontWeight: 700 }}>Pesan Anonim ✉</a>
           </nav>
           
           <div style={{ display: "flex", alignItems: "center", gap: 10, marginLeft: "auto" }} className="portal-header-actions">
@@ -72,7 +72,7 @@ export default function PortalPage() {
             <details className="portal-burger" style={{ position: "relative" }}>
               <summary aria-label="Buka menu" style={{ listStyle: "none", cursor: "pointer", display: "grid", placeItems: "center", width: 40, height: 40, border: "1px solid #171716", borderRadius: "50%", background: "#fffdf8", fontSize: 18, userSelect: "none" }}>☰</summary>
               <nav style={{ position: "absolute", right: 0, top: 48, display: "flex", flexDirection: "column", gap: 4, minWidth: 200, padding: 10, background: "#fffdf8", border: "1px solid #171716", borderRadius: 16, boxShadow: "0 8px 24px rgba(23,23,22,.15)", zIndex: 50 }}>
-                {[["Tentang", "#tentang"], ["Program", "#program"], ["Mapel", "#mapel"], ["Pengumuman", "#pengumuman"], ["Lokasi", "#lokasi"], ["Tools 🛠️", "/tools"], ["Pesan Anonim ✉", "/siswa/inbox"]].map(([label, href]) => (
+                {[["Tentang", "#tentang"], ["Program", "#program"], ["Mapel", "#mapel"], ["Pengumuman", "#pengumuman"], ["Lokasi", "#lokasi"], ["Tools 🛠️", "/perkakas"], ["Pesan Anonim ✉", "/anonim"]].map(([label, href]) => (
                   <a key={href} href={href} style={{ padding: "10px 14px", borderRadius: 10, color: "#171716", fontSize: 13, fontWeight: 700, textDecoration: "none" }}>{label}</a>
                 ))}
               </nav>
@@ -101,7 +101,7 @@ export default function PortalPage() {
           {/* kiri: siswi — student-hero-transparent (aset baru), fallback char-girl */}
           <div className="portal-hero-side hero-left" style={{ position: "relative", zIndex: 2, justifySelf: "start", width: "min(100%, 250px)", height: 370, transform: "rotate(-5deg)" }}>
             <div style={{ position: "absolute", inset: "40px 0 0", background: "#f5c94a", borderRadius: "48% 52% 38% 62% / 52% 41% 59% 48%", transform: "rotate(-10deg)" }} />
-            <Image src="/assets/student-hero-transparent.webp" alt="Ilustrasi siswi membawa buku" fill sizes="(max-width: 900px) 0px, 250px" className="anim-floaty" style={{ objectFit: "contain", objectPosition: "center bottom" }} priority />
+            <Image src="/assets/student-hero-transparent.webp" alt="Ilustrasi siswi membawa buku" fill sizes="(max-width: 600px) 180px, (max-width: 900px) 220px, 250px" className="anim-floaty" style={{ objectFit: "contain", objectPosition: "center bottom" }} priority />
             <span style={{ position: "absolute", top: 36, left: -28, width: 52, height: 52, display: "grid", placeItems: "center", border: "1px solid #171716", borderRadius: "50%", background: "#fffdf8", boxShadow: "4px 5px 0 #171716", fontSize: 25 }} aria-hidden="true">✎</span>
             <span style={{ position: "absolute", bottom: 33, left: -60, padding: "10px 13px", border: "1px solid #171716", borderRadius: 14, background: "#fffdf8", fontFamily: "var(--font-meta)", fontSize: 8, textTransform: "uppercase", boxShadow: "3px 4px 0 #171716", transform: "rotate(-8deg)" }}>
               kelas<br /><strong style={{ fontFamily: "var(--font-display)", fontSize: 12 }}>ceria</strong>
@@ -112,7 +112,6 @@ export default function PortalPage() {
           <Reveal className="portal-hero-copy">
             <div style={{ textAlign: "center", position: "relative", zIndex: 3 }}>
               <p className="kicker" style={{ justifyContent: "center", display: "flex", alignItems: "center", gap: 8 }}>
-                <span style={{ width: 7, height: 7, borderRadius: "50%", background: "#e85e43", boxShadow: "0 0 0 5px rgba(232,94,67,.14)" }} />
                 ruang tumbuh {nama.toLowerCase()}
               </p>
               <h1 className="display" style={{ fontSize: "clamp(44px, 5.4vw, 84px)", margin: "21px auto 19px", maxWidth: 640, lineHeight: 1.02 }}>
@@ -123,7 +122,7 @@ export default function PortalPage() {
               </p>
               <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 25, marginTop: 32, flexWrap: "wrap" }}>
                 <AuthCta className="btn-sticker btn-primary" style={{ textDecoration: "none", minHeight: 50, padding: "0 21px" }} loginLabel="Mulai belajar ↗" />
-                <a href="/siswa/inbox" className="btn-sticker btn-ghost" style={{ textDecoration: "none", minHeight: 50, padding: "0 21px", background: "#fffdf8" }}>Kirim Pesan / Anonim ✉</a>
+                <a href="/anonim" className="btn-sticker btn-ghost" style={{ textDecoration: "none", minHeight: 50, padding: "0 21px", background: "#fffdf8" }}>Kirim Pesan / Anonim ✉</a>
                 <a href="#tentang" style={{ color: "#e85e43", fontSize: 12, fontWeight: 700, textDecoration: "none" }}>Kenalan dulu ↓</a>
               </div>
             </div>
@@ -132,7 +131,7 @@ export default function PortalPage() {
           {/* kanan: siswa — student-book (aset baru) */}
           <div className="portal-hero-side hero-right" style={{ position: "relative", zIndex: 2, justifySelf: "end", width: "min(100%, 250px)", height: 370, transform: "rotate(6deg)" }}>
             <div style={{ position: "absolute", inset: "40px 0 0", background: "#97c4db", borderRadius: "48% 52% 38% 62% / 52% 41% 59% 48%", transform: "rotate(10deg)" }} />
-            <Image src="/assets/student-book.webp" alt="Ilustrasi siswa berkacamata membaca buku" fill sizes="(max-width: 900px) 0px, 250px" loading="lazy" className="anim-floaty" style={{ objectFit: "contain", objectPosition: "center bottom" }} />
+            <Image src="/assets/student-book.webp" alt="Ilustrasi siswa berkacamata membaca buku" fill sizes="(max-width: 600px) 180px, (max-width: 900px) 220px, 250px" loading="lazy" className="anim-floaty" style={{ objectFit: "contain", objectPosition: "center bottom" }} />
             <span style={{ position: "absolute", top: 72, right: -27, width: 52, height: 52, display: "grid", placeItems: "center", border: "1px solid #171716", borderRadius: "50%", background: "#f5c94a", boxShadow: "4px 5px 0 #171716", fontSize: 25 }} aria-hidden="true">✺</span>
             <span style={{ position: "absolute", bottom: 66, right: -74, padding: "10px 13px", border: "1px solid #171716", borderRadius: 14, background: "#fffdf8", fontFamily: "var(--font-meta)", fontSize: 8, textTransform: "uppercase", boxShadow: "3px 4px 0 #171716", transform: "rotate(9deg)" }}>
               <strong style={{ fontFamily: "var(--font-display)", fontSize: 12 }}>{counts ? `${counts.students} siswa` : "…"}</strong><br />belajar di sini
@@ -416,9 +415,18 @@ export default function PortalPage() {
           align-items: center !important;
           padding: 40px 16px 28px !important;
           text-align: center !important;
+          min-height: calc(100dvh - 72px) !important;
+          justify-content: center !important;
         }
         .portal-hero-copy { width: 100% !important; margin-bottom: 20px !important; }
         .portal-hero-side { display: none !important; }
+        .portal-hero-side.hero-left {
+          display: block !important;
+          width: min(100%, 200px) !important;
+          height: 250px !important;
+          margin-bottom: 8px !important;
+        }
+        .portal-hero-side.hero-right { display: none !important; }
         .portal-hero-bottom {
           grid-column: 1 / -1;
           display: flex !important;

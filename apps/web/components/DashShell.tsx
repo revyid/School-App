@@ -75,6 +75,10 @@ export default function DashShell({
   const path = usePathname();
 
   useEffect(() => {
+    setOpen(false);
+  }, [path]);
+
+  useEffect(() => {
     if (!open) return;
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key === "Escape") setOpen(false);
@@ -294,7 +298,7 @@ export default function DashShell({
           </div>
         </header>
 
-        <main style={{ padding: "clamp(16px, 3vw, 36px) clamp(16px, 4vw, 40px) clamp(40px, 6vh, 60px)", maxWidth: 1200 }}>
+        <main key={path} style={{ padding: "clamp(16px, 3vw, 36px) clamp(16px, 4vw, 40px) clamp(40px, 6vh, 60px)", maxWidth: 1200 }}>
           {children}
         </main>
       </div>

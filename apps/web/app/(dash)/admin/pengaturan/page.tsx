@@ -47,6 +47,8 @@ export default function SettingsPage() {
         defaultPasswordMode: String(s.defaultPasswordMode ?? "random"),
         ttsPhrase: String(s.ttsPhrase ?? "{{name}} sudah hadir"),
         ttsPhraseDup: String(s.ttsPhraseDup ?? "{{name}} sudah di catat"),
+        mapLat: s.mapLat === null || s.mapLat === undefined ? "" : String(s.mapLat),
+        mapLng: s.mapLng === null || s.mapLng === undefined ? "" : String(s.mapLng),
       });
     }
   }, [data]);
@@ -67,6 +69,8 @@ export default function SettingsPage() {
         defaultPasswordMode: f.defaultPasswordMode === "nisn" ? "nisn" : "random",
         ttsPhrase: (f.ttsPhrase ?? "").trim() || "{{name}} sudah hadir",
         ttsPhraseDup: (f.ttsPhraseDup ?? "").trim() || "{{name}} sudah di catat",
+        mapLat: f.mapLat === "" ? null : Number(f.mapLat),
+        mapLng: f.mapLng === "" ? null : Number(f.mapLng),
       }),
     });
     const d = await res.json().catch(() => ({}));
@@ -126,7 +130,15 @@ export default function SettingsPage() {
           <label style={{ display: "grid", gap: 6, fontSize: 13, color: "#74746d" }}>Ucapan suara absensi — scan SUDAH DICATAT / duplikat — pakai {"{{name}}"} dan {"{{class}}"}
             <TextInput value={f.ttsPhraseDup ?? ""} onChange={set("ttsPhraseDup")} placeholder="{{name}} sudah di catat" />
           </label>
-          <Note>Contoh: {"{{name}}"} sudah hadir → “Revy sudah hadir”. Berlaku untuk scan lokal & scanner lain via realtime.</Note>
+          <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
+            <label style={{ display: "grid", gap: 6, fontSize: 13, color: "#74746d" }}>Koordinat Peta (Latitude)
+              <TextInput type="number" step="any" value={f.mapLat ?? ""} onChange={set("mapLat")} placeholder="-6.200000" style={{ width: 170 }} />
+            </label>
+            <label style={{ display: "grid", gap: 6, fontSize: 13, color: "#74746d" }}>Koordinat Peta (Longitude)
+              <TextInput type="number" step="any" value={f.mapLng ?? ""} onChange={set("mapLng")} placeholder="106.816666" style={{ width: 170 }} />
+            </label>
+          </div>
+          <Note>Koordinat ini menentukan titik lokasi sekolah pada Peta Digital di halaman depan.</Note>
           <Toolbar><Btn onClick={save}>Simpan</Btn></Toolbar>
           {msg && <p style={{ fontWeight: 700 }}>{msg}</p>}
         </div>
