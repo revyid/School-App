@@ -112,7 +112,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
     headers: {
       "content-type": name.endsWith(".png") ? "image/png" : "image/jpeg",
       "content-length": String(st.size),
-      "content-disposition": 'attachment; filename="foto-izin"',
+      "content-disposition": `inline; filename="foto-izin-${lr.id.slice(0, 8)}${name.endsWith(".png") ? ".png" : ".jpg"}"`,
       "x-content-type-options": "nosniff",
       "cache-control": "private, max-age=3600",
     },

@@ -22,7 +22,7 @@ export default function IzinGuruPage() {
   const [msg, setMsg] = useState<string | null>(null);
 
   async function review(id: string, decision: "APPROVED" | "REJECTED") {
-    const res = await api(`/api/leave/${id}/review`, {
+    const res = await api(`/api/leave/${id}`, {
       method: "POST",
       headers: { "content-type": "application/json" },
       body: JSON.stringify({ decision, note: notes[id] || null }),
