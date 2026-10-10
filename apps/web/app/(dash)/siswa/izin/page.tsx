@@ -2,7 +2,8 @@
 
 // Siswa: ajukan izin/sakit via kamera live (getUserMedia). Upload galeri TIDAK
 // disediakan di UI; server menolak tanpa capture token valid (sekali pakai, 5 mnt).
-import { useRef, useState } from "react";
+// Foto: SATU jepretan foto bersama siswa + orang tua dalam satu frame.
+import { useEffect, useRef, useState } from "react";
 import { api, useFetch } from "@/app/lib/api";
 import { PageHead, Panel, Toolbar, TextInput, TextSelect, Btn, Badge, Note } from "@/components/DashUI";
 
@@ -18,11 +19,22 @@ export default function IzinPage() {
   const [date, setDate] = useState(todayWibInput);
   const [kind, setKind] = useState("IZIN");
   const [desc, setDesc] = useState("");
-  const [fotoSiswa, setFotoSiswa] = useState<Blob | null>(null);
-  const [fotoOrtu, setFotoOrtu] = useState<Blob | null>(null);
+  const [foto, setFoto] = useState<Blob | null>(null);
+  const [preview, setPreview] = useState<string | null>(null);
   const [msg, setMsg] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const history = useFetch<{ rows: { id: string; date: string; kind: string; status: string }[] }>("/api/leave");
+  const consent = useFetch<{ consented: boolean; consentedAt?: string | null }>("/api/auth/consent");
+
+  const consentKnown = Boolean(consent.data);
+  const consented = consent.data?.consented === true;
+  const needConsent = consentKnown && !consented;
+
+  useEffect(() => {
+    return () => {
+      if (preview) URL.revokeObjectURL(preview);
+    };
+  }, [preview]);
 
   async function startCamera() {
     try {
@@ -45,7 +57,7 @@ export default function IzinPage() {
     setStreaming(false);
   }
 
-  function jepret(target: "siswa" | "ortu") {
+  function jepret() {
     const v = videoRef.current;
     const c = canvasRef.current;
     if (!v || !c) return;
@@ -57,19 +69,30 @@ export default function IzinPage() {
         setMsg("Gagal menjepret");
         return;
       }
-      if (target === "siswa") setFotoSiswa(b);
-      else setFotoOrtu(b);
-      setMsg(`Foto ${target === "siswa" ? "siswa" : "orang tua"} terjepret (${Math.round(b.size / 1024)}KB)`);
+      if (preview) URL.revokeObjectURL(preview);
+      setFoto(b);
+      setPreview(URL.createObjectURL(b));
+      setMsg(`Foto bersama terjepret (${Math.round(b.size / 1024)}KB). Pastikan siswa dan orang tua terlihat dalam satu frame.`);
     }, "image/jpeg", 0.85);
+  }
+
+  function ulang() {
+    if (preview) URL.revokeObjectURL(preview);
+    setFoto(null);
+    setPreview(null);
   }
 
   async function ajukan(e: React.FormEvent) {
     e.preventDefault();
     if (busy) return;
+    if (needConsent) {
+      setMsg("Persetujuan orang tua belum dicatat. Minta admin mencatat persetujuan dulu sebelum mengajukan.");
+      return;
+    }
     setBusy(true);
     setMsg(null);
-    if (!fotoSiswa) {
-      setMsg("Jepret foto siswa dulu via kamera");
+    if (!foto) {
+      setMsg("Jepret foto bersama dulu via kamera");
       setBusy(false);
       return;
     }
@@ -79,23 +102,22 @@ export default function IzinPage() {
       const cd = await cap.json().catch(() => ({}));
       if (!cap.ok) {
         setMsg(cd.error || "Gagal minta token capture");
+        consent.reload();
         return;
       }
-      // 2. Kirim form + token + foto.
+      // 2. Kirim form + token + foto bersama sebagai studentPhoto.
       const form = new FormData();
       form.append("date", date);
       form.append("kind", kind);
       form.append("description", desc);
       form.append("captureToken", cd.token);
-      form.append("studentPhoto", new File([fotoSiswa], "siswa.jpg", { type: "image/jpeg" }));
-      if (fotoOrtu) form.append("parentPhoto", new File([fotoOrtu], "ortu.jpg", { type: "image/jpeg" }));
+      form.append("studentPhoto", new File([foto], "bersama.jpg", { type: "image/jpeg" }));
       const res = await api("/api/leave", { method: "POST", body: form });
       const d = await res.json().catch(() => ({}));
       if (!res.ok) setMsg(d.error || `Gagal (${res.status})`);
       else {
         setMsg("Pengajuan terkirim, menunggu persetujuan wali kelas");
-        setFotoSiswa(null);
-        setFotoOrtu(null);
+        ulang();
         history.reload();
       }
     } catch {
@@ -107,7 +129,17 @@ export default function IzinPage() {
 
   return (
     <>
-      <PageHead kicker="Perizinan" title="Izin / sakit" desc="Foto wajib diambil langsung dari kamera (tidak bisa dari galeri). Pencegahan dasar, bukan anti-spoofing sempurna." />
+      <PageHead kicker="Perizinan" title="Izin / sakit" desc="Foto bersama siswa dan orang tua diambil langsung dari kamera dalam satu frame (tidak bisa dari galeri). Pencegahan dasar, bukan anti-spoofing sempurna." />
+      {consentKnown && !consented && (
+        <Panel style={{ marginBottom: 16 }}>
+          <Note>Persetujuan orang tua belum dicatat. Minta admin/tata usaha mencatat persetujuan di menu Privasi, lalu muat ulang halaman ini sebelum mengajukan.</Note>
+        </Panel>
+      )}
+      {consented && (
+        <Panel style={{ marginBottom: 16 }}>
+          <Note>Persetujuan orang tua sudah tercatat. Anda bisa mengajukan izin.</Note>
+        </Panel>
+      )}
       <Panel style={{ marginBottom: 16 }}>
         <Toolbar>
           {!streaming
@@ -117,11 +149,22 @@ export default function IzinPage() {
         <video ref={videoRef} playsInline muted style={{ width: "100%", maxWidth: 480, background: "#171716", borderRadius: 16 }} />
         <canvas ref={canvasRef} style={{ display: "none" }} />
         <Toolbar>
-          <Btn type="button" kind="ghost" onClick={() => jepret("siswa")} disabled={!streaming}>Jepret foto saya</Btn>
-          <Btn type="button" kind="ghost" onClick={() => jepret("ortu")} disabled={!streaming}>Jepret foto orang tua</Btn>
-          <span style={{ fontSize: 13, color: "#74746d" }}>{fotoSiswa ? "✓ siswa" : "· siswa"} {fotoOrtu ? "✓ ortu" : "· ortu (opsional)"}</span>
+          <Btn
+            type="button"
+            kind="ghost"
+            onClick={jepret}
+            disabled={!streaming || needConsent || busy}
+            title={needConsent ? "Menunggu persetujuan orang tua dicatat admin" : "Jepret foto bersama dalam satu frame"}
+          >
+            Jepret foto bersama
+          </Btn>
+          {foto && <Btn type="button" kind="ghost" onClick={ulang}>Ulangi</Btn>}
+          <span style={{ fontSize: 13, color: "#74746d" }}>{foto ? "Foto bersama: sudah ada" : "Foto bersama: belum ada"}</span>
         </Toolbar>
-        <form onSubmit={ajukan} style={{ display: "grid", gap: 12, maxWidth: 520 }}>
+        {preview && (
+          <img src={preview} alt="Pratinjau foto bersama siswa dan orang tua" style={{ width: "100%", maxWidth: 480, borderRadius: 16, border: "1px solid rgba(23,23,22,.2)" }} />
+        )}
+        <form onSubmit={ajukan} style={{ display: "grid", gap: 12, maxWidth: 520, marginTop: 12 }}>
           <label style={{ display: "grid", gap: 6, fontSize: 13, color: "#74746d" }}>
             Tanggal:
             <TextInput type="date" value={date} onChange={(e) => setDate(e.target.value)} required />
@@ -137,7 +180,18 @@ export default function IzinPage() {
             Alasan (min 10 huruf):
             <textarea value={desc} onChange={(e) => setDesc(e.target.value)} required minLength={10} rows={3} style={{ borderRadius: 14, border: "1px solid rgba(23,23,22,.25)", background: "#fffdf8", padding: "9px 14px", fontSize: 14 }} />
           </label>
-          <Toolbar><Btn type="submit" disabled={busy}>{busy ? "Mengirim…" : "Ajukan"}</Btn></Toolbar>
+          <Toolbar>
+            <Btn
+              type="submit"
+              disabled={busy || needConsent}
+              title={needConsent ? "Menunggu persetujuan orang tua dicatat admin" : "Kirim pengajuan"}
+            >
+              {busy ? "Mengirim..." : "Ajukan"}
+            </Btn>
+          </Toolbar>
+          {needConsent && (
+            <span style={{ fontSize: 13, color: "#74746d" }}>Tombol Ajukan aktif setelah admin mencatat persetujuan orang tua.</span>
+          )}
         </form>
         {msg && <p style={{ fontWeight: 700 }}>{msg}</p>}
       </Panel>

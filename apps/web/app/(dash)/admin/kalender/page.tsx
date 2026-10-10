@@ -4,6 +4,7 @@
 import { useState } from "react";
 import { api, useFetch } from "@/app/lib/api";
 import { PageHead, Panel, Toolbar, TextInput, TextSelect, Btn, Badge, WarmTable, warmCell, Note, Err } from "@/components/DashUI";
+import ConfirmDialog from "@/components/ConfirmDialog";
 
 interface CalRow {
   id: string;
@@ -27,6 +28,7 @@ export default function KalenderPage() {
   const [classId, setClassId] = useState("");
   const [note, setNote] = useState("");
   const [msg, setMsg] = useState<string | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
 
   async function save(e: React.FormEvent) {
     e.preventDefault();
@@ -46,7 +48,13 @@ export default function KalenderPage() {
   }
 
   async function hapus(id: string) {
-    if (!confirm("Hapus hari khusus ini?")) return;
+    setDeleteTarget(id);
+  }
+
+  async function doHapus() {
+    if (!deleteTarget) return;
+    const id = deleteTarget;
+    setDeleteTarget(null);
     const res = await api(`/api/attendance/calendar?id=${id}`, { method: "DELETE" });
     if (!res.ok) setMsg("Gagal menghapus");
     else reload();
@@ -110,6 +118,14 @@ export default function KalenderPage() {
         </form>
         {msg && <p style={{ fontWeight: 700 }}>{msg}</p>}
       </Panel>
+      <ConfirmDialog
+        open={deleteTarget !== null}
+        title="Hapus Hari Khusus"
+        message="Hapus hari khusus ini dari kalender akademik?"
+        confirmLabel="Ya, hapus"
+        onConfirm={doHapus}
+        onCancel={() => setDeleteTarget(null)}
+      />
     </>
   );
 }

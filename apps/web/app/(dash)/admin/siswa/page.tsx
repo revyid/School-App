@@ -18,6 +18,7 @@ import {
   Err,
   LinkBtn,
 } from "@/components/DashUI";
+import ConfirmDialog from "@/components/ConfirmDialog";
 
 interface StudentRow {
   userId: string;
@@ -188,6 +189,18 @@ export default function StudentsPage() {
 
   const { data: settingsData } = useFetch<{ settings: { portalName?: string } }>(`/api/settings`);
   const schoolName = settingsData?.settings?.portalName || "Sekolah";
+  const [pending, setPending] = useState<{ title: string; message: string; action: () => Promise<void> } | null>(null);
+
+  function askConfirm(title: string, message: string, action: () => Promise<void>) {
+    setPending({ title, message, action });
+  }
+
+  async function runPending() {
+    if (!pending) return;
+    const act = pending.action;
+    setPending(null);
+    await act();
+  }
 
   async function createSingleStudent(e: React.FormEvent) {
     e.preventDefault();
@@ -251,26 +264,30 @@ export default function StudentsPage() {
   }
 
   async function toggleActive(row: StudentRow) {
-    if (!confirm(`${row.user.isActive ? "Nonaktifkan" : "Aktifkan"} ${row.user.name}?`)) return;
-    const res = await api(`/api/students/${row.userId}`, {
-      method: "PATCH",
-      csrf: true,
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({ isActive: !row.user.isActive }),
+    const r = row;
+    askConfirm(r.user.isActive ? "Nonaktifkan Siswa" : "Aktifkan Siswa", `${r.user.isActive ? "Nonaktifkan" : "Aktifkan"} ${r.user.name}?`, async () => {
+      const res = await api(`/api/students/${r.userId}`, {
+        method: "PATCH",
+        csrf: true,
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ isActive: !r.user.isActive }),
+      });
+      if (!res.ok) alert("Gagal: " + ((await res.json().catch(() => ({}))).error || res.status));
+      reload();
     });
-    if (!res.ok) alert("Gagal: " + ((await res.json().catch(() => ({}))).error || res.status));
-    reload();
   }
 
   async function resetPw(row: StudentRow) {
-    if (!confirm(`Reset password ${row.user.name}?`)) return;
-    const res = await api(`/api/students/${row.userId}/reset-password`, { method: "POST" });
-    const d = await res.json().catch(() => ({}));
-    if (!res.ok) {
-      alert("Gagal reset password: " + (d.error || res.status));
-      return;
-    }
-    setCreatedPw({ name: row.user.name, pw: d.tempPassword });
+    const r = row;
+    askConfirm("Reset Password", `Reset password ${r.user.name}?`, async () => {
+      const res = await api(`/api/students/${r.userId}/reset-password`, { method: "POST" });
+      const d = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        alert("Gagal reset password: " + (d.error || res.status));
+        return;
+      }
+      setCreatedPw({ name: r.user.name, pw: d.tempPassword });
+    });
   }
 
   // Unduh 1 Kartu QR sebagai PNG
@@ -359,7 +376,7 @@ export default function StudentsPage() {
               disabled={zipLoading}
               style={{ background: "#50643e", borderColor: "#50643e", color: "#fffdf8" }}
             >
-              {zipLoading ? (zipProgress ?? "Memproses…") : "Unduh Kartu QR (.ZIP) 📦"}
+              {zipLoading ? (zipProgress ?? "Memproses…") : "Unduh Kartu QR (.ZIP)"}
             </Btn>
             <LinkBtn href="/admin/import">Import Excel</LinkBtn>
           </div>
@@ -388,7 +405,7 @@ export default function StudentsPage() {
               {createdPw.pw}
             </code>
           </div>
-          <Btn kind="ghost" onClick={() => setCreatedPw(null)}>✕</Btn>
+          <Btn kind="ghost" onClick={() => setCreatedPw(null)}>X</Btn>
         </div>
       )}
 
@@ -513,7 +530,7 @@ export default function StudentsPage() {
                         onClick={() => downloadSingleCard(r)}
                         title="Unduh PNG Kartu QR dengan Nama, Kelas, NISN"
                       >
-                        Unduh QR (PNG) 🖨️
+                        Unduh QR (PNG)
                       </Btn>
                       <Btn kind="ghost" onClick={() => startEdit(r)}>
                         Edit
@@ -606,6 +623,14 @@ export default function StudentsPage() {
           </div>
         </div>
       )}
+      <ConfirmDialog
+        open={pending !== null}
+        title={pending?.title ?? ""}
+        message={pending?.message ?? ""}
+        confirmLabel="Ya, lanjutkan"
+        onConfirm={runPending}
+        onCancel={() => setPending(null)}
+      />
     </>
   );
 }

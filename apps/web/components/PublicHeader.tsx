@@ -39,16 +39,16 @@ export default function PublicHeader({ schoolName }: { schoolName: string }) {
           Portal
         </Link>
         <Link href="/perkakas" style={{ color: "#575752", textDecoration: "none" }}>
-          Tools 🛠️
+          Tools
         </Link>
         <Link href="/perkakas/peta" style={{ color: "#575752", textDecoration: "none" }}>
-          Peta 🗺️
+          Peta
         </Link>
-        <Link href="/perkakas/buku" style={{ color: "#575752", textDecoration: "none" }}>
-          Rak Buku 📚
+        <Link href="/buku" style={{ color: "#575752", textDecoration: "none" }}>
+          Rak Buku
         </Link>
         <Link href="/anonim" style={{ color: "#e85e43", textDecoration: "none" }}>
-          Pesan Anonim ✉
+          Pesan Anonim
         </Link>
         <AuthCta
           className="btn-sticker"

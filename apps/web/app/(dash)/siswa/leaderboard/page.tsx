@@ -6,7 +6,7 @@ import { useEffect, useState } from "react";
 import { api, useFetch } from "@/app/lib/api";
 import { PageHead, Panel, Note, Err } from "@/components/DashUI";
 
-const MEDAL = ["🥇", "🥈", "🥉"];
+const MEDAL = ["1", "2", "3"];
 
 export default function LeaderboardPage() {
   const [rows, setRows] = useState<{ studentId: string; name: string; points: number }[]>([]);

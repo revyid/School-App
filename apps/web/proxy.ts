@@ -18,7 +18,7 @@ const PWA_ASSETS = new Set([
 // Cocokkan SEGMEN penuh: /publicity tidak lolos sebagai /public.
 // Root "/" + "/perkakas" + "/anonim" = publik per sekolah (guest maupun login boleh melihat).
 function isPublic(path: string): boolean {
-  if (path === "/" || path === "/perkakas/buku" || path === "/buku" || path === "/login" || path === "/change-password" || path === "/anonim" || path.startsWith("/api/anonim")) return true;
+  if (path === "/" || path === "/syarat" || path === "/privasi" || path === "/perkakas/buku" || path === "/buku" || path === "/login" || path === "/change-password" || path === "/anonim" || path.startsWith("/api/anonim")) return true;
   if (PWA_ASSETS.has(path)) return true;
   const seg = path.split("/").filter(Boolean)[0] ?? "";
   return seg === "portal" || seg === "public" || seg === "perkakas" || seg === "tools";
@@ -53,7 +53,7 @@ export function proxy(req: NextRequest) {
     "default-src 'self'",
     `script-src 'self' 'nonce-${nonce}'${isDev ? " 'unsafe-eval'" : ""}`,
     "style-src 'self' 'unsafe-inline'",
-    `img-src 'self' data: blob: https://covers.openlibrary.org${isTools ? " https://tile.openstreetmap.org" : ""}`,
+    "img-src 'self' data: blob: https://covers.openlibrary.org https://tile.openstreetmap.org",
     // Dev (next dev): HMR pakai ws:// + port; prod: hanya wss:// apex.
     isDev
       ? `connect-src 'self' ws: wss: http: https:`

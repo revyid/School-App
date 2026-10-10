@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { api, useFetch } from "@/app/lib/api";
 import { PageHead, Panel, Toolbar, TextInput, TextSelect, Btn, WarmTable, warmCell, Note, Err } from "@/components/DashUI";
+import ConfirmDialog from "@/components/ConfirmDialog";
 
 export default function AssignmentsPage() {
   const { data, loading, error, reload } = useFetch<{ rows: { id: string; subject: string | null; teacher: { id: string; name: string }; class: { id: string; name: string } }[] }>(`/api/assignments`);
@@ -11,6 +12,7 @@ export default function AssignmentsPage() {
   const [teacherId, setTeacherId] = useState("");
   const [classId, setClassId] = useState("");
   const [subject, setSubject] = useState("");
+  const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
 
   async function create() {
     if (!teacherId || !classId) { alert("Pilih guru dan kelas"); return; }
@@ -24,7 +26,13 @@ export default function AssignmentsPage() {
   }
 
   async function remove(id: string) {
-    if (!confirm("Hapus penugasan ini?")) return;
+    setDeleteTarget(id);
+  }
+
+  async function doRemove() {
+    if (!deleteTarget) return;
+    const id = deleteTarget;
+    setDeleteTarget(null);
     await api(`/api/assignments?id=${id}`, { method: "DELETE" });
     reload();
   }
@@ -64,6 +72,14 @@ export default function AssignmentsPage() {
           <Btn onClick={create}>Tambah</Btn>
         </Toolbar>
       </Panel>
+      <ConfirmDialog
+        open={deleteTarget !== null}
+        title="Hapus Penugasan"
+        message="Hapus penugasan guru ini?"
+        confirmLabel="Ya, hapus"
+        onConfirm={doRemove}
+        onCancel={() => setDeleteTarget(null)}
+      />
     </>
   );
 }

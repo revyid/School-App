@@ -14,6 +14,7 @@ export default function LoginPage() {
   const [busy, setBusy] = useState(false);
   const [schoolName, setSchoolName] = useState<string | undefined>(undefined);
   const [notice, setNotice] = useState("");
+  const [setuju, setSetuju] = useState(false);
 
   function safeNext(): string | null {
     try {
@@ -48,6 +49,10 @@ export default function LoginPage() {
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
+    if (!setuju) {
+      setError("Centang persetujuan Syarat & Kebijakan Privasi sebelum masuk.");
+      return;
+    }
     setBusy(true);
     setError("");
     const r = await fetch("/api/auth/login", {
@@ -62,6 +67,10 @@ export default function LoginPage() {
       return;
     }
     if (d.csrfToken) sessionStorage.setItem("csrf", d.csrfToken);
+    await fetch("/api/auth/consent", {
+      method: "POST",
+      headers: { "content-type": "application/json", "x-csrf-token": sessionStorage.getItem("csrf") ?? "" },
+    }).catch(() => {});
     const back = safeNext();
     if (d.mustChangePassword) router.replace("/change-password");
     else if (back) router.replace(back);
@@ -135,6 +144,21 @@ export default function LoginPage() {
               <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} autoComplete="current-password" required style={input} />
             </label>
             {error && <p role="alert" style={{ color: "#c94b35", fontSize: 13, margin: 0 }}>{error}</p>}
+            <label style={{ display: "flex", gap: 10, alignItems: "flex-start", fontSize: 12.5, fontWeight: 400, lineHeight: 1.6, color: "#575752", cursor: "pointer" }}>
+              <input
+                type="checkbox"
+                checked={setuju}
+                onChange={(e) => setSetuju(e.target.checked)}
+                style={{ marginTop: 3, width: 16, height: 16, accentColor: "#171716", flexShrink: 0 }}
+              />
+              <span>
+                Saya menyetujui{" "}
+                <a href="/syarat" target="_blank" rel="noreferrer" style={{ color: "#171716", fontWeight: 700 }}>Syarat Layanan</a>{" "}
+                dan{" "}
+                <a href="/privasi" target="_blank" rel="noreferrer" style={{ color: "#171716", fontWeight: 700 }}>Kebijakan Privasi</a>{" "}
+                (UU PDP No. 27/2022). Persetujuan ini dicatat sekolah.
+              </span>
+            </label>
             <button type="submit" disabled={busy} className="btn-sticker btn-primary" style={{ justifyContent: "center", marginTop: 4 }}>
               {busy ? "Memproses…" : "Masuk ↗"}
             </button>

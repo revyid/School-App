@@ -49,7 +49,7 @@ export default function IzinGuruPage() {
             </TextSelect>
           </label>
         </Toolbar>
-        {loading && <Note>Memuat…</Note>}
+        {loading && <Note>Memuat...</Note>}
         {error && <Err>Gagal: {error}</Err>}
         {msg && <p style={{ fontWeight: 700 }}>{msg}</p>}
         {data && data.rows.length === 0 && <Note>Tidak ada pengajuan pada status ini.</Note>}
@@ -63,10 +63,14 @@ export default function IzinGuruPage() {
                 <td style={warmCell()}>{r.description}</td>
                 <td style={warmCell()}>
                   {r.hasPhoto ? (
-                    <>
-                      <a href={`/api/leave/${r.id}/photo?which=siswa`} target="_blank" rel="noreferrer">siswa</a>{" "}
-                      <a href={`/api/leave/${r.id}/photo?which=ortu`} target="_blank" rel="noreferrer">ortu</a>
-                    </>
+                    <a href={`/api/leave/${r.id}/photo?which=siswa`} target="_blank" rel="noreferrer" title="Buka foto bukti ukuran penuh">
+                      <img
+                        src={`/api/leave/${r.id}/photo?which=siswa`}
+                        alt={`Bukti foto pengajuan ${r.student.name}`}
+                        loading="lazy"
+                        style={{ width: 72, height: 72, objectFit: "cover", borderRadius: 10, border: "1px solid rgba(23,23,22,.2)", display: "block" }}
+                      />
+                    </a>
                   ) : "-"}
                 </td>
                 <td style={warmCell()}>
