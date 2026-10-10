@@ -17,6 +17,18 @@ type Book = {
 
 const TAGS = ["Cerita", "Sains", "Aktivitas", "Dunia"];
 
+const BOOK_PALETTE = ["#f5c94a", "#97c4db", "#aec6a4", "#e85e43"];
+
+// Warna stabil per judul (hash judul modulo palet); fallback lokal bila color kosong.
+function bookColor(title: string, color?: string): string {
+  if (color && color.trim().length > 0) return color;
+  let hash = 0;
+  for (let i = 0; i < title.length; i++) {
+    hash = (hash * 31 + title.charCodeAt(i)) | 0;
+  }
+  return BOOK_PALETTE[Math.abs(hash) % BOOK_PALETTE.length];
+}
+
 export default function PopularBooks() {
   const popular = useFetch<{ rows: Book[] }>("/api/portal/popular-books");
   const rows = popular.data?.rows ?? [];
@@ -39,7 +51,7 @@ export default function PopularBooks() {
               const author = (b.authors ?? [])[0];
               return (
                 <Reveal key={`${b.title}-${i}`} delay={i * 90}>
-                  <a href="/perkakas/buku" className="ebook-card" style={{ background: b.color, textDecoration: "none" }}>
+                  <a href="/buku" className="ebook-card" style={{ background: bookColor(b.title, b.color), textDecoration: "none" }}>
                     <span className="book-tag">{b.subject}</span>
                     <strong>{b.title}</strong>
                     <small>{author ? `oleh ${author}` : b.year ? `terbit ${b.year}` : " "}</small>
@@ -50,7 +62,7 @@ export default function PopularBooks() {
             })}
       </div>
       <div style={{ marginTop: 18 }}>
-        <a href="/perkakas/buku" className="btn-sticker" style={{ background: "#fffdf8", color: "#171716", borderColor: "#fffdf8", textDecoration: "none" }}>
+        <a href="/buku" className="btn-sticker" style={{ background: "#fffdf8", color: "#171716", borderColor: "#fffdf8", textDecoration: "none" }}>
           Buka rak ebook ↗
         </a>
       </div>

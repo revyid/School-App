@@ -5,11 +5,12 @@ import { useEffect, useRef } from "react";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 
-export default function Map({ lat, lng }: { lat: number; lng: number }) {
+export default function Map({ lat, lng }: { lat?: number | null; lng?: number | null }) {
   const ref = useRef<HTMLDivElement>(null);
+  const isValid = lat != null && lng != null && lat !== 0 && lng !== 0 && !isNaN(lat) && !isNaN(lng);
 
   useEffect(() => {
-    if (!ref.current) return;
+    if (!isValid || !ref.current) return;
     const map = L.map(ref.current).setView([lat, lng], 15);
     L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
       attribution: "© OpenStreetMap",
@@ -19,7 +20,9 @@ export default function Map({ lat, lng }: { lat: number; lng: number }) {
     return () => {
       map.remove();
     };
-  }, [lat, lng]);
+  }, [isValid, lat, lng]);
+
+  if (!isValid) return null;
 
   return <div ref={ref} style={{ height: 300, width: "100%", maxWidth: 640 }} />;
 }

@@ -4,6 +4,7 @@
 import { useState } from "react";
 import { api, useFetch } from "@/app/lib/api";
 import { PageHead, Panel, Toolbar, Btn, Note } from "@/components/DashUI";
+import ConfirmDialog from "@/components/ConfirmDialog";
 
 interface Q {
   id: string; type: "MCQ" | "SORTING"; stem: string; imageUrl: string | null; options: string[];
@@ -19,6 +20,7 @@ export default function AsesmenSiswaPage() {
   const [sort, setSort] = useState<Record<string, string[]>>({});
   const [msg, setMsg] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [confirmKumpul, setConfirmKumpul] = useState(false);
 
   function move(qid: string, opts: string[], from: number, dir: -1 | 1) {
     const cur = sort[qid] ?? opts;
@@ -31,17 +33,24 @@ export default function AsesmenSiswaPage() {
 
   async function kumpul() {
     if (!aid || !attempt.data || submitting) return;
+    setConfirmKumpul(true);
+  }
+
+  function kumpulMsg(): string {
+    if (!aid || !attempt.data) return "Kumpulkan jawaban? Setelah dikumpulkan tidak bisa diubah.";
     const total = attempt.data.questions.length;
     const dijawab = attempt.data.questions.filter((q) =>
       q.type === "MCQ" ? mcq[q.id] != null : true,
     ).length;
     const kosong = total - dijawab;
-    const yakin = window.confirm(
-      kosong > 0
-        ? `Kamu menjawab ${dijawab} dari ${total} soal (${kosong} kosong). Tetap kumpulkan?`
-        : `Kumpulkan ${total} jawaban? Setelah dikumpulkan tidak bisa diubah.`,
-    );
-    if (!yakin) return;
+    return kosong > 0
+      ? `Kamu menjawab ${dijawab} dari ${total} soal (${kosong} kosong). Tetap kumpulkan?`
+      : `Kumpulkan ${total} jawaban? Setelah dikumpulkan tidak bisa diubah.`;
+  }
+
+  async function doKumpul() {
+    if (!aid || !attempt.data || submitting) return;
+    setConfirmKumpul(false);
     setSubmitting(true);
     // Petakan jawaban SORTING (teks) kembali ke indeks koordinat acak.
     const answers = attempt.data.questions.map((q) => {
@@ -136,6 +145,14 @@ export default function AsesmenSiswaPage() {
         </Panel>
       )}
       {msg && <p style={{ fontWeight: 700 }}>{msg}</p>}
+      <ConfirmDialog
+        open={confirmKumpul}
+        title="Kumpulkan Jawaban"
+        message={kumpulMsg()}
+        confirmLabel="Kumpulkan"
+        onConfirm={doKumpul}
+        onCancel={() => setConfirmKumpul(false)}
+      />
     </>
   );
 }

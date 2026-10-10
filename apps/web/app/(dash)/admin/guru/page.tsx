@@ -16,6 +16,7 @@ import {
   Err,
   LinkBtn,
 } from "@/components/DashUI";
+import ConfirmDialog from "@/components/ConfirmDialog";
 
 interface TeacherRow {
   id: string;
@@ -55,6 +56,18 @@ export default function TeachersPage() {
   const [newSubject, setNewSubject] = useState("");
   const [newSubjectClassId, setNewSubjectClassId] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [pending, setPending] = useState<{ title: string; message: string; action: () => Promise<void> } | null>(null);
+
+  function askConfirm(title: string, message: string, action: () => Promise<void>) {
+    setPending({ title, message, action });
+  }
+
+  async function runPending() {
+    if (!pending) return;
+    const act = pending.action;
+    setPending(null);
+    await act();
+  }
 
   async function create(e: React.FormEvent) {
     e.preventDefault();
@@ -148,30 +161,34 @@ export default function TeachersPage() {
   }
 
   async function removeAssignment(id: string) {
-    if (!confirm("Hapus penugasan mapel ini?")) return;
-    await api(`/api/assignments?id=${id}`, { method: "DELETE" });
-    reload();
+    const aid = id;
+    askConfirm("Hapus Penugasan", "Hapus penugasan mapel ini?", async () => {
+      await api(`/api/assignments?id=${aid}`, { method: "DELETE" });
+      reload();
+    });
   }
 
   async function resetPw(id: string, n: string) {
-    if (!confirm(`Reset password ${n}?`)) return;
-    const res = await api(`/api/teachers/${id}`, { method: "POST" });
-    const d = await res.json().catch(() => ({}));
-    if (!res.ok) {
-      alert("Gagal: " + (d.error || res.status));
-      return;
-    }
-    setLastPw(d.tempPassword);
+    askConfirm("Reset Password", `Reset password ${n}?`, async () => {
+      const res = await api(`/api/teachers/${id}`, { method: "POST" });
+      const d = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        alert("Gagal: " + (d.error || res.status));
+        return;
+      }
+      setLastPw(d.tempPassword);
+    });
   }
 
   async function toggle(id: string, active: boolean, n: string) {
-    if (!confirm(`${active ? "Nonaktifkan" : "Aktifkan"} ${n}?`)) return;
-    await api(`/api/teachers/${id}`, {
-      method: "PATCH",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({ isActive: !active }),
+    askConfirm(active ? "Nonaktifkan Guru" : "Aktifkan Guru", `${active ? "Nonaktifkan" : "Aktifkan"} ${n}?`, async () => {
+      await api(`/api/teachers/${id}`, {
+        method: "PATCH",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ isActive: !active }),
+      });
+      reload();
     });
-    reload();
   }
 
   const classes = classesData?.rows ?? [];
@@ -182,7 +199,7 @@ export default function TeachersPage() {
         kicker="Data master"
         title="Manajemen Guru & Wali Kelas"
         desc="Kelola data akun guru, jabatan wali kelas, serta pengampu mata pelajaran per kelas."
-        right={<LinkBtn href="/admin/penugasan">Daftar Semua Penugasan ↗</LinkBtn>}
+        right={<LinkBtn href="/admin/penugasan">Daftar Semua Penugasan</LinkBtn>}
       />
 
       {lastPw && (
@@ -211,7 +228,7 @@ export default function TeachersPage() {
             <h2 className="display" style={{ fontSize: 19, margin: 0 }}>
               Edit Penugasan: <span style={{ color: "#e85e43" }}>{editingTeacher.name}</span>
             </h2>
-            <Btn kind="ghost" onClick={() => setEditingTeacher(null)}>Tutup ✕</Btn>
+            <Btn kind="ghost" onClick={() => setEditingTeacher(null)}>Tutup</Btn>
           </div>
 
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: 14, marginBottom: 14 }}>
@@ -451,6 +468,14 @@ export default function TeachersPage() {
           </div>
         </form>
       </Panel>
+      <ConfirmDialog
+        open={pending !== null}
+        title={pending?.title ?? ""}
+        message={pending?.message ?? ""}
+        confirmLabel="Ya, lanjutkan"
+        onConfirm={runPending}
+        onCancel={() => setPending(null)}
+      />
     </>
   );
 }

@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { api, useFetch } from "@/app/lib/api";
 import { PageHead, Panel, Toolbar, TextInput, TextSelect, Btn, WarmTable, warmCell, Note, Err } from "@/components/DashUI";
+import ConfirmDialog from "@/components/ConfirmDialog";
 
 const DAYS = ["Min", "Sen", "Sel", "Rab", "Kam", "Jum", "Sab"];
 
@@ -20,6 +21,7 @@ export default function TimetablePage() {
   const [end, setEnd] = useState("07:45");
   const [subjectId, setSubjectId] = useState("");
   const [teacherId, setTeacherId] = useState("");
+  const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
 
   async function add() {
     if (!classId) { alert("Pilih kelas"); return; }
@@ -35,7 +37,13 @@ export default function TimetablePage() {
   }
 
   async function remove(id: string) {
-    if (!confirm("Hapus slot ini?")) return;
+    setDeleteTarget(id);
+  }
+
+  async function doRemove() {
+    if (!deleteTarget) return;
+    const id = deleteTarget;
+    setDeleteTarget(null);
     await api(`/api/timetable?id=${id}`, { method: "DELETE" });
     setRefresh((r) => r + 1);
     reload();
@@ -89,6 +97,14 @@ export default function TimetablePage() {
           </Toolbar>
         </Panel>
       )}
+      <ConfirmDialog
+        open={deleteTarget !== null}
+        title="Hapus Slot Jadwal"
+        message="Hapus slot jadwal ini?"
+        confirmLabel="Ya, hapus"
+        onConfirm={doRemove}
+        onCancel={() => setDeleteTarget(null)}
+      />
     </>
   );
 }

@@ -63,8 +63,8 @@ export default function PortalPage() {
             <a href="#mapel" style={{ color: "#575752", textDecoration: "none" }}>Mapel</a>
             <a href="#pengumuman" style={{ color: "#575752", textDecoration: "none" }}>Pengumuman</a>
             <a href="#lokasi" style={{ color: "#575752", textDecoration: "none" }}>Lokasi</a>
-            <a href="/perkakas" style={{ color: "#575752", textDecoration: "none" }}>Tools 🛠️</a>
-            <a href="/anonim" style={{ color: "#e85e43", textDecoration: "none", fontWeight: 700 }}>Pesan Anonim ✉</a>
+            <a href="/perkakas" style={{ color: "#575752", textDecoration: "none" }}>Tools</a>
+            <a href="/anonim" style={{ color: "#e85e43", textDecoration: "none", fontWeight: 700 }}>Pesan Anonim</a>
           </nav>
           
           <div style={{ display: "flex", alignItems: "center", gap: 10, marginLeft: "auto" }} className="portal-header-actions">
@@ -72,7 +72,7 @@ export default function PortalPage() {
             <details className="portal-burger" style={{ position: "relative" }}>
               <summary aria-label="Buka menu" style={{ listStyle: "none", cursor: "pointer", display: "grid", placeItems: "center", width: 40, height: 40, border: "1px solid #171716", borderRadius: "50%", background: "#fffdf8", fontSize: 18, userSelect: "none" }}>☰</summary>
               <nav style={{ position: "absolute", right: 0, top: 48, display: "flex", flexDirection: "column", gap: 4, minWidth: 200, padding: 10, background: "#fffdf8", border: "1px solid #171716", borderRadius: 16, boxShadow: "0 8px 24px rgba(23,23,22,.15)", zIndex: 50 }}>
-                {[["Tentang", "#tentang"], ["Program", "#program"], ["Mapel", "#mapel"], ["Pengumuman", "#pengumuman"], ["Lokasi", "#lokasi"], ["Tools 🛠️", "/perkakas"], ["Pesan Anonim ✉", "/anonim"]].map(([label, href]) => (
+                {[["Tentang", "#tentang"], ["Program", "#program"], ["Mapel", "#mapel"], ["Pengumuman", "#pengumuman"], ["Lokasi", "#lokasi"], ["Tools", "/perkakas"], ["Pesan Anonim", "/anonim"]].map(([label, href]) => (
                   <a key={href} href={href} style={{ padding: "10px 14px", borderRadius: 10, color: "#171716", fontSize: 13, fontWeight: 700, textDecoration: "none" }}>{label}</a>
                 ))}
               </nav>
@@ -122,6 +122,12 @@ export default function PortalPage() {
               </p>
               <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 25, marginTop: 32, flexWrap: "wrap" }}>
                 <AuthCta className="btn-sticker btn-primary" style={{ textDecoration: "none", minHeight: 50, padding: "0 21px" }} loginLabel="Mulai belajar ↗" />
+                {info.data?.ctaGtkUrl && (
+                  <a href={info.data.ctaGtkUrl} target="_blank" rel="noreferrer" className="btn-sticker btn-ghost" style={{ textDecoration: "none", minHeight: 50, padding: "0 21px", background: "#fffdf8" }}>Ruang GTK ↗</a>
+                )}
+                {info.data?.ctaMuridUrl && (
+                  <a href={info.data.ctaMuridUrl} target="_blank" rel="noreferrer" className="btn-sticker btn-ghost" style={{ textDecoration: "none", minHeight: 50, padding: "0 21px", background: "#fffdf8" }}>Ruang Murid ↗</a>
+                )}
                 <a href="/anonim" className="btn-sticker btn-ghost" style={{ textDecoration: "none", minHeight: 50, padding: "0 21px", background: "#fffdf8" }}>Kirim Pesan / Anonim ✉</a>
                 <a href="#tentang" style={{ color: "#e85e43", fontSize: 12, fontWeight: 700, textDecoration: "none" }}>Kenalan dulu ↓</a>
               </div>
@@ -344,20 +350,10 @@ export default function PortalPage() {
                 Temukan<br /><span style={{ color: "#e85e43" }}>kami.</span>
               </h2>
             </Reveal>
-            <Reveal delay={100}>
-              <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
-                {info.data?.ctaGtkUrl && (
-                  <a href={info.data.ctaGtkUrl} target="_blank" rel="noreferrer" className="btn-sticker btn-ghost" style={{ textDecoration: "none" }}>Ruang GTK ↗</a>
-                )}
-                {info.data?.ctaMuridUrl && (
-                  <a href={info.data.ctaMuridUrl} target="_blank" rel="noreferrer" className="btn-sticker btn-primary" style={{ textDecoration: "none" }}>Ruang Murid ↗</a>
-                )}
-              </div>
-            </Reveal>
           </div>
           <Reveal>
             <div className="card" style={{ padding: "clamp(20px, 3vw, 32px)" }}>
-              {info.data && info.data.school.lat != null && info.data.school.lng != null ? (
+              {info.data?.school.lat != null && info.data?.school.lng != null && info.data.school.lat !== 0 && info.data.school.lng !== 0 ? (
                 <Map lat={info.data.school.lat} lng={info.data.school.lng} />
               ) : (
                 <p style={{ color: "#575752", margin: 0 }}>Peta belum diatur oleh admin sekolah.</p>

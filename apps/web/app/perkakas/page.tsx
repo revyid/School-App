@@ -75,9 +75,9 @@ export default async function ToolsHubPage() {
             </span>
           </Link>
 
-          {/* TOOL 2: Rak Buku Sejarah */}
+          {/* MATERI TERPISAH: katalog buku pindah ke /buku */}
           <Link
-            href="/perkakas/buku"
+            href="/buku"
             className="card"
             style={{
               display: "flex",
@@ -91,16 +91,16 @@ export default async function ToolsHubPage() {
             }}
           >
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
-              <span className="kicker">Buku</span>
+              <span className="kicker">Materi terpisah</span>
             </div>
             <h2 style={{ fontSize: 22, fontWeight: 800, margin: "0 0 8px", letterSpacing: "-0.02em" }}>
-              Katalog Buku Sejarah Digital
+              Katalog Buku Digital
             </h2>
             <p style={{ color: "#74746d", fontSize: 13.5, lineHeight: 1.55, margin: "0 0 20px", flex: 1 }}>
-              Cari dan baca koleksi buku sejarah Kemendikbud & literatur terbuka secara gratis langsung dari browser.
+              Koleksi bacaan pindah ke halaman tersendiri di /buku, tetap gratis tanpa login.
             </p>
             <span style={{ fontWeight: 700, color: "#171716", fontSize: 14 }}>
-              Jelajahi Perpustakaan →
+              Buka /buku →
             </span>
           </Link>
         </div>

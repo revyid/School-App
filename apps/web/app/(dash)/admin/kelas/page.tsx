@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { api, useFetch } from "@/app/lib/api";
 import { PageHead, Panel, Toolbar, TextInput, TextSelect, Btn, WarmTable, warmCell, Note, Err } from "@/components/DashUI";
+import ConfirmDialog from "@/components/ConfirmDialog";
 
 interface ClassRow {
   id: string; name: string; gradeLevel: string | null;
@@ -15,6 +16,7 @@ export default function ClassesPage() {
   const { data: teachers } = useFetch<{ rows: { id: string; name: string }[] }>(`/api/teachers?page=1&perPage=200`);
   const [name, setName] = useState("");
   const [homeroom, setHomeroom] = useState("");
+  const [deleteTarget, setDeleteTarget] = useState<{ id: string; name: string } | null>(null);
 
   async function create() {
     if (!name.trim()) return;
@@ -29,7 +31,13 @@ export default function ClassesPage() {
   }
 
   async function remove(id: string, n: string) {
-    if (!confirm(`Hapus kelas ${n}?`)) return;
+    setDeleteTarget({ id, name: n });
+  }
+
+  async function doRemove() {
+    if (!deleteTarget) return;
+    const { id } = deleteTarget;
+    setDeleteTarget(null);
     const res = await api(`/api/classes/${id}`, { method: "DELETE" });
     if (!res.ok) alert("Gagal: " + ((await res.json().catch(() => ({}))).error || res.status));
     reload();
@@ -68,6 +76,14 @@ export default function ClassesPage() {
           <Btn onClick={create}>Tambah</Btn>
         </Toolbar>
       </Panel>
+      <ConfirmDialog
+        open={deleteTarget !== null}
+        title="Hapus Kelas"
+        message={deleteTarget ? `Hapus kelas ${deleteTarget.name}?` : ""}
+        confirmLabel="Ya, hapus"
+        onConfirm={doRemove}
+        onCancel={() => setDeleteTarget(null)}
+      />
     </>
   );
 }

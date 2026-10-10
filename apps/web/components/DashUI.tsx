@@ -50,7 +50,7 @@ export function PageHead({
 
 // ---------- SegStat (metric cards ala edukids) ----------
 const STAT_ACCENTS = ["#aec6a4", "#f5c94a", "#97c4db", "#e85e43"];
-const STAT_ICONS = ["✦", "◎", "✳", "★"];
+const STAT_ICONS = ["", "", "", ""];
 
 export function SegStat({ stats }: { stats: { label: string; value: React.ReactNode; accent?: string }[] }) {
   return (
@@ -103,7 +103,7 @@ export function Panel({ children, style, deco }: { children: React.ReactNode; st
   return (
     <section className="card" style={{ padding: "clamp(16px, 2.5vw, 26px)", position: "relative", overflow: deco ? "hidden" : undefined, ...style }}>
       {deco && (
-        <span aria-hidden="true" style={{ position: "absolute", right: 18, top: 18, fontSize: 38, opacity: 0.07, transform: "rotate(18deg)", pointerEvents: "none" }}>✦</span>
+        <span aria-hidden="true" style={{ position: "absolute", right: 18, top: 18, fontSize: 38, opacity: 0.07, transform: "rotate(18deg)", pointerEvents: "none" }} />
       )}
       {children}
     </section>

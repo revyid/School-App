@@ -57,7 +57,7 @@ async function subscribePush(): Promise<{ ok: true } | { ok: false; reason: stri
     return { ok: false, reason: "Browser ini tidak mendukung Web Push." };
   try {
     if (typeof Notification !== "undefined" && Notification.permission === "denied")
-      return { ok: false, reason: "Izin notifikasi diblokir. Buka info situs (ikon gembok) → Izin → Notifikasi → Izinkan." };
+      return { ok: false, reason: "Izin notifikasi diblokir. Buka info situs (ikon gembok) > Izin > Notifikasi > Izinkan." };
     const perm = await Notification.requestPermission();
     if (perm !== "granted") return { ok: false, reason: "Izin notifikasi belum diberikan. Ketuk Izinkan saat browser meminta." };
 
@@ -371,7 +371,7 @@ export default function Bell() {
                       padding: 0,
                     }}
                   >
-                    Tandai semua dibaca ✓
+                    Tandai semua dibaca
                   </button>
                 )}
               </div>
@@ -571,7 +571,7 @@ export default function Bell() {
                   fontWeight: 800,
                 }}
               >
-                ✕
+                X
               </button>
             </div>
 

@@ -5,7 +5,7 @@
 // Kendaraan per titik: otomatis / mobil / motor / bus / kapal / pesawat / sepeda / jalan kaki.
 // Ekspor video + PNG + preset JSON. State tersimpan di localStorage.
 import { useEffect, useRef, useState } from "react";
-import Link from "next/link";
+import ConfirmDialog from "@/components/ConfirmDialog";
 
 type Veh = "auto" | "mobil" | "motor" | "bus" | "kapal" | "pesawat" | "sepeda" | "jalan";
 const VEH_LABEL: Record<Veh, string> = {
@@ -85,6 +85,7 @@ export default function PetaClient() {
   const [hits, setHits] = useState<SearchHit[]>([]);
   const [searching, setSearching] = useState(false);
   const [searchMsg, setSearchMsg] = useState("");
+  const [confirmHapusSemua, setConfirmHapusSemua] = useState(false);
 
   const mx = (lng: number) => (lng + 180) / 360;
   const my = (lat: number) => {
@@ -721,7 +722,12 @@ export default function PetaClient() {
   function clearAll() {
     const E = eng.current;
     if (!E.pins.length) return;
-    if (!confirm("Hapus semua lokasi?")) return;
+    setConfirmHapusSemua(true);
+  }
+  function doClearAll() {
+    const E = eng.current;
+    setConfirmHapusSemua(false);
+    if (!E.pins.length) return;
     E.pins = [];
     (E as { _save?: () => void })._save?.();
     (E as { _updateRoute?: () => void })._updateRoute?.();
@@ -849,39 +855,27 @@ export default function PetaClient() {
 
   return (
     <div style={{ background: "#f7f4ec", minHeight: "100vh", color: "#171716" }}>
-      <header
+      <div
         style={{
           display: "flex",
           alignItems: "center",
-          gap: 12,
+          gap: 8,
           padding: "12px clamp(16px,4vw,40px)",
           borderBottom: "1px solid rgba(23,23,22,.14)",
-          position: "sticky",
-          top: 0,
-          zIndex: 40,
           background: "rgba(247,244,236,.96)",
+          flexWrap: "wrap",
         }}
       >
-        <Link href="/perkakas" style={{ textDecoration: "none", color: "#171716", fontWeight: 800, fontSize: 14 }}>
-          Kembali
-        </Link>
-        <div style={{ minWidth: 0 }}>
-          <p className="kicker" style={{ margin: 0 }}>
-            Perkakas gratis
-          </p>
-          <h1 className="display" style={{ fontSize: 20, margin: 0 }}>
-            Pembuat Peta Digital
-          </h1>
-        </div>
-        <div style={{ marginLeft: "auto", display: "flex", gap: 8, flexWrap: "wrap" }}>
-          <button className="btn-sticker btn-ghost" onClick={() => commit({ playing: !playing })}>
-            {playing ? "Jeda" : "Putar"}
-          </button>
-          <button className="btn-sticker btn-primary" onClick={exportVideo} disabled={eng.current.exporting}>
-            {progress ? "Merekam " + progress : "Ekspor Video"}
-          </button>
-        </div>
-      </header>
+        <span className="kicker" style={{ margin: 0, marginRight: "auto" }}>
+          Pembuat Peta Digital
+        </span>
+        <button className="btn-sticker btn-ghost" onClick={() => commit({ playing: !playing })}>
+          {playing ? "Jeda" : "Putar"}
+        </button>
+        <button className="btn-sticker btn-primary" onClick={exportVideo} disabled={eng.current.exporting}>
+          {progress ? "Merekam " + progress : "Ekspor Video"}
+        </button>
+      </div>
 
       <main style={{ maxWidth: 1200, margin: "0 auto", padding: "20px clamp(16px,4vw,40px) 48px" }}>
         <p style={{ color: "#74746d", fontSize: 14, maxWidth: 720, margin: "0 0 16px" }}>
@@ -1112,6 +1106,14 @@ export default function PetaClient() {
       <style>{`@media (max-width: 900px) {
         .peta-layout { grid-template-columns: 1fr !important; }
       }`}</style>
+      <ConfirmDialog
+        open={confirmHapusSemua}
+        title="Hapus semua lokasi?"
+        message="Semua titik lokasi di peta akan dihapus dan tidak bisa dikembalikan."
+        confirmLabel="Ya, hapus semua"
+        onConfirm={doClearAll}
+        onCancel={() => setConfirmHapusSemua(false)}
+      />
     </div>
   );
 }

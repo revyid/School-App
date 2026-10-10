@@ -3,7 +3,6 @@
 // ter-prerender statis tanpa nonce.
 import { connection } from "next/server";
 import SwRegister from "@/components/SwRegister";
-import PrivacyBanner from "@/components/PrivacyBanner";
 import "./globals.css";
 
 export const dynamic = "force-dynamic";
@@ -21,7 +20,6 @@ export default async function RootLayout({ children }: { children: React.ReactNo
     <html lang="id">
       <body>
         {children}
-        <PrivacyBanner />
         <SwRegister />
       </body>
     </html>

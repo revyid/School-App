@@ -57,7 +57,7 @@ export default function SiswaDashboard() {
               {profile.data?.user.studentProfile?.class && <> Kelas {profile.data.user.studentProfile.class.name}.</>}
             </p>
             <Link href="/siswa/tugas" className="btn-sticker btn-primary">
-              Lanjut belajar ↗
+              Lanjut belajar
             </Link>
           </div>
           <div className="dash-hero-char" style={{ position: "relative", flexShrink: 0 }}>
@@ -171,14 +171,14 @@ export default function SiswaDashboard() {
                       fontWeight: 700,
                     }}
                   >
-                    ★ {b.name}
+                    {b.name}
                   </li>
                 ))}
               </ul>
             )}
             <p style={{ margin: "14px 0 0" }}>
               <Link href="/siswa/leaderboard" style={{ fontWeight: 700, color: "#171716" }}>
-                Lihat papan peringkat →
+                Lihat papan peringkat
               </Link>
             </p>
           </div>
