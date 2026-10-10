@@ -72,10 +72,12 @@ export default function DashShell({
   children: React.ReactNode;
 }) {
   const [open, setOpen] = useState(false);
+  const [profileOpen, setProfileOpen] = useState(false);
   const path = usePathname();
 
   useEffect(() => {
     setOpen(false);
+    setProfileOpen(false);
   }, [path]);
 
   useEffect(() => {
@@ -283,18 +285,44 @@ export default function DashShell({
             {schoolName}
           </span>
 
-          {/* Kanan: bell + avatar */}
-          <div style={{ display: "flex", alignItems: "center", gap: 10, marginLeft: "auto" }}>
+          {/* Kanan: bell + avatar dropdown */}
+          <div style={{ display: "flex", alignItems: "center", gap: 10, marginLeft: "auto", position: "relative" }}>
             <Bell />
 
-            {/* Avatar chip */}
-            <span style={{ display: "flex", alignItems: "center", gap: 9, fontSize: 13, paddingLeft: 4, borderLeft: "1px solid rgba(23,23,22,.12)" }}>
+            {/* Avatar chip: klik untuk buka dropdown profil + keluar */}
+            <button
+              type="button"
+              onClick={() => setProfileOpen((v) => !v)}
+              aria-label="Menu profil"
+              aria-expanded={profileOpen}
+              style={{ display: "flex", alignItems: "center", gap: 9, fontSize: 13, padding: "4px 4px 4px 4px", paddingLeft: 12, borderLeft: "1px solid rgba(23,23,22,.12)", background: "transparent", borderTop: "none", borderRight: "none", borderBottom: "none", cursor: "pointer", color: "inherit" }}
+            >
               <span style={{ width: 34, height: 34, borderRadius: "50%", background: accent, color: "#fffdf8", display: "inline-flex", alignItems: "center", justifyContent: "center", fontWeight: 800, border: "2px solid #fffdf8", boxShadow: `0 0 0 2px ${accent}`, flexShrink: 0 }}>
                 {(userName || "?").slice(0, 1).toUpperCase()}
               </span>
-              <span style={{ fontWeight: 700 }} className="dash-username">{userName}</span>
-              <LogoutButton />
-            </span>
+              <span style={{ fontWeight: 700, maxWidth: 140, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }} className="dash-username">{userName}</span>
+              <span aria-hidden="true" style={{ fontSize: 10, color: "#8a8a82" }}>▾</span>
+            </button>
+            {profileOpen && (
+              <>
+                <div onClick={() => setProfileOpen(false)} style={{ position: "fixed", inset: 0, zIndex: 60 }} aria-hidden="true" />
+                <div style={{ position: "absolute", right: 0, top: "calc(100% + 8px)", minWidth: 240, background: "#fffdf8", border: "1px solid rgba(23,23,22,.16)", borderRadius: 16, boxShadow: "0 12px 32px rgba(23,23,22,.18)", padding: 14, zIndex: 61, display: "grid", gap: 8 }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                    <span style={{ width: 40, height: 40, borderRadius: "50%", background: accent, color: "#fffdf8", display: "inline-flex", alignItems: "center", justifyContent: "center", fontWeight: 800, fontSize: 18, flexShrink: 0 }}>
+                      {(userName || "?").slice(0, 1).toUpperCase()}
+                    </span>
+                    <div style={{ minWidth: 0 }}>
+                      <div style={{ fontWeight: 800, fontSize: 14, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{userName}</div>
+                      <div style={{ fontSize: 11, color: "#8a8a82", fontWeight: 700, textTransform: "uppercase", letterSpacing: ".06em" }}>{role}</div>
+                    </div>
+                  </div>
+                  <div style={{ fontSize: 12, color: "#74746d", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{schoolName}</div>
+                  <div style={{ borderTop: "1px solid rgba(23,23,22,.12)", paddingTop: 8 }}>
+                    <LogoutButton />
+                  </div>
+                </div>
+              </>
+            )}
           </div>
         </header>
 

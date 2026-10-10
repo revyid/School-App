@@ -25,36 +25,44 @@ export default function PublicHeader({ schoolName }: { schoolName: string }) {
         <PublicLogo name={schoolName} />
       </Link>
       <nav
+        className="public-nav"
         style={{
           display: "flex",
-          gap: 16,
+          gap: 14,
           marginLeft: "auto",
           alignItems: "center",
-          fontSize: 13,
+          fontSize: 12.5,
           fontWeight: 700,
-          flexWrap: "wrap",
+          flexWrap: "nowrap",
+          whiteSpace: "nowrap",
+          overflowX: "auto",
+          scrollbarWidth: "none",
         }}
       >
-        <Link href="/" style={{ color: "#575752", textDecoration: "none" }}>
+        <Link href="/" style={{ color: "#575752", textDecoration: "none", flexShrink: 0 }}>
           Portal
         </Link>
-        <Link href="/perkakas" style={{ color: "#575752", textDecoration: "none" }}>
+        <Link href="/perkakas" style={{ color: "#575752", textDecoration: "none", flexShrink: 0 }}>
           Tools
         </Link>
-        <Link href="/perkakas/peta" style={{ color: "#575752", textDecoration: "none" }}>
+        <Link href="/perkakas/peta" style={{ color: "#575752", textDecoration: "none", flexShrink: 0 }}>
           Peta
         </Link>
-        <Link href="/buku" style={{ color: "#575752", textDecoration: "none" }}>
+        <Link href="/buku" style={{ color: "#575752", textDecoration: "none", flexShrink: 0 }}>
           Rak Buku
         </Link>
-        <Link href="/anonim" style={{ color: "#e85e43", textDecoration: "none" }}>
+        <Link href="/anonim" style={{ color: "#e85e43", textDecoration: "none", flexShrink: 0 }}>
           Pesan Anonim
         </Link>
         <AuthCta
           className="btn-sticker"
-          style={{ background: "#171716", color: "#fffdf8", textDecoration: "none", padding: "8px 16px", fontSize: 12 }}
+          style={{ background: "#171716", color: "#fffdf8", textDecoration: "none", padding: "8px 16px", fontSize: 12, flexShrink: 0 }}
         />
       </nav>
+      <style>{`.public-nav::-webkit-scrollbar { display: none; }
+      @media (max-width: 760px) {
+        .public-nav a:not(:last-child) { display: none; }
+      }`}</style>
     </header>
   );
 }

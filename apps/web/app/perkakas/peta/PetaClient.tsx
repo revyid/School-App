@@ -872,6 +872,12 @@ export default function PetaClient() {
         <button className="btn-sticker btn-ghost" onClick={() => commit({ playing: !playing })}>
           {playing ? "Jeda" : "Putar"}
         </button>
+        <button className="btn-sticker btn-ghost" onClick={() => fitView()}>
+          Pas di Layar
+        </button>
+        <button className="btn-sticker btn-ghost" onClick={exportPNG}>
+          Simpan PNG
+        </button>
         <button className="btn-sticker btn-primary" onClick={exportVideo} disabled={eng.current.exporting}>
           {progress ? "Merekam " + progress : "Ekspor Video"}
         </button>
@@ -984,7 +990,15 @@ export default function PetaClient() {
             </label>
             <label style={{ display: "grid", gap: 4, fontSize: 13, fontWeight: 700 }}>
               Kendaraan bawaan
-              <select value={defaultVeh} onChange={(e) => commit({ defaultVeh: e.target.value as Veh })} style={ctl}>
+              <select
+                value={defaultVeh}
+                onChange={(e) => {
+                  const v = e.target.value as Veh;
+                  const autoMode: RouteMode = v === "kapal" || v === "pesawat" ? "air" : v === "auto" ? "auto" : "darat";
+                  commit({ defaultVeh: v, mode: autoMode });
+                }}
+                style={ctl}
+              >
                 {(Object.keys(VEH_LABEL) as Veh[]).map((v) => (
                   <option key={v} value={v}>
                     {VEH_LABEL[v]}
@@ -1011,14 +1025,8 @@ export default function PetaClient() {
               <button className="btn-sticker btn-ghost" onClick={() => commit({ dark: !dark })}>
                 {dark ? "Siang" : "Malam"}
               </button>
-              <button className="btn-sticker btn-ghost" onClick={() => fitView()}>
-                Pas Layar
-              </button>
             </div>
             <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-              <button className="btn-sticker btn-ghost" onClick={exportPNG}>
-                Simpan PNG
-              </button>
               <button className="btn-sticker btn-ghost" onClick={savePreset}>
                 Simpan Preset
               </button>
