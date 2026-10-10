@@ -15,7 +15,7 @@ export default function AIChatWidget() {
     {
       id: "welcome",
       sender: "ai",
-      text: "Halo! Saya Asisten Belajar AI. Ada yang bisa saya bantu terkait jadwal, tugas, atau materi belajarmu hari ini?",
+      text: "Halo! Saya Asisten AI sekolah. Tanya soal info sekolah, pengumuman, jadwal, tugas, atau materi belajarmu.",
     },
   ]);
   const [input, setInput] = useState("");

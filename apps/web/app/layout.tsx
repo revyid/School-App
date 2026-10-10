@@ -3,6 +3,7 @@
 // ter-prerender statis tanpa nonce.
 import { connection } from "next/server";
 import SwRegister from "@/components/SwRegister";
+import AIChatWidget from "@/components/AIChatWidget";
 import "./globals.css";
 
 export const dynamic = "force-dynamic";
@@ -21,6 +22,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
       <body>
         {children}
         <SwRegister />
+        <AIChatWidget />
       </body>
     </html>
   );
