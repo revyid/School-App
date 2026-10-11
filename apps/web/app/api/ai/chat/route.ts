@@ -67,8 +67,19 @@ async function askAI(
         signal: ctrl.signal,
       }).finally(() => clearTimeout(timer));
       if (aiRes.ok) {
-        const resJson = await aiRes.json();
-        const text = resJson.choices?.[0]?.message?.content;
+        const raw = await aiRes.text().catch(() => "");
+        let resJson: any = null;
+        try {
+          resJson = JSON.parse(raw);
+        } catch {
+          // Router kadang menempel trailer SSE ("data: [DONE]") setelah JSON.
+          const cut = raw.split("data:")[0];
+          const end = cut.lastIndexOf("}");
+          if (end > 0) {
+            try { resJson = JSON.parse(cut.slice(0, end + 1)); } catch { /* isi di bawah */ }
+          }
+        }
+        const text = resJson?.choices?.[0]?.message?.content;
         if (typeof text === "string" && text.trim()) return text;
         lastErr = "empty-choices";
       } else {
@@ -79,7 +90,7 @@ async function askAI(
         await new Promise((r) => setTimeout(r, 600 * attempt));
       }
     } catch (e: any) {
-      lastErr = e?.name === "AbortError" ? "timeout" : "network";
+      lastErr = e?.name === "AbortError" ? "timeout" : `network:${e?.cause?.message ?? e?.message ?? "unknown"}`;
       await new Promise((r) => setTimeout(r, 600 * attempt));
     }
   }
