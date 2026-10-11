@@ -117,6 +117,7 @@ model School {
   collabMessages  CollabMessage[]
   aiChatSessions  AiChatSession[]
   aiChatMessages  AiChatMessage[]
+  pushSubscriptions PushSubscription[]
 }
 
 model User {
@@ -256,6 +257,8 @@ model SchoolSettings {
   studentRetentionDays Int      @default(90)
   photoRetentionDays   Int      @default(30)
   defaultPasswordMode  String   @default("random")
+  aiChatEnabled        Boolean  @default(false)
+  aiShareStudentData   Boolean  @default(false)
   // Template ucapan TTS saat scan absensi berhasil (variabel: {{name}}, {{class}}).
   ttsPhrase            String   @default("{{name}} sudah hadir")
   // Template ucapan TTS saat scan sudah dicatat/duplikat.
@@ -737,10 +740,11 @@ model CollabMessage {
   @@index([schoolId, threadId, createdAt])
 }
 
-// Web Push subscriptions per user/device. Endpoint unik per perangkat.
-// Tidak pakai schoolId RLS karena endpoint = device, bukan tenant.
+// Web Push subscriptions per user/device, tenant-scoped for RLS.
 model PushSubscription {
   id           String   @id @default(cuid())
+  schoolId     String
+  school       School   @relation(fields: [schoolId], references: [id], onDelete: Cascade)
   userId       String
   user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   endpoint     String   @db.Text
@@ -750,6 +754,7 @@ model PushSubscription {
   userAgent    String?  @db.VarChar(300)
   createdAt    DateTime @default(now())
   @@unique([userId, endpointHash])
+  @@index([schoolId])
   @@index([userId])
 }
 

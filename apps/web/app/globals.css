@@ -206,7 +206,7 @@ a:hover .side-icon-emoji, button:hover .side-icon-emoji { transform: rotate(15de
 
 @media (prefers-reduced-motion: reduce) {
   html { scroll-behavior: auto; }
-  .anim-floaty, .anim-breathe, .anim-drift { animation: none; }
+  .anim-floaty, .anim-breathe, .anim-drift, .anim-dot-ping, .anim-spin-slow { animation: none; }
   .reveal { opacity: 1; transform: none; transition: none; }
   .card-lift:hover, .btn-sticker:hover { transform: none; }
 }

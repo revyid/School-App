@@ -203,7 +203,7 @@ export default function BellToggle({
     if (e.key === 'Enter' || e.key === ' ') lastInput.current = 'keyboard';
   };
 
-  const showBadge = badge && on && count > 0;
+  const showBadge = badge && count > 0;
 
   return (
     <motion.span

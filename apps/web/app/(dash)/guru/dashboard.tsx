@@ -21,7 +21,8 @@ export default function GuruDashboard() {
   const leave = useFetch<{ rows: { id: string }[] }>("/api/leave?status=PENDING");
 
   const kelas = assign.data?.rows ?? [];
-  const firstClass = kelas[0]?.class.id ?? "";
+  const kelasUnik = Array.from(new Map(kelas.map((k) => [k.class.id, k])).values());
+  const firstClass = kelasUnik[0]?.class.id ?? "";
   const daily = useFetch<{ summary: Record<string, number> }>(
     firstClass ? `/api/attendance/daily?date=${todayStr()}&classId=${firstClass}` : null,
   );
@@ -102,10 +103,10 @@ export default function GuruDashboard() {
           <div className="card card-lift" style={{ padding: 18, minHeight: 148 }}>
             <p style={{ fontSize: 12, color: "#74746d", margin: 0 }}>Kelas diampu</p>
             <p className="display" style={{ fontSize: 40, margin: "6px 0" }}>
-              {assign.loading ? "…" : kelas.length}
+              {assign.loading ? "…" : kelasUnik.length}
             </p>
             <p style={{ fontSize: 12, color: "#74746d", margin: 0 }}>
-              {kelas.length > 0 ? kelas.map((k) => k.class.name).slice(0, 2).join(", ") + (kelas.length > 2 ? "…" : "") : "Belum ada penugasan"}
+              {kelas.length > 0 ? kelasUnik.map((k) => k.class.name).slice(0, 2).join(", ") + (kelas.length > 2 ? "…" : "") : "Belum ada penugasan"}
             </p>
           </div>
         </Reveal>
@@ -127,7 +128,7 @@ export default function GuruDashboard() {
               {!s ? "…" : belumAbsen}
             </p>
             <p style={{ fontSize: 12, color: "#74746d", margin: 0 }}>
-              {s ? `Hadir ${s.HADIR ?? 0} · Izin ${s.IZIN ?? 0} · Sakit ${s.SAKIT ?? 0} · Alpha ${s.ALPHA ?? 0}` : (kelas[0]?.class.name ?? "")}
+              {s ? `Hadir ${s.HADIR ?? 0} · Izin ${s.IZIN ?? 0} · Sakit ${s.SAKIT ?? 0} · Alpha ${s.ALPHA ?? 0}` : (kelasUnik[0]?.class.name ?? "")}
             </p>
           </div>
         </Reveal>
@@ -150,8 +151,12 @@ export default function GuruDashboard() {
         <Reveal>
           <div className="card" style={{ padding: 20 }}>
             <h2 style={{ fontSize: 17, fontWeight: 800, margin: "0 0 12px" }}>Tugas terbarumu</h2>
-            {!tasks.data ? (
+            {tasks.loading ? (
               <p style={{ color: "#74746d" }}>Memuat…</p>
+            ) : tasks.error ? (
+              <p role="alert" style={{ color: "#c94b35" }}>Tugas gagal dimuat. Muat ulang halaman.</p>
+            ) : !tasks.data ? (
+              <p style={{ color: "#74746d" }}>Tugas belum tersedia.</p>
             ) : tasks.data.rows.length === 0 ? (
               <p style={{ color: "#74746d" }}>
                 Belum ada tugas. <Link href="/guru/tugas" style={{ fontWeight: 700, color: "#171716" }}>Buat tugas pertama →</Link>
@@ -199,7 +204,9 @@ export default function GuruDashboard() {
           pointer-events: none !important;
           z-index: 1 !important;
         }
-      }`}</style>
+      }
+      @media (max-width: 480px) { .dash-metrics { grid-template-columns: 1fr !important; } }
+      `}</style>
     </div>
   );
 }

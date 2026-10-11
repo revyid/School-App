@@ -23,6 +23,7 @@ export default function BukuClient({ schoolName }: { schoolName: string }) {
   const [rows, setRows] = useState<Book[]>([]);
   const [msg, setMsg] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [hasSearched, setHasSearched] = useState(false);
 
   async function cari(e: React.FormEvent) {
     e.preventDefault();
@@ -31,6 +32,8 @@ export default function BukuClient({ schoolName }: { schoolName: string }) {
       return;
     }
     setBusy(true);
+    setHasSearched(true);
+    setRows([]);
     setMsg(null);
     try {
       const res = await fetch(`/api/portal/search-books?q=${encodeURIComponent(q.trim())}`, { cache: "no-store" });
@@ -47,8 +50,8 @@ export default function BukuClient({ schoolName }: { schoolName: string }) {
     }
   }
 
-  const items = rows.length > 0 ? rows : (popular.data?.rows ?? []);
-  const searching = rows.length > 0 || msg !== null;
+  const searching = hasSearched;
+  const items = searching ? rows : (popular.data?.rows ?? []);
 
   return (
     <div style={{ background: "#f7f4ec", minHeight: "100vh" }}>
@@ -77,21 +80,23 @@ export default function BukuClient({ schoolName }: { schoolName: string }) {
             {busy ? "Mencari…" : "Cari"}
           </button>
           {searching && (
-            <button type="button" onClick={() => { setRows([]); setMsg(null); setQ(""); }} className="btn-sticker btn-ghost">
+            <button type="button" onClick={() => { setRows([]); setHasSearched(false); setMsg(null); setQ(""); }} className="btn-sticker btn-ghost">
               Kembali ke koleksi
             </button>
           )}
         </form>
-        {msg && <p style={{ color: "#74746d", fontSize: 13 }}>{msg}</p>}
+        {msg && <p role="status" aria-live="polite" style={{ color: "#74746d", fontSize: 13 }}>{msg}</p>}
 
-        {!popular.data && !searching ? (
-          <p style={{ color: "#74746d" }}>Memuat katalog buku sejarah…</p>
+        {popular.loading && !searching ? (
+          <p role="status" style={{ color: "#74746d" }}>Memuat katalog buku sejarah…</p>
+        ) : popular.error && !searching ? (
+          <div className="card" style={{ padding: 28 }}><p role="alert" style={{ color: "#c94b35", margin: "0 0 12px" }}>Katalog gagal dimuat. Periksa koneksi lalu coba lagi.</p><button type="button" className="btn-sticker btn-ghost" onClick={popular.reload}>Coba lagi</button></div>
         ) : items.length === 0 ? (
           <div className="card" style={{ padding: 28 }}>
             <p style={{ color: "#74746d", margin: 0 }}>Rak sedang kosong. Coba lagi nanti.</p>
           </div>
         ) : (
-          <div className="ebook-shelf" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(min(200px, 100%), 1fr))", gap: 20 }}>
+          <div className="ebook-shelf">
             {items.map((b, i) => (
               <Reveal key={`${b.title}-${i}`} delay={(i % 4) * 80}>
                 <BookCard b={b} color={b.color ?? CARD_COLORS[i % CARD_COLORS.length]} />
@@ -107,13 +112,13 @@ export default function BukuClient({ schoolName }: { schoolName: string }) {
 function BookCard({ b, color }: { b: Book; color: string }) {
   const author = (b.authors ?? []).slice(0, 2).join(", ");
   const inner = (
-    <article className="ebook-card" style={{ background: color, display: "flex", flexDirection: "column", minHeight: 280, padding: 18, borderRadius: 16, border: "2px solid #171716", position: "relative", overflow: "hidden" }}>
+    <article className="ebook-card" style={{ background: color }}>
       {b.coverUrl && (
         <div style={{ width: "100%", height: 140, marginBottom: 12, borderRadius: 8, overflow: "hidden", background: "rgba(0,0,0,0.06)", display: "flex", alignItems: "center", justifyContent: "center" }}>
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src={b.coverUrl}
-            alt={b.title}
+            alt=""
             style={{ width: "100%", height: "100%", objectFit: "cover" }}
             loading="lazy"
             onError={(e) => {

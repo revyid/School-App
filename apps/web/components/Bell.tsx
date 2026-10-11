@@ -213,6 +213,13 @@ export default function Bell() {
     });
   }, []);
 
+  useEffect(() => {
+    if (!activeNotif) return;
+    const onKey = (event: KeyboardEvent) => { if (event.key === "Escape") setActiveNotif(null); };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [activeNotif]);
+
   // Tutup dropdown klik luar
   useEffect(() => {
     if (!open) return;
@@ -285,8 +292,9 @@ export default function Bell() {
           onColor="#fffdf8"
           onBackground="#171716"
           size="sm"
-          offLabel=""
-          onLabel=""
+          offLabel="Buka notifikasi"
+          onLabel="Tutup notifikasi"
+          label={`Notifikasi${unread > 0 ? `, ${unread} belum dibaca` : ""}`}
           pressed={open}
           onChange={() => {
             setOpen((o) => !o);
@@ -392,8 +400,9 @@ export default function Bell() {
               {localRows.map((n) => {
                 const isUnread = !n.readAt;
                 return (
-                  <li
-                    key={n.id}
+                  <li key={n.id} style={{ listStyle: "none" }}>
+                    <button
+                    type="button"
                     onClick={() => openDetail(n)}
                     style={{
                       padding: "12px 18px",
@@ -456,6 +465,7 @@ export default function Bell() {
                     <span style={{ color: "#a0a096", fontSize: 10, whiteSpace: "nowrap", marginTop: 3 }}>
                       {timeAgo(n.createdAt)}
                     </span>
+                    </button>
                   </li>
                 );
               })}
@@ -500,7 +510,8 @@ export default function Bell() {
       {activeNotif && (
         <div
           role="dialog"
-          aria-label="Detail Notifikasi"
+          aria-modal="true"
+          aria-labelledby="notification-detail-title"
           style={{
             position: "fixed",
             inset: 0,
@@ -544,7 +555,7 @@ export default function Bell() {
                 >
                   Pemberitahuan
                 </span>
-                <h3 className="display" style={{ margin: "8px 0 2px", fontSize: 20, lineHeight: 1.25 }}>
+                <h3 id="notification-detail-title" className="display" style={{ margin: "8px 0 2px", fontSize: 20, lineHeight: 1.25 }}>
                   {activeNotif.title}
                 </h3>
                 <span style={{ fontSize: 11, color: "#74746d" }}>
@@ -570,8 +581,9 @@ export default function Bell() {
                   cursor: "pointer",
                   fontWeight: 800,
                 }}
+                aria-label="Tutup detail notifikasi"
               >
-                X
+                ×
               </button>
             </div>
 

@@ -81,13 +81,21 @@ export default function DashShell({
   }, [path]);
 
   useEffect(() => {
-    if (!open) return;
+    if (!open && !profileOpen) return;
     const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") setOpen(false);
+      if (event.key === "Escape") {
+        setOpen(false);
+        setProfileOpen(false);
+      }
     };
     document.addEventListener("keydown", onKeyDown);
-    return () => document.removeEventListener("keydown", onKeyDown);
-  }, [open]);
+    const previous = document.body.style.overflow;
+    if (open) document.body.style.overflow = "hidden";
+    return () => {
+      document.removeEventListener("keydown", onKeyDown);
+      document.body.style.overflow = previous;
+    };
+  }, [open, profileOpen]);
 
   const roleAccent: Record<string, string> = { ADMIN: "#e85e43", GURU: "#50643e", SISWA: "#4a8fa8" };
   const accent = roleAccent[role] ?? "#e85e43";
@@ -100,7 +108,7 @@ export default function DashShell({
 
   const nav = (items: MenuItem[]) =>
     items.map((m) => {
-      const active = path === m.href || (m.href.length > 1 && path.startsWith(m.href));
+      const active = path === m.href || (m.href.length > 1 && path.startsWith(m.href + "/"));
       const Icon = resolveIcon(m.label);
       const iconColor = active ? accent : "#8a8a82";
       return (
@@ -123,6 +131,7 @@ export default function DashShell({
             transition: "background .18s, color .18s",
           }}
           className="side-link"
+          aria-current={active ? "page" : undefined}
         >
           <span className="side-icon" style={{ flexShrink: 0, display: "grid", placeItems: "center", width: 22, height: 22, transition: "transform .3s" }}>
             <Icon size={16} color={iconColor} />
@@ -201,6 +210,9 @@ export default function DashShell({
           }}
         >
           <aside
+            role="dialog"
+            aria-label="Menu navigasi"
+            aria-modal="true"
             onClick={(e) => e.stopPropagation()}
             style={{
               width: "min(84vw, 280px)",
@@ -242,6 +254,7 @@ export default function DashShell({
       <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column" }}>
         {/* Topbar */}
         <header
+          aria-label="Navigasi utama"
           style={{
             display: "flex",
             alignItems: "center",
@@ -266,6 +279,8 @@ export default function DashShell({
 
           {/* Search pill */}
           <span
+            role="status"
+            aria-label={`Sekolah aktif: ${schoolName}`}
             className="dash-search-pill"
             style={{
               flex: 1,
@@ -326,7 +341,7 @@ export default function DashShell({
           </div>
         </header>
 
-        <main key={path} style={{ padding: "clamp(16px, 3vw, 36px) clamp(16px, 4vw, 40px) clamp(40px, 6vh, 60px)", maxWidth: 1200 }}>
+        <main id="main-content" style={{ padding: "clamp(16px, 3vw, 36px) clamp(16px, 4vw, 40px) clamp(40px, 6vh, 60px)", maxWidth: 1200 }}>
           {children}
         </main>
       </div>
