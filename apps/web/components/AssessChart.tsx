@@ -1,23 +1,20 @@
 "use client";
 
-// Bar chart persentase benar per soal (Chart.js). Client-only.
+// Spline chart persentase benar per soal (Chart.js line + tension). Client-only.
+// Garis melengkung (tidak lancip): tension 0.45, titik bulat, area fill lembut.
 import { useEffect, useRef } from "react";
 import {
   Chart,
-  BarController,
-  BarElement,
+  LineController,
+  LineElement,
+  PointElement,
   CategoryScale,
   LinearScale,
+  Filler,
   Tooltip,
 } from "chart.js";
 
-Chart.register(BarController, BarElement, CategoryScale, LinearScale, Tooltip);
-
-function barColor(pct: number): string {
-  if (pct >= 70) return "#50643e";
-  if (pct >= 40) return "#f5c94a";
-  return "#e85e43";
-}
+Chart.register(LineController, LineElement, PointElement, CategoryScale, LinearScale, Filler, Tooltip);
 
 export default function AssessChart({ labels, pcts, counts }: { labels: string[]; pcts: number[]; counts?: number[] }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -29,16 +26,23 @@ export default function AssessChart({ labels, pcts, counts }: { labels: string[]
     if (!el) return;
     chartRef.current?.destroy();
     chartRef.current = new Chart(el, {
-      type: "bar",
+      type: "line",
       data: {
         labels,
         datasets: [
           {
             label: "% benar",
             data: pcts,
-            backgroundColor: pcts.map(barColor),
-            borderRadius: 6,
-            maxBarThickness: 44,
+            borderColor: "#50643e",
+            backgroundColor: "rgba(80,100,62,.14)",
+            fill: true,
+            tension: 0.45,
+            borderWidth: 2.5,
+            pointRadius: 5,
+            pointHoverRadius: 7,
+            pointBackgroundColor: "#50643e",
+            pointBorderColor: "#fffdf8",
+            pointBorderWidth: 2,
           },
         ],
       },
