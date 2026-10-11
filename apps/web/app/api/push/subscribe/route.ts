@@ -2,11 +2,9 @@ import { NextRequest, NextResponse } from "next/server";
 import { SESSION_COOKIE } from "@sms/shared/auth";
 import { requireRole } from "@/server/auth-gate";
 import { db } from "@sms/db/client";
+import { runAsSchool } from "@sms/db/tenant";
 import { randomUUID } from "node:crypto";
 import { endpointHash } from "@/server/push";
-
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const dbAny = db as any;
 
 async function gate(req: NextRequest) {
   return requireRole({
@@ -35,10 +33,11 @@ export async function POST(req: NextRequest) {
   const hash = endpointHash(String(endpoint));
   const ua = req.headers.get("user-agent")?.slice(0, 300) ?? null;
 
-  await dbAny.pushSubscription.upsert({
+  await runAsSchool(db, a.school.id, (tx) => tx.pushSubscription.upsert({
     where: { userId_endpointHash: { userId: a.userId, endpointHash: hash } },
     create: {
       id: randomUUID(),
+      schoolId: a.school.id,
       userId: a.userId,
       endpoint: String(endpoint),
       endpointHash: hash,
@@ -47,7 +46,7 @@ export async function POST(req: NextRequest) {
       userAgent: ua,
     },
     update: { p256dh: String(keys.p256dh), auth: String(keys.auth), userAgent: ua },
-  });
+  }));
 
   return NextResponse.json({ ok: true });
 }
@@ -62,8 +61,8 @@ export async function DELETE(req: NextRequest) {
   if (!endpoint) return NextResponse.json({ error: "endpoint wajib" }, { status: 400 });
 
   const hash = endpointHash(String(endpoint));
-  await dbAny.pushSubscription.deleteMany({
+  await runAsSchool(db, a.school.id, (tx) => tx.pushSubscription.deleteMany({
     where: { userId: a.userId, endpointHash: hash },
-  });
+  }));
   return NextResponse.json({ ok: true });
 }

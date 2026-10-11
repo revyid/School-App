@@ -41,6 +41,8 @@ export async function GET(req: NextRequest) {
       studentRetentionDays: 90,
       photoRetentionDays: 30,
       defaultPasswordMode: "random",
+      aiChatEnabled: s?.aiChatEnabled ?? false,
+      aiShareStudentData: s?.aiShareStudentData ?? false,
       ttsPhrase: "{{name}} sudah hadir",
       ttsPhraseDup: "{{name}} sudah di catat",
       ...(s ?? {}),

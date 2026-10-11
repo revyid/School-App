@@ -37,6 +37,13 @@ export default async function PrivasiPage() {
           <p>
             Data disimpan dalam basis data terenkripsi dan terisolasi per sekolah. Data Anda tidak pernah dijual, disewakan, atau dibagikan kepada pihak ketiga tanpa persetujuan eksplisit.
           </p>
+          <h2 style={{ fontSize: 18, color: "#171716", marginTop: 24, marginBottom: 8 }}>4. Asisten AI dan pemrosesan pihak ketiga</h2>
+          <p>
+            Fitur chat AI dinonaktifkan secara default. Jika diaktifkan oleh konfigurasi layanan dan administrator sekolah, pertanyaan yang dikirim melalui chat akan diproses oleh penyedia model AI pihak ketiga yang dikonfigurasi. Secara default, konteks pribadi siswa—seperti profil, tugas, nilai, atau kehadiran—tidak dikirim ke penyedia tersebut. Pengiriman konteks data siswa hanya diizinkan jika fitur berbagi data AI diaktifkan oleh administrator sekolah dan juga diizinkan secara eksplisit oleh konfigurasi server. Nama siswa dan pengenal langsung tidak dimasukkan ke prompt sistem. Pengguna sebaiknya tidak menuliskan data pribadi sensitif di pertanyaan chat.
+          </p>
+          <p>
+            Admin sekolah dapat meninjau dan mengubah pengaturan AI di halaman Pengaturan Sekolah. Pengaturan tersebut tidak dapat melewati konfigurasi keamanan server. Jika AI atau berbagi konteks dinonaktifkan, permintaan AI tidak akan diproses atau konteks siswa tidak akan diteruskan ke penyedia model.
+          </p>
         </div>
       </main>
     </div>

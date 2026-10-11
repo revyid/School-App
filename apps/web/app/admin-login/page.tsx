@@ -16,19 +16,24 @@ export default function AdminLoginPage() {
     e.preventDefault();
     setBusy(true);
     setError("");
-    const r = await fetch("/api/auth/admin-login", {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({ email, password }),
-    });
-    const d = await r.json().catch(() => ({}));
-    setBusy(false);
-    if (!r.ok) {
-      setError(d.error ?? "Email atau kata sandi salah");
-      return;
+    try {
+      const r = await fetch("/api/auth/admin-login", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ email, password }),
+      });
+      const d = await r.json().catch(() => ({}));
+      if (!r.ok) {
+        setError(d.error ?? "Email atau kata sandi salah");
+        return;
+      }
+      if (d.csrfToken) sessionStorage.setItem("csrf", d.csrfToken);
+      router.replace(d.mustChangePassword ? "/change-password" : "/pantau");
+    } catch {
+      setError("Koneksi gagal. Periksa internet lalu coba lagi.");
+    } finally {
+      setBusy(false);
     }
-    if (d.csrfToken) sessionStorage.setItem("csrf", d.csrfToken);
-    router.replace("/pantau");
   }
 
   return (
@@ -40,7 +45,7 @@ export default function AdminLoginPage() {
         <form onSubmit={submit} style={{ display: "grid", gap: 12 }}>
           <label style={{ display: "grid", gap: 6, fontSize: 13, color: "#74746d" }}>
             Email
-            <TextInput value={email} onChange={(e) => setEmail(e.target.value)} autoComplete="username" required />
+            <TextInput type="email" value={email} onChange={(e) => setEmail(e.target.value)} autoComplete="username" required />
           </label>
           <label style={{ display: "grid", gap: 6, fontSize: 13, color: "#74746d" }}>
             Kata sandi

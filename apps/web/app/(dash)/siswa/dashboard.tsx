@@ -21,7 +21,7 @@ export default function SiswaDashboard() {
   const exp = useFetch<{ points: number; badges: { name: string; awardedAt: string }[] }>("/api/exp/me");
 
   const rows = tasks.data?.rows ?? [];
-  const belum = rows.filter((t) => t.state === "BELUM").length;
+  const belum = rows.filter((t) => t.state === "BELUM" || t.state === "TERLAMBAT").length;
   const sudah = rows.filter((t) => t.state === "SUDAH").length;
   const pct = rows.length === 0 ? 0 : Math.round((sudah / rows.length) * 100);
   const pertama = profile.data?.user.name.split(" ")[0] ?? "Teman";
@@ -88,14 +88,14 @@ export default function SiswaDashboard() {
         <Reveal delay={60}>
           <div className="card card-lift" style={{ background: "#50643e", color: "#fffdf8", padding: 18, minHeight: 150 }}>
             <p style={{ fontSize: 12, opacity: 0.85, margin: 0 }}>Tugas selesai</p>
-            <p className="display" style={{ fontSize: 40, margin: "6px 0" }}>{tasks.loading ? "…" : `${sudah}/${rows.length}`}</p>
+            <p className="display" style={{ fontSize: 40, margin: "6px 0" }}>{tasks.loading ? "…" : tasks.error ? "—" : `${sudah}/${rows.length}`}</p>
             <p style={{ fontSize: 12, color: "#f5c94a", margin: 0 }}>{pct}% dari semua tugas</p>
           </div>
         </Reveal>
         <Reveal delay={120}>
           <div className="card card-lift" style={{ padding: 18, minHeight: 150 }}>
             <p style={{ fontSize: 12, color: "#74746d", margin: 0 }}>Menunggu dikerjakan</p>
-            <p className="display" style={{ fontSize: 40, margin: "6px 0" }}>{tasks.loading ? "…" : belum}</p>
+            <p className="display" style={{ fontSize: 40, margin: "6px 0" }}>{tasks.loading ? "…" : tasks.error ? "—" : belum}</p>
             <p style={{ fontSize: 12, color: "#74746d", margin: 0 }}>
               {belum > 0 ? "Yuk cicil satu per satu" : "Bersih, kerja bagus!"}
             </p>
@@ -104,14 +104,14 @@ export default function SiswaDashboard() {
         <Reveal delay={180}>
           <div className="card card-lift" style={{ background: "#f5c94a", padding: 18, minHeight: 150 }}>
             <p style={{ fontSize: 12, margin: 0 }}>Bintang terkumpul</p>
-            <p className="display" style={{ fontSize: 40, margin: "6px 0" }}>{exp.loading ? "…" : points}</p>
+            <p className="display" style={{ fontSize: 40, margin: "6px 0" }}>{exp.loading ? "…" : exp.error ? "—" : points}</p>
             <p style={{ fontSize: 12, margin: 0 }}>poin EXP</p>
           </div>
         </Reveal>
         <Reveal delay={240}>
           <div className="card card-lift" style={{ padding: 18, minHeight: 150 }}>
             <p style={{ fontSize: 12, color: "#74746d", margin: 0 }}>Lencana</p>
-            <p className="display" style={{ fontSize: 40, margin: "6px 0" }}>{exp.loading ? "…" : badges.length}</p>
+            <p className="display" style={{ fontSize: 40, margin: "6px 0" }}>{exp.loading ? "…" : exp.error ? "—" : badges.length}</p>
             <p style={{ fontSize: 12, color: "#74746d", margin: 0 }}>
               {badges.length > 0 ? badges[badges.length - 1].name : "Belum ada — kumpulkan!"}
             </p>
@@ -128,6 +128,8 @@ export default function SiswaDashboard() {
             </h2>
             {tasks.loading ? (
               <p style={{ color: "#74746d" }}>Memuat…</p>
+            ) : tasks.error ? (
+              <p role="alert" style={{ color: "#c94b35" }}>Tugas gagal dimuat. Muat ulang halaman.</p>
             ) : menunggu.length === 0 ? (
               <p style={{ color: "#74746d" }}>
                 Tidak ada tugas menunggu. {rows.length === 0 ? "Gurumu belum memberikan tugas." : "Semua sudah dikumpulkan!"}
@@ -199,7 +201,9 @@ export default function SiswaDashboard() {
           pointer-events: none !important;
           z-index: 1 !important;
         }
-      }`}</style>
+      }
+      @media (max-width: 480px) { .dash-metrics { grid-template-columns: 1fr !important; } }
+      `}</style>
     </div>
   );
 }
