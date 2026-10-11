@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect } from "react";
 import dynamic from "next/dynamic";
 import Image from "next/image";
 import PublicLogo from "@/components/PublicLogo";
@@ -31,7 +32,10 @@ const SUBJECT_GLYPH: GlyphName[] = ["sigma", "textAa", "spark", "target"];
 export default function PortalPage() {
   const info = useFetch<PortalInfo>("/api/portal/info");
 
-  const nama = info.data?.school.name ?? "…";
+  const nama = info.data?.portalName || info.data?.school.name || "…";
+  useEffect(() => {
+    if (info.data) document.title = nama;
+  }, [info.data, nama]);
   const ann = info.data?.announcements ?? [];
   const counts = info.data?.counts;
   const subjects = info.data?.subjects ?? [];
