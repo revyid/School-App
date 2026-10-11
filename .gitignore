@@ -3,6 +3,7 @@ node_modules/
 dist/
 packages/db/src/generated/
 *.env
+.env.local
 !.env.example
 .env.example
 !apps/*/.env.example

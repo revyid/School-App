@@ -2,7 +2,7 @@
 
 ## RLS / tenants
 - [ ] `pnpm test` hijau: `tenant-isolation.test.ts` mencakup SEMUA tabel di RLS_TABLES
-      (saat ini 34 tabel) + blok `it` per tabel baru.
+      (saat ini 37 tabel) + blok `it` per tabel baru.
 - [ ] Semua tabel tenant: ENABLE + FORCE RLS + policy `tenant_isolation`
       (pola migrasi `*_rls`), grant minimal ke `app_user`.
 - [ ] `AuditLog` append-only (app_user tanpa UPDATE/DELETE).
@@ -41,3 +41,9 @@
 | Tanggal | Drill | Hasil |
 | ------- | ----- | ----- |
 | -       | -     | -     |
+
+## AI chat dan data siswa
+- AI chat nonaktif secara default (`AI_CHAT_ENABLED=false`).
+- Berbagi data siswa ke vendor pihak ketiga hanya aktif jika flag env, toggle admin sekolah, dan teks kebijakan privasi yang mendokumentasikan AI/pihak ketiga semuanya mengizinkan.
+- Nama, NISN, email, dan identifier siswa tidak dimasukkan ke system prompt; tugas/asesmen yang dikirim ke konteks harus sudah `publishAt <= now()`.
+- `DATABASE_URL`, `SYSTEM_URL`, `VAPID_PRIVATE`, `INTERNAL_TOKEN`, dan credential lain yang pernah tersimpan di `.env.local` harus ditinjau/dirotasi bila aktif; ikuti `docs/secret-rotation.md` dan jangan commit nilainya.

@@ -39,6 +39,7 @@ function usePrefersReducedMotion() {
 }
 
 export default function AIChatWidget() {
+  const [enabled, setEnabled] = useState(false);
   const [open, setOpen] = useState(false);
   const [messages, setMessages] = useState<ChatMessage[]>([FALLBACK_GREETING]);
   const [input, setInput] = useState("");
@@ -47,6 +48,26 @@ export default function AIChatWidget() {
   const [phIdx, setPhIdx] = useState(0);
   const reducedMotion = usePrefersReducedMotion();
   const chatEndRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    let active = true;
+    fetch("/api/ai/chat", { cache: "no-store" })
+      .then((res) => res.json().catch(() => ({})))
+      .then((data) => {
+        if (!active) return;
+        setEnabled(data.enabled === true);
+        if (data.enabled === true && Array.isArray(data.messages) && data.messages.length > 0) {
+          setMessages(data.messages.map((m: { sender: string; text: string }, i: number) => ({
+            id: `h-${i}`,
+            sender: m.sender === "user" ? "user" : "ai",
+            text: m.text,
+          })));
+        }
+        setHistoryLoaded(true);
+      })
+      .catch(() => { if (active) setHistoryLoaded(true); });
+    return () => { active = false; };
+  }, []);
 
   useEffect(() => {
     const t = setInterval(() => setPhIdx((i) => (i + 1) % PLACEHOLDERS.length), 3000);
@@ -63,6 +84,7 @@ export default function AIChatWidget() {
     try {
       const res = await fetch("/api/ai/chat", { cache: "no-store" });
       const d = await res.json().catch(() => ({}));
+      setEnabled(d.enabled === true);
       if (res.ok && Array.isArray(d.messages) && d.messages.length > 0) {
         setMessages(
           d.messages.map((m: { sender: string; text: string }, i: number) => ({
@@ -117,6 +139,8 @@ export default function AIChatWidget() {
     e.preventDefault();
     sendText(input);
   }
+
+  if (!enabled) return null;
 
   return (
     <div style={{ position: "fixed", bottom: 20, right: 20, zIndex: 9999 }}>

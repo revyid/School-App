@@ -3,7 +3,7 @@ import { db } from "../client.js";
 import { runAsSchool } from "../tenant.js";
 import { dbSystemTest } from "../test-utils.js"; // TEST-ONLY
 
-const RLS_TABLES = ["User", "Class", "TeacherClass", "StudentProfile", "AuditLog", "School", "Subject", "SchoolSettings", "TimetableSlot", "ImportBatch", "AttendanceRecord", "AcademicCalendar", "StudentQr", "Task", "TaskMaterial", "Submission", "Notification", "MessageOutbox", "LeaveRequest", "CaptureSession", "ParentalConsent", "PrivacyPolicy", "Assessment", "Question", "AssessQuestion", "AssessAttempt", "AssessAnswer", "StudyGroup", "StudyGroupMember", "ExpLog", "ExpBadge", "Announcement", "CollabThread", "CollabMessage"];
+const RLS_TABLES = ["User", "Class", "TeacherClass", "StudentProfile", "AuditLog", "School", "Subject", "SchoolSettings", "TimetableSlot", "ImportBatch", "AttendanceRecord", "AcademicCalendar", "StudentQr", "Task", "TaskMaterial", "Submission", "Notification", "MessageOutbox", "LeaveRequest", "CaptureSession", "ParentalConsent", "PrivacyPolicy", "Assessment", "Question", "AssessQuestion", "AssessAttempt", "AssessAnswer", "StudyGroup", "StudyGroupMember", "ExpLog", "ExpBadge", "Announcement", "CollabThread", "CollabMessage", "PushSubscription", "AiChatSession", "AiChatMessage"];
 // Aturan: setiap tabel tenant BARU wajib ditambah di RLS_TABLES + satu blok it di bawah.
 
 let A = "", B = "";
@@ -43,6 +43,10 @@ beforeAll(async () => {
   BIDS.att = (await dbSystemTest.attendanceRecord.create({ data: { schoolId: B, studentId: bu.id, date: new Date(Date.UTC(2026, 0, 5)), status: "HADIR", source: "SCAN" } })).id;
   BIDS.cal = (await dbSystemTest.academicCalendar.create({ data: { schoolId: B, date: new Date(Date.UTC(2026, 0, 6)), kind: "LIBUR" } })).id;
   BIDS.qr = (await dbSystemTest.studentQr.create({ data: { schoolId: B, studentId: bu.id, token: `sms1-${uniq("a").replace(/[^0-9a-f]/g, "b").padEnd(32, "0").slice(0, 32)}` } })).id;
+  BIDS.push = (await dbSystemTest.pushSubscription.create({ data: { schoolId: B, userId: bu.id, endpoint: "https://push.example/" + uniq("endpoint"), endpointHash: uniq("hash").replace(/[^a-z0-9]/g, "a").slice(0, 64).padEnd(64, "a"), p256dh: "p256dh", auth: "auth" } })).id;
+  const bsess = await dbSystemTest.aiChatSession.create({ data: { schoolId: B, userId: bu.id } });
+  BIDS.aiSession = bsess.id;
+  BIDS.aiMessage = (await dbSystemTest.aiChatMessage.create({ data: { schoolId: B, sessionId: bsess.id, role: "user", content: "rahasia" } })).id;
 });
 afterAll(async () => {
   await dbSystemTest.school.deleteMany({ where: { id: { in: [A, B] } } });
@@ -344,4 +348,14 @@ describe("tenant isolation", () => {
       tx.announcement.create({ data: { schoolId: B, authorId: bg.id, title: "x", body: "y" } })
     )).rejects.toThrow();
   });
+  it("PushSubscription/AiChatSession/AiChatMessage: scope A buta terhadap B", async () => {
+    for (const [model, id] of [["pushSubscription", BIDS.push], ["aiChatSession", BIDS.aiSession], ["aiChatMessage", BIDS.aiMessage]] as const) {
+      const rows = await runAsSchool(db, A, (tx: Tx) => (tx[model] as { findMany: (a: object) => Promise<{ id: string }[]> }).findMany({ select: { id: true } }));
+      expect(rows.map((r) => r.id)).not.toContain(id);
+    }
+    await expect(runAsSchool(db, A, (tx: Tx) => tx.pushSubscription.deleteMany({ where: { id: BIDS.push } }))).resolves.toMatchObject({ count: 0 });
+    await expect(runAsSchool(db, A, (tx: Tx) => tx.aiChatSession.deleteMany({ where: { id: BIDS.aiSession } }))).resolves.toMatchObject({ count: 0 });
+    await expect(runAsSchool(db, A, (tx: Tx) => tx.aiChatMessage.create({ data: { schoolId: B, sessionId: BIDS.aiSession, role: "user", content: "x" } }))).rejects.toThrow();
+  });
+
 });
