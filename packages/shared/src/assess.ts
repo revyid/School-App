@@ -27,7 +27,6 @@ export const assessmentInputSchema = z.object({
   // Regular-only: field kind lawas diabaikan bila dikirim.
   kind: z.enum(["DIAGNOSTIC", "REGULAR"]).default("REGULAR"),
   showChart: z.boolean().default(true),
-  isPublic: z.boolean().default(true),
   title: z.string().trim().min(1).max(200),
   instruction: z.string().trim().max(10000).optional().nullable(),
   durationMin: z.number().int().min(1).max(480).optional().nullable(),

@@ -35,7 +35,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
   return NextResponse.json({ assessment: as });
 }
 
-// PATCH /api/assessments/[id] — toggle showChart/isPublic (+ judul/deadline opsional).
+// PATCH /api/assessments/[id] — toggle showChart (+ judul/deadline opsional).
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const a = await gate(req);
   if (!a.ok) return NextResponse.json({ error: a.error }, { status: a.status });
@@ -48,9 +48,8 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   }
   const body = await req.json().catch(() => null) as Record<string, unknown> | null;
   if (!body) return NextResponse.json({ error: "body tidak valid" }, { status: 400 });
-  const data: { showChart?: boolean; isPublic?: boolean; title?: string; deadline?: Date | null } = {};
+  const data: { showChart?: boolean; title?: string; deadline?: Date | null } = {};
   if (typeof body.showChart === "boolean") data.showChart = body.showChart;
-  if (typeof body.isPublic === "boolean") data.isPublic = body.isPublic;
   if (typeof body.title === "string" && body.title.trim()) data.title = body.title.trim().slice(0, 200);
   if (body.deadline === null) data.deadline = null;
   else if (typeof body.deadline === "string" && body.deadline) {

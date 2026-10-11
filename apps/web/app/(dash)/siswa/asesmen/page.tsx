@@ -2,6 +2,7 @@
 
 // Siswa: daftar asesmen + kerjakan + review read-only (hijau benar, tanpa label A/B/C) + chart + cetak PDF.
 import { useState } from "react";
+import AssessChart from "@/components/AssessChart";
 import { api, useFetch } from "@/app/lib/api";
 import { PageHead, Panel, Toolbar, Btn, Note } from "@/components/DashUI";
 import ConfirmDialog from "@/components/ConfirmDialog";
@@ -155,21 +156,13 @@ export default function AsesmenSiswaPage() {
                     </div>
                   ))}
                   {showChart && result.data.stats && result.data.stats.length > 0 && (
-                    <div style={{ marginTop: 8 }}>
+                    <div style={{ marginTop: 8, maxWidth: 720 }}>
                       <h3 className="display" style={{ fontSize: 16, margin: "0 0 8px" }}>Chart kelas: persentase benar per soal</h3>
-                      <div style={{ display: "grid", gap: 8 }}>
-                        {result.data.stats.map((s, i) => (
-                          <div key={s.questionId}>
-                            <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12.5 }}>
-                              <span style={{ fontWeight: 700 }}>Soal {i + 1}</span>
-                              <span>{s.pct}% (n={s.n})</span>
-                            </div>
-                            <div style={{ height: 10, borderRadius: 8, background: "#eeeadd", overflow: "hidden", marginTop: 3 }}>
-                              <div style={{ width: `${s.pct}%`, height: "100%", background: "#50643e", borderRadius: 8 }} />
-                            </div>
-                          </div>
-                        ))}
-                      </div>
+                      <AssessChart
+                        labels={result.data.stats.map((_, i) => `Soal ${i + 1}`)}
+                        pcts={result.data.stats.map((s) => s.pct)}
+                        counts={result.data.stats.map((s) => s.n)}
+                      />
                     </div>
                   )}
                 </>
