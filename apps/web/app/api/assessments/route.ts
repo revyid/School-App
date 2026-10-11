@@ -38,7 +38,7 @@ export async function GET(req: NextRequest) {
     const classId: string = prof.classId;
     const rows = await runAsSchool(db, a.school.id, (tx) =>
       tx.assessment.findMany({
-        where: { classId, publishAt: { lte: now }, isPublic: true },
+        where: { classId, publishAt: { lte: now } },
         select: { id: true, title: true, deadline: true, durationMin: true, createdAt: true, showChart: true },
         orderBy: { createdAt: "desc" },
         take: 100,
@@ -108,7 +108,6 @@ export async function POST(req: NextRequest) {
         shuffleQ: v.shuffleQ,
         shuffleOpt: v.shuffleOpt,
         showChart: v.showChart,
-        isPublic: v.isPublic,
         questions: {
           create: [
             ...bank.map((q, i) => ({

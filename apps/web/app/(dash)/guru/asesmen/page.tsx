@@ -2,35 +2,32 @@
 
 // Guru: buat asesmen (teks massal) + daftar + analisis/chart + histori murid + toggle + cetak PDF.
 import { useState } from "react";
+import AssessChart from "@/components/AssessChart";
 import { api, useFetch } from "@/app/lib/api";
 import { PageHead, Panel, Toolbar, TextInput, TextSelect, Btn, Badge, WarmTable, warmCell, Note, Err } from "@/components/DashUI";
 import { parseMultiQuestions, PLACEHOLDER_EXAMPLE } from "@/lib/parse-questions";
 
 interface Row {
-  id: string; title: string; showChart: boolean; isPublic: boolean;
+  id: string; title: string; showChart: boolean;
   _count?: { questions: number; attempts: number };
 }
 
 interface AnalysisItem { questionId: string; stem: string; n: number; difficulty: number; distractors: Record<string, number> }
 interface HistRow { id: string; studentName: string; score: number | null; maxScore: number | null; correct: number; total: number; submittedAt: string | null }
 
-function ChartBars({ items }: { items: AnalysisItem[] }) {
+function ChartBox({ items }: { items: AnalysisItem[] }) {
   return (
-    <div style={{ display: "grid", gap: 10, marginTop: 12 }}>
-      {items.map((it, i) => {
-        const pct = Math.round(it.difficulty * 100);
-        return (
-          <div key={it.questionId}>
-            <div style={{ display: "flex", justifyContent: "space-between", gap: 8, fontSize: 12.5 }}>
-              <span style={{ fontWeight: 700 }}>Soal {i + 1}. {it.stem.slice(0, 80)}</span>
-              <span style={{ whiteSpace: "nowrap" }}>{pct}% benar (n={it.n})</span>
-            </div>
-            <div style={{ height: 12, borderRadius: 8, background: "#eeeadd", overflow: "hidden", marginTop: 4 }}>
-              <div style={{ width: `${pct}%`, height: "100%", background: pct >= 70 ? "#50643e" : pct >= 40 ? "#f5c94a" : "#e85e43", borderRadius: 8, transition: "width .4s" }} />
-            </div>
-          </div>
-        );
-      })}
+    <div style={{ maxWidth: 720, marginTop: 12 }}>
+      <AssessChart
+        labels={items.map((it, i) => `Soal ${i + 1}`)}
+        pcts={items.map((it) => Math.round(it.difficulty * 100))}
+        counts={items.map((it) => it.n)}
+      />
+      <ul style={{ margin: "10px 0 0", paddingLeft: 18, fontSize: 12.5, color: "#575752" }}>
+        {items.map((it, i) => (
+          <li key={it.questionId}>Soal {i + 1}. {it.stem.slice(0, 80)} — {Math.round(it.difficulty * 100)}% benar (n={it.n})</li>
+        ))}
+      </ul>
     </div>
   );
 }
@@ -44,7 +41,6 @@ export default function AsesmenGuruPage() {
   const [classId, setClassId] = useState("");
   const [title, setTitle] = useState("");
   const [showChart, setShowChart] = useState(true);
-  const [isPublic, setIsPublic] = useState(true);
   const [rawText, setRawText] = useState(PLACEHOLDER_EXAMPLE);
   const [sel, setSel] = useState<string | null>(null);
   const analysis = useFetch<{ items: AnalysisItem[]; attempts: number }>(
@@ -67,7 +63,7 @@ export default function AsesmenGuruPage() {
       headers: { "content-type": "application/json" },
       body: JSON.stringify({
         classId, title,
-        showChart, isPublic,
+        showChart,
         shuffleQ: true, shuffleOpt: true,
         inline: parsed.map((q) => ({
           type: q.type, stem: q.stem, options: q.options,
@@ -80,7 +76,7 @@ export default function AsesmenGuruPage() {
     else { setMsg(`Asesmen "${title}" berhasil dibuat dengan ${parsed.length} soal!`); setTitle(""); reload(); }
   }
 
-  async function toggle(id: string, patch: { showChart?: boolean; isPublic?: boolean }) {
+  async function toggle(id: string, patch: { showChart?: boolean }) {
     const res = await api(`/api/assessments/${id}`, {
       method: "PATCH",
       headers: { "content-type": "application/json" },
@@ -118,12 +114,7 @@ export default function AsesmenGuruPage() {
               <input type="checkbox" checked={showChart} onChange={(e) => setShowChart(e.target.checked)} style={{ width: 18, height: 18 }} />
               Tampilkan chart ke murid
             </label>
-            <label style={{ display: "flex", gap: 8, alignItems: "center", cursor: "pointer" }}>
-              <input type="checkbox" checked={isPublic} onChange={(e) => setIsPublic(e.target.checked)} style={{ width: 18, height: 18 }} />
-              Publikasikan ke murid
-            </label>
           </div>
-          {!isPublic && <Note>Hanya guru dan admin yang bisa melihat. Murid tidak melihat asesmen ini.</Note>}
           <label style={{ display: "grid", gap: 6, fontSize: 13, color: "#575752" }}>
             Format Soal Massal (Bisa buat 1 atau banyak soal sekaligus):
             <textarea
@@ -170,7 +161,7 @@ export default function AsesmenGuruPage() {
         {error && <Err>Gagal: {error}</Err>}
         {data && data.rows.length === 0 && <Note>Belum ada asesmen. Buat yang pertama di atas.</Note>}
         {data && data.rows.length > 0 && (
-          <WarmTable head={["Judul", "Soal", "Mengerjakan", "Chart", "Publik", "Aksi"]}>
+          <WarmTable head={["Judul", "Soal", "Mengerjakan", "Chart", "Aksi"]}>
             {data.rows.map((r) => (
               <tr key={r.id}>
                 <td style={warmCell({ fontWeight: 700 })}>{r.title}</td>
@@ -180,12 +171,6 @@ export default function AsesmenGuruPage() {
                   <button type="button" onClick={() => toggle(r.id, { showChart: !r.showChart })}
                     style={{ border: "1px solid rgba(23,23,22,.3)", borderRadius: 20, padding: "4px 12px", fontSize: 12, fontWeight: 700, cursor: "pointer", background: r.showChart ? "#50643e" : "#fffdf8", color: r.showChart ? "#fff" : "#171716" }}>
                     {r.showChart ? "Aktif" : "Mati"}
-                  </button>
-                </td>
-                <td style={warmCell()}>
-                  <button type="button" onClick={() => toggle(r.id, { isPublic: !r.isPublic })}
-                    style={{ border: "1px solid rgba(23,23,22,.3)", borderRadius: 20, padding: "4px 12px", fontSize: 12, fontWeight: 700, cursor: "pointer", background: r.isPublic ? "#50643e" : "#fffdf8", color: r.isPublic ? "#fff" : "#171716" }}>
-                    {r.isPublic ? "Publik" : "Privat"}
                   </button>
                 </td>
                 <td style={warmCell()}><Btn kind="ghost" type="button" onClick={() => setSel(r.id)}>Analisis</Btn></td>
@@ -204,7 +189,7 @@ export default function AsesmenGuruPage() {
             <Btn kind="ghost" type="button" onClick={() => setSel(null)}>Tutup</Btn>
             <Btn kind="dark" type="button" onClick={() => window.print()}>Cetak PDF</Btn>
           </Toolbar>
-          {analysis.data && analysis.data.items.length > 0 && chartOn && <ChartBars items={analysis.data.items} />}
+          {analysis.data && analysis.data.items.length > 0 && chartOn && <ChartBox items={analysis.data.items} />}
           {analysis.data && analysis.data.items.length > 0 && !chartOn && (
             <Note>Chart dimatikan untuk asesmen ini (toggle Chart di atas). Murid tidak melihat chart.</Note>
           )}

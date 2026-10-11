@@ -46,7 +46,6 @@ export default function SettingsPage() {
         photoRetentionDays: String(s.photoRetentionDays ?? 30),
         defaultPasswordMode: String(s.defaultPasswordMode ?? "random"),
         aiChatEnabled: String(s.aiChatEnabled ?? false),
-        aiShareStudentData: String(s.aiShareStudentData ?? false),
         ttsPhrase: String(s.ttsPhrase ?? "{{name}} sudah hadir"),
         ttsPhraseDup: String(s.ttsPhraseDup ?? "{{name}} sudah di catat"),
         mapLat: s.mapLat === null || s.mapLat === undefined ? "" : String(s.mapLat),
@@ -70,7 +69,6 @@ export default function SettingsPage() {
         photoRetentionDays: Number(f.photoRetentionDays),
         defaultPasswordMode: f.defaultPasswordMode === "nisn" ? "nisn" : "random",
         aiChatEnabled: f.aiChatEnabled === "true",
-        aiShareStudentData: f.aiShareStudentData === "true",
         ttsPhrase: (f.ttsPhrase ?? "").trim() || "{{name}} sudah hadir",
         ttsPhraseDup: (f.ttsPhraseDup ?? "").trim() || "{{name}} sudah di catat",
         mapLat: f.mapLat === "" ? null : Number(f.mapLat),
@@ -136,13 +134,7 @@ export default function SettingsPage() {
                 <option value="true">Aktif (jika diizinkan konfigurasi server)</option>
               </TextSelect>
             </label>
-            <label style={{ display: "grid", gap: 6, fontSize: 13, color: "#74746d" }}>Kirim konteks pribadi siswa ke penyedia model AI pihak ketiga
-              <TextSelect value={f.aiShareStudentData ?? "false"} onChange={set("aiShareStudentData")} style={{ width: "100%" }}>
-                <option value="false">Tidak — pengaturan yang disarankan</option>
-                <option value="true">Izinkan (hanya jika konfigurasi server juga mengizinkan)</option>
-              </TextSelect>
-            </label>
-            <Note>Chat AI dan berbagi data nonaktif secara default. Persetujuan admin sekolah saja tidak cukup: konfigurasi server harus mengaktifkannya juga. Baca <a href="/privasi">Kebijakan Privasi</a> sebelum mengubah pilihan.</Note>
+            <Note>AI hanya tahu panduan website dan info publik sekolah — tidak pernah membaca data pribadi siapa pun (tanpa nama, nilai, absensi, atau tugas individual).</Note>
           </section>
           <label style={{ display: "grid", gap: 6, fontSize: 13, color: "#74746d" }}>Ucapan suara absensi — scan BERHASIL (TTS scanner) — pakai {"{{name}}"} dan {"{{class}}"}
             <TextInput value={f.ttsPhrase ?? ""} onChange={set("ttsPhrase")} placeholder="{{name}} sudah hadir" style={{ width: "100%" }} />
