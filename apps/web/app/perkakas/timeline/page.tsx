@@ -1,5 +1,6 @@
 import { schoolSlugFromHost } from "@sms/shared/school";
 import { db } from "@sms/db/client";
+import { runAsSchool } from "@sms/db/tenant";
 import { headers } from "next/headers";
 import PublicHeader from "@/components/PublicHeader";
 import TimelineLoader from "./TimelineLoader";
@@ -18,8 +19,15 @@ export default async function TimelinePage() {
 
   let schoolName = "Portal Sekolah";
   if (slug) {
-    const s = await db.school.findFirst({ where: { slug }, select: { name: true } });
-    if (s?.name) schoolName = s.name;
+    const s = await db.school.findFirst({ where: { slug }, select: { id: true, name: true } });
+    if (s) {
+      schoolName = s.name;
+      try {
+        const st = await runAsSchool(db, s.id, (tx) =>
+          tx.schoolSettings.findUnique({ where: { schoolId: s.id }, select: { portalName: true } }));
+        if (st?.portalName) schoolName = st.portalName;
+      } catch { /* fallback ke nama sekolah */ }
+    }
   }
 
   return (

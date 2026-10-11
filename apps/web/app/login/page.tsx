@@ -42,7 +42,8 @@ export default function LoginPage() {
     fetch("/api/portal/info").then(async (r) => {
       if (!r.ok) return;
       const d = await r.json().catch(() => null);
-      if (d?.school?.name) setSchoolName(d.school.name);
+      if (d?.portalName || d?.school?.name) setSchoolName(d.portalName || d.school.name);
+      if (d?.portalName || d?.school?.name) document.title = `Masuk — ${d.portalName || d.school.name}`;
     }).catch(() => {});
     safeNext();
   }, [router]);
