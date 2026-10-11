@@ -9,6 +9,7 @@ import { io, type Socket } from "socket.io-client";
 import { api, useFetch } from "@/app/lib/api";
 import { PageHead, Panel, Toolbar, TextInput, Btn, Badge, Note, LinkBtn } from "@/components/DashUI";
 import SwipeToast from "@/components/SwipeToast";
+import { useCamera } from "@/components/useCamera";
 
 interface ScanItem { token: string; at: number; tries: number }
 const QUEUE_KEY = "att-offline-queue";
@@ -74,8 +75,8 @@ export default function ScannerPage() {
   const ttsTemplate = settingsData?.settings?.ttsPhrase || "{{name}} sudah hadir";
   const ttsTemplateDup = settingsData?.settings?.ttsPhraseDup || "{{name}} sudah di catat";
 
-  const videoRef = useRef<HTMLVideoElement>(null);
-  const [streaming, setStreaming] = useState(false);
+  const cam = useCamera("environment");
+  const videoRef = cam.videoRef;
   const [manual, setManual] = useState("");
   const [msg, setMsg] = useState<string | null>(null);
   const [offlineCount, setOfflineCount] = useState(0);
@@ -193,36 +194,19 @@ export default function ScannerPage() {
   }, [formatText, ttsTemplate]);
 
   const startCamera = useCallback(async () => {
-    if (streaming) return;
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
-      if (videoRef.current) {
-        videoRef.current.srcObject = stream;
-        await videoRef.current.play();
-      }
-      setStreaming(true);
-    } catch {
-      setMsg("Kamera tidak tersedia — gunakan input manual di bawah");
-    }
-  }, [streaming]);
+    if (cam.streaming || cam.starting) return;
+    warmVoice();
+    const ok = await cam.start();
+    if (!ok && cam.error) setMsg(cam.error.message + " — gunakan input manual di bawah");
+  }, [cam]);
 
   const stopCamera = useCallback(() => {
-    const v = videoRef.current;
-    const stream = v?.srcObject as MediaStream | null;
-    stream?.getTracks().forEach((t) => t.stop());
-    if (v) v.srcObject = null;
-    setStreaming(false);
-  }, []);
-
-  useEffect(() => () => {
-    const v = videoRef.current;
-    const stream = v?.srcObject as MediaStream | null;
-    stream?.getTracks().forEach((t) => t.stop());
-  }, []);
+    cam.stop();
+  }, [cam]);
 
   // Loop deteksi: BarcodeDetector tiap 500ms; token sms1-* langsung dipost.
   useEffect(() => {
-    if (!streaming) return;
+    if (!cam.streaming) return;
     let alive = true;
     const loop = async () => {
       while (alive) {
@@ -248,7 +232,7 @@ export default function ScannerPage() {
     return () => {
       alive = false;
     };
-  }, [streaming, postToken]);
+  }, [cam.streaming, postToken]);
 
   return (
     <>
@@ -263,8 +247,8 @@ export default function ScannerPage() {
           <p style={{ margin: "0 0 12px" }}><Badge status="PENDING">Antrean offline: {offlineCount} (otomatis dikirim saat online)</Badge></p>
         )}
         <Toolbar>
-          {!streaming
-            ? <Btn type="button" kind="dark" onClick={() => { warmVoice(); void startCamera(); }}>Nyalakan kamera</Btn>
+          {!cam.streaming
+            ? <Btn type="button" kind="dark" onClick={() => { void startCamera(); }}>Nyalakan kamera</Btn>
             : <Btn kind="ghost" type="button" onClick={stopCamera}>Matikan kamera</Btn>}
           <Btn kind="ghost" type="button" onClick={warmVoice}>Aktifkan suara</Btn>
         </Toolbar>

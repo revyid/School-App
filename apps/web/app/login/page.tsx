@@ -169,7 +169,7 @@ export default function LoginPage() {
               </span>
             </label>
             <button type="submit" disabled={busy} className="btn-sticker btn-primary" style={{ justifyContent: "center", marginTop: 4 }}>
-              {busy ? "Memproses…" : "Masuk ↗"}
+              {busy ? "Memproses…" : "Masuk"}
             </button>
           </form>
         </div>

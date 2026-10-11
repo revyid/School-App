@@ -10,8 +10,8 @@ const HOME: Record<string, string> = { ...(ROLE_HOME as Record<string, string>),
 export default function AuthCta({
   className,
   style,
-  loginLabel = "Masuk ↗",
-  dashLabel = "Buka dasbor ↗",
+  loginLabel = "Masuk",
+  dashLabel = "Buka dasbor",
 }: {
   className?: string;
   style?: React.CSSProperties;

@@ -35,7 +35,7 @@ export default function AdminDashboard() {
           </p>
           <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
             <Link href="/admin/import" className="btn-sticker" style={{ background: "#f5c94a", color: "#171716", borderColor: "#f5c94a" }}>
-              Impor data ↗
+              Impor data
             </Link>
             <Link href="/admin/wa" className="btn-sticker" style={{ background: "#fffdf8", color: "#171716", borderColor: "#fffdf8" }}>
               Status WhatsApp
@@ -63,7 +63,7 @@ export default function AdminDashboard() {
               {students.loading ? "…" : metric(students)}
             </p>
             <p style={{ fontSize: 12, color: "#74746d", margin: 0 }}>
-              <Link href="/admin/siswa" style={{ fontWeight: 700, color: "#171716" }}>Kelola siswa →</Link>
+              <Link href="/admin/siswa" style={{ fontWeight: 700, color: "#171716" }}>Kelola siswa</Link>
             </p>
           </div>
         </Reveal>
@@ -74,7 +74,7 @@ export default function AdminDashboard() {
               {teachers.loading ? "…" : metric(teachers)}
             </p>
             <p style={{ fontSize: 12, color: "#74746d", margin: 0 }}>
-              <Link href="/admin/guru" style={{ fontWeight: 700, color: "#171716" }}>Kelola guru →</Link>
+              <Link href="/admin/guru" style={{ fontWeight: 700, color: "#171716" }}>Kelola guru</Link>
             </p>
           </div>
         </Reveal>
@@ -85,7 +85,7 @@ export default function AdminDashboard() {
               {classes.loading ? "…" : metric(classes)}
             </p>
             <p style={{ fontSize: 12, margin: 0 }}>
-              <Link href="/admin/kelas" style={{ fontWeight: 700, color: "#171716" }}>Kelola kelas →</Link>
+              <Link href="/admin/kelas" style={{ fontWeight: 700, color: "#171716" }}>Kelola kelas</Link>
             </p>
           </div>
         </Reveal>
@@ -114,7 +114,7 @@ export default function AdminDashboard() {
               <p style={{ color: "#74746d" }}>Pengumuman belum tersedia.</p>
             ) : ann.data.rows.length === 0 ? (
               <p style={{ color: "#74746d" }}>
-                Belum ada pengumuman. <Link href="/admin/pengumuman" style={{ fontWeight: 700, color: "#171716" }}>Buat pengumuman →</Link>
+                Belum ada pengumuman. <Link href="/admin/pengumuman" style={{ fontWeight: 700, color: "#171716" }}>Buat pengumuman</Link>
               </p>
             ) : (
               <ul style={{ listStyle: "none", margin: 0, padding: 0, display: "grid", gap: 10 }}>
@@ -131,10 +131,10 @@ export default function AdminDashboard() {
           <div className="card" style={{ padding: 20, background: "#f5c94a" }}>
             <h2 style={{ fontSize: 17, fontWeight: 800, margin: "0 0 12px" }}>Operasional</h2>
             <ul style={{ listStyle: "none", margin: 0, padding: 0, display: "grid", gap: 10, fontSize: 14 }}>
-              <li><Link href="/admin/kehadiran" style={{ fontWeight: 700, color: "#171716" }}>Kehadiran hari ini →</Link></li>
-              <li><Link href="/admin/jadwal" style={{ fontWeight: 700, color: "#171716" }}>Jadwal pelajaran →</Link></li>
-              <li><Link href="/admin/pengaturan" style={{ fontWeight: 700, color: "#171716" }}>Pengaturan sekolah →</Link></li>
-              <li><Link href="/admin/audit" style={{ fontWeight: 700, color: "#171716" }}>Log audit →</Link></li>
+              <li><Link href="/admin/kehadiran" style={{ fontWeight: 700, color: "#171716" }}>Kehadiran hari ini</Link></li>
+              <li><Link href="/admin/jadwal" style={{ fontWeight: 700, color: "#171716" }}>Jadwal pelajaran</Link></li>
+              <li><Link href="/admin/pengaturan" style={{ fontWeight: 700, color: "#171716" }}>Pengaturan sekolah</Link></li>
+              <li><Link href="/admin/audit" style={{ fontWeight: 700, color: "#171716" }}>Log audit</Link></li>
             </ul>
           </div>
         </Reveal>

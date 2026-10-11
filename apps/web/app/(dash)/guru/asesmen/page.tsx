@@ -4,82 +4,12 @@
 import { useState } from "react";
 import { api, useFetch } from "@/app/lib/api";
 import { PageHead, Panel, Toolbar, TextInput, TextSelect, Btn, Badge, WarmTable, warmCell, Note, Err } from "@/components/DashUI";
+import { parseMultiQuestions, PLACEHOLDER_EXAMPLE, type ParsedQ } from "@/lib/parse-questions";
 
 interface Row {
   id: string; kind: string; title: string;
   _count?: { questions: number; attempts: number };
 }
-
-type ParsedQ = {
-  type: "MCQ" | "SORTING";
-  stem: string;
-  options: string[];
-  correctIndex: number | null;
-};
-
-// Parser multi-soal format mudah:
-// 1. Soal MCQ
-// a opsi 1
-// b opsi 2
-// c opsi 3 (BENAR)
-//
-// 2. Urutkan siklus air (SORTING)
-// Evaporasi
-// Kondensasi
-// Presipitasi
-function parseMultiQuestions(raw: string): ParsedQ[] {
-  const blocks = raw.split(/\n\s*\n/).map((b) => b.trim()).filter(Boolean);
-  const result: ParsedQ[] = [];
-
-  for (const block of blocks) {
-    const lines = block.split("\n").map((l) => l.trim()).filter(Boolean);
-    if (lines.length < 2) continue;
-
-    const firstLine = lines[0];
-    const isSorting = firstLine.toLowerCase().includes("(sorting)") || firstLine.toLowerCase().includes("urutkan");
-    const stem = firstLine.replace(/^\d+[\.\)]\s*/, "").replace(/\s*\(sorting\)/i, "").trim();
-
-    const optLines = lines.slice(1);
-    const options: string[] = [];
-    let correctIndex = 0;
-
-    if (isSorting) {
-      for (const line of optLines) {
-        options.push(line.replace(/^[a-zA-Z\d]+[\.\)]\s*/, "").trim());
-      }
-      result.push({ type: "SORTING", stem, options, correctIndex: null });
-    } else {
-      optLines.forEach((line, idx) => {
-        const isMarked = /\s*\(benar\)|\s*\*$/i.test(line);
-        const clean = line
-          .replace(/^[a-zA-Z\d]+[\.\)]\s*/, "")
-          .replace(/\s*\(benar\)|\s*\*$/i, "")
-          .trim();
-        if (clean) {
-          options.push(clean);
-          if (isMarked) correctIndex = options.length - 1;
-        }
-      });
-      if (options.length >= 2) {
-        result.push({ type: "MCQ", stem, options, correctIndex });
-      }
-    }
-  }
-
-  return result;
-}
-
-const PLACEHOLDER_EXAMPLE = `1. Ibu kota negara Indonesia adalah...
-a Surabaya
-b Jakarta (BENAR)
-c Bandung
-d Medan
-
-2. Urutkan planet dari yang terdekat dengan Matahari (SORTING)
-Merkurius
-Venus
-Bumi
-Mars`;
 
 export default function AsesmenGuruPage() {
   const { data, loading, error, reload } = useFetch<{ rows: Row[] }>("/api/assessments");
@@ -100,7 +30,7 @@ export default function AsesmenGuruPage() {
   );
   const [msg, setMsg] = useState<string | null>(null);
 
-  const parsed = parseMultiQuestions(rawText);
+  const { questions: parsed, errors: parseErrors } = parseMultiQuestions(rawText);
 
   async function buat(e: React.FormEvent) {
     e.preventDefault();
@@ -140,7 +70,7 @@ export default function AsesmenGuruPage() {
 
   return (
     <>
-      <PageHead kicker="Ujian" title="Asesmen kelas" desc="Buat ujian baru dengan banyak soal sekaligus (pilihan ganda / mengurutkan)." />
+      <PageHead kicker="Ujian" title="Asesmen kelas" desc="Buat ujian dengan banyak soal sekaligus: pilihan ganda, mengurutkan, benar/salah, dan isian." />
       <Panel style={{ marginBottom: 16 }}>
         <h2 className="display" style={{ fontSize: 18, margin: "0 0 12px" }}>Buat Asesmen Baru</h2>
         <form onSubmit={buat} style={{ display: "grid", gap: 12, maxWidth: 640 }}>
@@ -174,16 +104,28 @@ export default function AsesmenGuruPage() {
               style={{ borderRadius: 14, border: "1px solid rgba(23,23,22,.25)", background: "#fffdf8", padding: "12px 14px", fontSize: 13, fontFamily: "var(--font-mono, monospace)" }}
             />
             <span style={{ fontSize: 11, color: "#8a8a82" }}>
-              * Tulis (BENAR) di samping opsi jawaban benar untuk pilihan ganda. Tulis (SORTING) pada judul soal untuk tipe mengurutkan item.
+              Tulis (BENAR) di akhir opsi yang benar. Tipe: (SORTING) mengurutkan, (BENAR/SALAH), (ISIAN: jawaban).
+              Hanya ISI opsi yang diacak ke siswa — label a/b/c tetap berurutan.
             </span>
           </label>
 
           <div style={{ background: "#f0ede3", padding: 12, borderRadius: 12, fontSize: 12 }}>
             <strong>Hasil Parsing: {parsed.length} Soal Terdeteksi</strong>
+            {parseErrors.length > 0 && (
+              <ul style={{ margin: "6px 0 0", paddingLeft: 18, color: "#c94b35" }}>
+                {parseErrors.map((e, i) => <li key={i}>{e}</li>)}
+              </ul>
+            )}
             <ul style={{ margin: "6px 0 0", paddingLeft: 18 }}>
               {parsed.map((q, idx) => (
-                <li key={idx}>
-                  <strong>[{q.type}]</strong> {q.stem} ({q.options.length} opsi{q.type === "MCQ" ? `, Benar: Opsi ${q.correctIndex! + 1}` : ""})
+                <li key={idx} style={{ marginBottom: 6 }}>
+                  <strong>[{q.rawType}]</strong> {q.stem.split("\n")[0]}
+                  {q.stem.split("\n").length > 1 && <span style={{ color: "#74746d" }}> (+{q.stem.split("\n").length - 1} baris)</span>}
+                  {" "}— {q.options.length} opsi
+                  {q.type === "MCQ" && q.correctIndex != null && (
+                    <>{`, benar: ${String.fromCharCode(97 + q.correctIndex)}. ${q.options[q.correctIndex]}`}</>
+                  )}
+                  {q.type === "SORTING" && <> (urutan benar: a, b, c, …)</>}
                 </li>
               ))}
             </ul>
