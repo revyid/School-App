@@ -1,13 +1,12 @@
 "use client";
 
-// Widget chat AI mengambang di semua halaman.
-// Mengikuti referensi "Floating AI Chat": tombol orb di pojok kanan bawah,
-// panel chat (header orb + nama + tutup), area pesan, dan composer berisi
-// textarea + select mode + tombol kirim bundar. Tanpa border beam effect:
-// indikator proses memakai ThinkingOrb (thinking-orbs).
+// Widget chat RAI mengambang (gaya Orbit ringkas): tombol orb pojok kanan bawah,
+// panel chat, pesan user bubble kanan, pesan RAI kiri dengan markdown,
+// composer pill + tombol kirim bundar. Tanpa pilih mode/model.
 import { useState, useRef, useEffect, useCallback } from "react";
 import { ThinkingOrb } from "thinking-orbs";
 import { api } from "@/app/lib/api";
+import RaiMarkdown from "./RaiMarkdown";
 
 import { Glyph } from "./Glyph";
 interface ChatMessage {
@@ -19,24 +18,17 @@ interface ChatMessage {
 const FALLBACK_GREETING: ChatMessage = {
   id: "welcome",
   sender: "ai",
-  text: "Halo. Saya Asisten AI sekolah. Tanya soal info sekolah, pengumuman, jadwal, tugas, atau materi belajarmu.",
+  text: "Halo, saya **RAI**. Tanya soal info sekolah, pengumuman, cara pakai fitur, atau materi belajarmu.",
 };
 
 const PLACEHOLDERS = [
-  "Tanya jadwal, tugas, pengumuman…",
-  "Contoh: tugas apa yang belum saya kumpulkan?",
-  "Contoh: kapan asesmen matematika?",
-  "Contoh: info PPDB tahun ini?",
+  "Tanya RAI: jadwal, tugas, pengumuman…",
+  "Contoh: bagaimana cara kumpulkan tugas?",
+  "Contoh: di mana kartu QR saya?",
+  "Contoh: jelaskan fotosintesis?",
 ];
 
-// Mode jawaban: "Agent" = berbasis data akunmu, "Auto" = pilih otomatis.
-// Pilihan ini hanya preferensi tampilan; backend menentukan mode sebenarnya.
-const MODE_OPTIONS = ["Agent", "Auto"] as const;
-
 const QUICK_TAGS = ["Jadwal", "Tugas", "Pengumuman"];
-
-const CHEVRON_BG =
-  "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='none' stroke='%238a8a94' stroke-width='2'%3E%3Cpath d='m2 4 4 4 4-4'/%3E%3C/svg%3E\") no-repeat right 10px center";
 
 function usePrefersReducedMotion() {
   const [reduced, setReduced] = useState(false);
@@ -58,7 +50,6 @@ export default function AIChatWidget() {
   const [loading, setLoading] = useState(false);
   const [historyLoaded, setHistoryLoaded] = useState(false);
   const [phIdx, setPhIdx] = useState(0);
-  const [agentMode, setAgentMode] = useState(true);
   const reducedMotion = usePrefersReducedMotion();
   const chatEndRef = useRef<HTMLDivElement>(null);
   const taRef = useRef<HTMLTextAreaElement>(null);
@@ -202,8 +193,8 @@ export default function AIChatWidget() {
         <button
           type="button"
           onClick={toggle}
-          aria-label="Buka chat AI"
-          title="Tanya AI"
+          aria-label="Buka chat RAI"
+          title="Tanya RAI"
           style={{
             width: 60,
             height: 60,
@@ -227,7 +218,7 @@ export default function AIChatWidget() {
 
       {open && (
         <section
-          aria-label="Chat AI"
+          aria-label="Chat RAI"
           style={{
             width: "min(400px, calc(100vw - 40px))",
             height: "min(580px, calc(100dvh - 130px))",
@@ -249,7 +240,7 @@ export default function AIChatWidget() {
               aria-hidden="true"
             />
             <b style={{ flex: 1, textAlign: "left", fontWeight: 600, fontSize: 14, color: "#171716" }}>
-              Asisten AI
+              RAI
               <span style={{ display: "block", fontSize: 11, fontWeight: 400, color: "#808388" }}>
                 {loading ? "Menjawab…" : "Siap membantu"}
               </span>
@@ -269,19 +260,28 @@ export default function AIChatWidget() {
             </button>
           </header>
 
-          <div style={{ flex: 1, padding: "6px 16px 14px", overflowY: "auto", display: "flex", flexDirection: "column", gap: 12, background: "#faf8f2" }}>
-            {messages.map((m) => (
-              <div key={m.id} style={{ display: "flex", gap: 8, alignItems: "flex-start", alignSelf: m.sender === "user" ? "flex-end" : "flex-start", maxWidth: "85%" }}>
+          <div style={{ flex: 1, padding: "14px 16px", overflowY: "auto", display: "flex", flexDirection: "column", gap: 14, background: "#faf8f2" }}>
+            {messages.map((m) => m.sender === "user" ? (
+              <div key={m.id} style={{ display: "flex", justifyContent: "flex-end" }}>
                 <div style={{
-                  background: m.sender === "user" ? "#171716" : "#fff",
-                  color: m.sender === "user" ? "#fff" : "#171716",
-                  border: m.sender === "ai" ? "1px solid rgba(23,23,22,.12)" : "none",
-                  borderRadius: m.sender === "user" ? "16px 16px 4px 16px" : "4px 16px 16px 16px",
-                  padding: "12px 15px", fontSize: 13, lineHeight: 1.55,
+                  maxWidth: "85%",
+                  background: "#171716",
+                  color: "#fff",
+                  borderRadius: "18px 18px 4px 18px",
+                  padding: "11px 15px", fontSize: 13, lineHeight: 1.55,
                   whiteSpace: "pre-wrap", wordBreak: "break-word",
                 }}>
                   {m.text}
                 </div>
+              </div>
+            ) : (
+              <div key={m.id} style={{
+                maxWidth: "100%",
+                color: "#2b2b28",
+                fontSize: 13, lineHeight: 1.65,
+                wordBreak: "break-word",
+              }}>
+                <RaiMarkdown text={m.text} />
               </div>
             ))}
             {loading && (
@@ -289,8 +289,8 @@ export default function AIChatWidget() {
                 role="status"
                 style={{ display: "flex", gap: 10, alignItems: "center", alignSelf: "flex-start", background: "#fff", border: "1px solid rgba(23,23,22,.12)", borderRadius: "4px 16px 16px 16px", padding: "8px 14px 8px 8px" }}
               >
-                <ThinkingOrb state="searching" size={64} theme="light" style={{ width: 44, height: 44 }} speed={reducedMotion ? 0 : 1} paused={reducedMotion} aria-label="AI sedang mencari jawaban" />
-                <span style={{ fontSize: 12, color: "#808388" }}>Mencari jawaban…</span>
+                <ThinkingOrb state="searching" size={64} theme="light" style={{ width: 44, height: 44 }} speed={reducedMotion ? 0 : 1} paused={reducedMotion} aria-label="RAI sedang mencari jawaban" />
+                <span style={{ fontSize: 12, color: "#808388" }}>RAI berpikir…</span>
               </div>
             )}
             <div ref={chatEndRef} />
@@ -315,22 +315,12 @@ export default function AIChatWidget() {
               placeholder={PLACEHOLDERS[phIdx]}
               disabled={loading}
               maxLength={1000}
-              aria-label="Tanya apa saja"
+              aria-label="Tanya RAI"
               style={{ width: "100%", border: "none", outline: "none", resize: "none", background: "transparent", color: "#171716", font: "inherit", fontSize: 16, minHeight: 44, maxHeight: 120, padding: "2px" }}
             />
 
             <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-              <select
-                aria-label="Mode"
-                value={agentMode ? "Agent" : "Auto"}
-                onChange={(e) => setAgentMode(e.target.value === "Agent")}
-                title={agentMode ? "Jawaban berbasis data akunmu sendiri" : "Pilih otomatis antara data akun dan info publik"}
-                style={{ appearance: "none", WebkitAppearance: "none", border: "1px solid rgba(23,23,22,.18)", background: `#fff ${CHEVRON_BG}`, color: "#171716", font: "inherit", fontSize: 13, padding: "7px 28px 7px 13px", borderRadius: 999, cursor: "pointer" }}
-              >
-                {MODE_OPTIONS.map((o) => (
-                  <option key={o} value={o}>{o}</option>
-                ))}
-              </select>
+              <span style={{ fontSize: 11, color: "#8a8a82" }}>RAI menjawab dengan markdown</span>
               <button
                 type="submit"
                 disabled={!canSend}
