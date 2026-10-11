@@ -537,6 +537,8 @@ model Assessment {
   deadline    DateTime?
   shuffleQ    Boolean    @default(true)
   shuffleOpt  Boolean    @default(true)
+  showChart   Boolean    @default(true)
+  isPublic    Boolean    @default(true)
   questions   AssessQuestion[]
   attempts    AssessAttempt[]
   groups      StudyGroup[]

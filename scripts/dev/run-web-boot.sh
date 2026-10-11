@@ -1,7 +1,8 @@
 #!/bin/bash
 # Stable boot entrypoint for SMS-LMS web (:3100). Do NOT use scratch/run-next.sh (pruned).
 export APEX_DOMAIN="localtest.me"
-export UPLOADS_ROOT="/tmp/sms-uploads"
+export AI_CHAT_ENABLED="true"
+export UPLOADS_ROOT="/home/revy/Projects/me/sms-lms/data/uploads"
 export NODE_OPTIONS="--max-old-space-size=4096"
 export SMS_COOKIE_SECURE="0"
 export SMS_COOKIE_NAME="sms-session-dev"

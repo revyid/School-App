@@ -187,6 +187,8 @@ function honestError(kind: string): { error: string; status: number } {
     return { error: "Model AI sedang penuh (antrean habis). Tunggu ±1 menit lalu coba lagi.", status: 502 };
   if (kind === "timeout")
     return { error: "Model AI lambat merespons (>25 dtk). Coba pertanyaan lebih pendek.", status: 504 };
+  if (kind.includes("empty-choices"))
+    return { error: "Model AI mengembalikan jawaban kosong. Coba lagi atau ganti model di AI_ROUTER_MODEL.", status: 502 };
   if (kind.includes("401") || kind.includes("403"))
     return { error: "Kunci API AI ditolak server. Hubungi admin untuk periksa key.", status: 502 };
   return { error: "Layanan AI gagal merespons. Coba lagi sebentar.", status: 502 };

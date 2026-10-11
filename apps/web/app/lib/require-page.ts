@@ -37,5 +37,11 @@ export async function requirePage(o: PageInput) {
     return { ok: false as const, redirectTo: "/change-password" };
   }
   const home = ROLE_HOME[a.role as keyof typeof ROLE_HOME] ?? "/siswa";
-  return { ok: true as const, me, schoolName: a.school.name, schoolSlug: a.school.slug, home };
+  const st = await runAsSchool(db, a.school.id, (tx) =>
+    tx.schoolSettings.findUnique({
+      where: { schoolId: a.school.id },
+      select: { portalName: true },
+    })).catch(() => null);
+  const portal = st?.portalName?.trim() ? st.portalName.trim() : a.school.name;
+  return { ok: true as const, me, schoolName: portal, schoolSlug: a.school.slug, home };
 }

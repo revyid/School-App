@@ -7,6 +7,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import SchoolLogo from "./SchoolLogo";
 import Bell from "./Bell";
+import AIChatWidget from "./AIChatWidget";
 import { LogoutButton } from "./LogoutButton";
 import {
   IconGrid, IconUsers, IconUser, IconSchool, IconCalendar, IconClipboard,
@@ -346,6 +347,7 @@ export default function DashShell({
           {children}
         </main>
       </div>
+      <AIChatWidget />
 
       <style>{`
         @media (max-width: 900px) {

@@ -1,21 +1,34 @@
 "use client";
 
-// Siswa: daftar asesmen + kerjakan (MCQ pilih opsi; SORTING: naik/turunkan urutan).
+// Siswa: daftar asesmen + kerjakan + review read-only (hijau benar, tanpa label A/B/C) + chart + cetak PDF.
 import { useState } from "react";
 import { api, useFetch } from "@/app/lib/api";
 import { PageHead, Panel, Toolbar, Btn, Note } from "@/components/DashUI";
 import ConfirmDialog from "@/components/ConfirmDialog";
-
 import { Glyph } from "../../../../components/Glyph";
+
 interface Q {
   id: string; type: "MCQ" | "SORTING"; stem: string; imageUrl: string | null; options: string[];
 }
+interface RQSort { id: string; type: "SORTING"; stem: string; imageUrl: string | null; correctSeq: string[]; pickedSeq: string[]; isCorrect: boolean; points: number; maxPoints: number }
+interface RQMcq { id: string; type: "MCQ"; stem: string; imageUrl: string | null; options: string[]; pickedIndex: number | null; correctIndex: number | null; isCorrect: boolean; points: number; maxPoints: number }
+type RQ = RQSort | RQMcq;
+interface Result {
+  submitted: boolean;
+  attempt?: { id: string; score: number | null; maxScore: number | null; submittedAt: string };
+  assessment?: { id: string; title: string; showChart: boolean };
+  questions?: RQ[];
+  stats?: { questionId: string; pct: number; n: number }[];
+}
 
 export default function AsesmenSiswaPage() {
-  const { data, loading, reload } = useFetch<{ rows: { id: string; title: string; deadline: string | null }[] }>("/api/assessments");
+  const { data, loading, reload } = useFetch<{ rows: { id: string; title: string; deadline: string | null; showChart: boolean }[] }>("/api/assessments");
   const [aid, setAid] = useState<string | null>(null);
-  const attempt = useFetch<{ attempt: { id: string; submittedAt: string | null; score?: number }; assessment: { title: string }; questions: Q[] }>(
+  const attempt = useFetch<{ attempt: { id: string; submittedAt: string | null; score?: number }; assessment: { title: string; showChart: boolean }; questions: Q[] }>(
     aid ? `/api/assessments/${aid}/attempt` : null,
+  );
+  const result = useFetch<Result>(
+    aid && attempt.data?.attempt.submittedAt ? `/api/assessments/${aid}/result` : null,
   );
   const [mcq, setMcq] = useState<Record<string, number>>({});
   const [sort, setSort] = useState<Record<string, string[]>>({});
@@ -32,7 +45,7 @@ export default function AsesmenSiswaPage() {
     setSort({ ...sort, [qid]: next });
   }
 
-  async function kumpul() {
+  function kumpul() {
     if (!aid || !attempt.data || submitting) return;
     setConfirmKumpul(true);
   }
@@ -53,7 +66,6 @@ export default function AsesmenSiswaPage() {
     if (!aid || !attempt.data || submitting) return;
     setConfirmKumpul(false);
     setSubmitting(true);
-    // Petakan jawaban SORTING (teks) kembali ke indeks koordinat acak.
     const answers = attempt.data.questions.map((q) => {
       if (q.type === "MCQ") return { questionId: q.id, pickedIndex: mcq[q.id] ?? null };
       const cur = sort[q.id] ?? q.options;
@@ -77,6 +89,8 @@ export default function AsesmenSiswaPage() {
     }
   }
 
+  const showChart = result.data?.assessment?.showChart ?? attempt.data?.assessment.showChart ?? false;
+
   return (
     <>
       <PageHead kicker="Ujian" title="Asesmen" desc="Kerjakan dengan jujur. Soal diacak per siswa, nilai keluar otomatis." />
@@ -97,9 +111,70 @@ export default function AsesmenSiswaPage() {
       )}
       {aid && attempt.data && (
         <Panel>
-          <h2 className="display" style={{ fontSize: 20, margin: "0 0 14px" }}>{attempt.data.assessment.title}</h2>
+          <Toolbar>
+            <h2 className="display" style={{ fontSize: 20, margin: 0, flex: 1 }}>{attempt.data.assessment.title}</h2>
+            {attempt.data.attempt.submittedAt && <Btn kind="dark" type="button" onClick={() => window.print()}>Cetak PDF</Btn>}
+          </Toolbar>
           {attempt.data.attempt.submittedAt ? (
-            <Note>Sudah dikumpulkan{attempt.data.attempt.score != null ? `, skor: ${attempt.data.attempt.score}` : ""}.</Note>
+            <>
+              <Note>Sudah dikumpulkan{attempt.data.attempt.score != null ? `, skor: ${attempt.data.attempt.score}` : ""}. Hasil di bawah read-only, tidak bisa diubah.</Note>
+              {result.data?.submitted && (
+                <>
+                  {result.data.questions?.map((q, qi) => (
+                    <div key={q.id} style={{ marginBottom: 18, padding: 14, border: "1px solid rgba(23,23,22,.14)", borderRadius: 16, background: q.isCorrect ? "#f2f7ec" : "#fffdf8" }}>
+                      <p style={{ fontWeight: 700, margin: "0 0 10px" }}>{qi + 1}. {q.stem}</p>
+                      {q.imageUrl && (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img src={q.imageUrl} alt="gambar soal" style={{ maxWidth: "100%", borderRadius: 12, marginBottom: 10 }} />
+                      )}
+                      {q.type === "MCQ" ? (
+                        <ul style={{ listStyle: "none", margin: 0, padding: 0, display: "grid", gap: 6 }}>
+                          {q.options.map((o, i) => {
+                            const benar = i === q.correctIndex;
+                            const dipilih = i === q.pickedIndex;
+                            return (
+                              <li key={i} style={{
+                                padding: "9px 12px", borderRadius: 12,
+                                border: benar ? "2px solid #50643e" : "1px solid rgba(23,23,22,.14)",
+                                background: benar ? "#dcead0" : dipilih ? "#f6e8e3" : "#fffdf8",
+                                fontWeight: benar || dipilih ? 700 : 400,
+                              }}>
+                                <span>{o}</span>
+                                {benar && <span style={{ marginLeft: 8, fontSize: 12, color: "#50643e" }}>✓ benar</span>}
+                                {!benar && dipilih && <span style={{ marginLeft: 8, fontSize: 12, color: "#e85e43" }}>✗ jawabanmu</span>}
+                              </li>
+                            );
+                          })}
+                        </ul>
+                      ) : (
+                        <div style={{ display: "grid", gap: 6, fontSize: 13 }}>
+                          <div><strong>Urutan benar:</strong> {q.correctSeq.join(" → ")}</div>
+                          <div><strong>Jawabanmu:</strong> {q.pickedSeq.join(" → ")}</div>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                  {showChart && result.data.stats && result.data.stats.length > 0 && (
+                    <div style={{ marginTop: 8 }}>
+                      <h3 className="display" style={{ fontSize: 16, margin: "0 0 8px" }}>Chart kelas: persentase benar per soal</h3>
+                      <div style={{ display: "grid", gap: 8 }}>
+                        {result.data.stats.map((s, i) => (
+                          <div key={s.questionId}>
+                            <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12.5 }}>
+                              <span style={{ fontWeight: 700 }}>Soal {i + 1}</span>
+                              <span>{s.pct}% (n={s.n})</span>
+                            </div>
+                            <div style={{ height: 10, borderRadius: 8, background: "#eeeadd", overflow: "hidden", marginTop: 3 }}>
+                              <div style={{ width: `${s.pct}%`, height: "100%", background: "#50643e", borderRadius: 8 }} />
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </>
+              )}
+            </>
           ) : (
             <>
               {attempt.data.questions.map((q, qi) => (
@@ -124,7 +199,7 @@ export default function AsesmenSiswaPage() {
                     </ul>
                   ) : (
                     <ol style={{ margin: 0, paddingLeft: 20, display: "grid", gap: 6 }}>
-                      {(sort[q.id] ?? q.options).map((o, i, arr) => (
+                      {(sort[q.id] ?? q.options).map((o, i) => (
                         <li key={`${o}-${i}`} style={{ display: "flex", gap: 8, alignItems: "center" }}>
                           <span style={{ flex: 1 }}>{o}{" "}</span>
                           <Btn type="button" kind="ghost" onClick={() => move(q.id, q.options, i, -1)}><Glyph name="arrowUp" size={14} /></Btn>
