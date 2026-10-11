@@ -6,7 +6,7 @@ import { runAsSchool } from "@sms/db/tenant";
 import { dbSystemTest as dbSystem } from "@sms/db/test-utils"; // TEST-ONLY
 import { processImportBatch } from "./import-processor.js";
 
-const UPLOADS = process.env.UPLOADS_ROOT ?? "/tmp/sms-uploads";
+const UPLOADS = process.env.UPLOADS_ROOT ?? "/home/revy/Projects/me/sms-lms/data/uploads";
 let schoolId = "";
 let adminId = "";
 

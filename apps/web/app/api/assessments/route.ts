@@ -38,8 +38,8 @@ export async function GET(req: NextRequest) {
     const classId: string = prof.classId;
     const rows = await runAsSchool(db, a.school.id, (tx) =>
       tx.assessment.findMany({
-        where: { classId, publishAt: { lte: now } },
-        select: { id: true, kind: true, title: true, deadline: true, durationMin: true, createdAt: true },
+        where: { classId, publishAt: { lte: now }, isPublic: true },
+        select: { id: true, title: true, deadline: true, durationMin: true, createdAt: true, showChart: true },
         orderBy: { createdAt: "desc" },
         take: 100,
       }));
@@ -99,7 +99,7 @@ export async function POST(req: NextRequest) {
         classId: v.classId,
         subjectId: v.subjectId || null,
         authorId: a.userId,
-        kind: v.kind,
+        kind: "REGULAR",
         title: v.title,
         instruction: v.instruction || null,
         durationMin: v.durationMin ?? null,
@@ -107,6 +107,8 @@ export async function POST(req: NextRequest) {
         deadline: v.deadline ? new Date(v.deadline) : null,
         shuffleQ: v.shuffleQ,
         shuffleOpt: v.shuffleOpt,
+        showChart: v.showChart,
+        isPublic: v.isPublic,
         questions: {
           create: [
             ...bank.map((q, i) => ({

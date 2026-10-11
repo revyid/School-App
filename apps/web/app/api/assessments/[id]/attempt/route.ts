@@ -94,7 +94,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
   }
   return NextResponse.json({
     attempt: { id: attempt.id, submittedAt: attempt.submittedAt, score: attempt.submittedAt ? attempt.score : undefined },
-    assessment: { id: as.id, title: as.title, instruction: as.instruction, durationMin: as.durationMin, deadline: as.deadline, kind: as.kind },
+    assessment: { id: as.id, title: as.title, instruction: as.instruction, durationMin: as.durationMin, deadline: as.deadline, showChart: as.showChart },
     questions: attempt.submittedAt ? [] : clientQs,
   });
 }
