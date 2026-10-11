@@ -131,7 +131,9 @@ export default function PetaClient() {
     E.cy = (c + d) / 2;
     const dx = Math.max(b - a, 1e-7);
     const dy = Math.max(d - c, 1e-7);
-    E.z = Math.max(2, Math.min(pts.length > 1 ? 17 : 14, Math.log2(Math.min((W - 120) / (dx * 256), (H - 160) / (dy * 256)))));
+    const fitW = Math.max(1, W - 120);
+    const fitH = Math.max(1, H - 160);
+    E.z = Math.max(2, Math.min(pts.length > 1 ? 17 : 14, Math.log2(Math.max(1, Math.min(fitW / (dx * 256), fitH / (dy * 256))))));
     (E as { _save?: () => void })._save?.();
   }
 
@@ -176,10 +178,10 @@ export default function PetaClient() {
           E.z = d.view.z ?? E.z;
         }
         E.loop = !!d.loop;
-        if (d.cam) E.cam = d.cam;
-        if (d.mode) E.mode = d.mode;
-        if (d.speed) E.speed = d.speed;
-        if (d.defaultVeh) E.defaultVeh = d.defaultVeh;
+        if (d.cam === "follow" || d.cam === "fit") E.cam = d.cam;
+        if (d.mode === "auto" || d.mode === "darat" || d.mode === "air") E.mode = d.mode;
+        if (Number.isFinite(d.speed) && d.speed >= 0.5 && d.speed <= 3) E.speed = d.speed;
+        if (d.defaultVeh && VEH_LABEL[d.defaultVeh as Veh]) E.defaultVeh = d.defaultVeh;
       }
     } catch {}
     try {
@@ -317,12 +319,16 @@ export default function PetaClient() {
         E.route = null;
         E.routeKey = "";
         E.effectiveKey = "";
+        E.pending = "";
+        E.T = 0;
         setEngineStatus("");
         return;
       }
       if (E.mode === "air") {
         E.route = null;
         E.routeKey = k;
+        E.pending = "";
+        E.T = 0;
         const pd = straightPD();
         if (pd) {
           const km = pd.total * 40075 * Math.cos(((E.pins[0] ? E.pins[0].lat : 0) * Math.PI) / 180);
@@ -350,11 +356,15 @@ export default function PetaClient() {
           E.effective = "darat";
           E.effectiveKey = k;
           E.routeM = j.routes[0].distance;
+          E.pending = "";
+          E.T = 0;
           setEngineStatus("Rute jalan " + (j.routes[0].distance / 1000).toFixed(1) + " km");
         } catch {
           if (E.pending !== k) return;
           E.effective = "air";
           E.effectiveKey = k;
+          E.pending = "";
+          E.T = 0;
           straightPD();
           setEngineStatus(
             E.mode === "auto"
@@ -493,7 +503,7 @@ export default function PetaClient() {
           E.T = F - 0.01;
           done = true;
         }
-        const f = E.T % F;
+        const f = E.loop ? E.T % F : Math.min(E.T, F);
         const dist = Math.min(f / D, 1) * pd.total;
         const sp = partial(pd, dist).map((p) => toS(p.x, p.y));
         ctx.lineJoin = "round";
@@ -637,6 +647,8 @@ export default function PetaClient() {
     cv.addEventListener("pointerdown", onDown);
     cv.addEventListener("pointermove", onMove);
     cv.addEventListener("pointerup", onUp);
+    cv.addEventListener("pointercancel", onUp);
+    cv.addEventListener("lostpointercapture", onUp);
     cv.addEventListener("wheel", onWheel, { passive: false });
 
     updateRoute();
@@ -648,7 +660,10 @@ export default function PetaClient() {
       cv.removeEventListener("pointerdown", onDown);
       cv.removeEventListener("pointermove", onMove);
       cv.removeEventListener("pointerup", onUp);
+      cv.removeEventListener("pointercancel", onUp);
+      cv.removeEventListener("lostpointercapture", onUp);
       cv.removeEventListener("wheel", onWheel);
+      E.stopRec?.();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -742,6 +757,12 @@ export default function PetaClient() {
       alert("Taruh minimal 2 lokasi dulu.");
       return;
     }
+    const currentPath = E.mode === "air" ? E.straight : E.route;
+    if (!currentPath || currentPath.total <= 0) {
+      setStatusText("Tunggu sampai rute selesai dimuat sebelum ekspor.");
+      (E as { _updateRoute?: () => void })._updateRoute?.();
+      return;
+    }
     if (!window.MediaRecorder || !cv.captureStream) {
       alert("Browser ini belum mendukung perekaman video.");
       return;
@@ -770,6 +791,13 @@ export default function PetaClient() {
     }
     rec.ondataavailable = (e) => {
       if (e.data.size) chunks.push(e.data);
+    };
+    rec.onerror = () => {
+      E.exporting = false;
+      E.stopRec = null;
+      setProgress(null);
+      setStatusText("Ekspor gagal. Coba lagi dengan rute yang lebih pendek.");
+      if (rec.state !== "inactive") rec.stop();
     };
     rec.onstop = async () => {
       E.exporting = false;
@@ -908,7 +936,7 @@ export default function PetaClient() {
               {searching ? "Mencari" : "Cari"}
             </button>
           </form>
-          {searchMsg ? <p style={{ fontSize: 13, color: "#74746d", margin: "8px 2px 0" }}>{searchMsg}</p> : null}
+          {searchMsg ? <p role="status" aria-live="polite" style={{ fontSize: 13, color: "#74746d", margin: "8px 2px 0" }}>{searchMsg}</p> : null}
           {hits.length > 0 ? (
             <ul style={{ listStyle: "none", margin: "8px 0 0", padding: 0, display: "grid", gap: 6 }}>
               {hits.map((h) => (
@@ -941,7 +969,7 @@ export default function PetaClient() {
                 background: "#e8e4dc",
               }}
             >
-              <canvas ref={canvasRef} style={{ position: "absolute", inset: 0, touchAction: "none", cursor: "crosshair" }} />
+              <canvas ref={canvasRef} role="img" aria-label="Peta interaktif. Gunakan daftar lokasi di samping untuk mengedit titik secara aksesibel." style={{ position: "absolute", inset: 0, touchAction: "none", cursor: "crosshair" }} />
               <div style={{ position: "absolute", right: 10, bottom: 12, display: "flex", flexDirection: "column", gap: 6 }}>
                 <button
                   aria-label="Perbesar"
@@ -1113,6 +1141,9 @@ export default function PetaClient() {
 
       <style>{`@media (max-width: 900px) {
         .peta-layout { grid-template-columns: 1fr !important; }
+        form { flex-wrap: wrap; }
+        form input { min-width: 0; }
+        .peta-layout > div > div { min-height: min(62vh, 560px) !important; }
       }`}</style>
       <ConfirmDialog
         open={confirmHapusSemua}

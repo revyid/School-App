@@ -31,12 +31,12 @@ export default function LoginPage() {
     fetch("/api/auth/me").then(async (r) => {
       if (!r.ok) return;
       const d = await r.json();
-      const back = safeNext();
-      if (back) {
-        router.replace(back);
+      if (d.user?.mustChangePassword) {
+        router.replace("/change-password");
         return;
       }
-      if (d.user?.mustChangePassword) router.replace("/change-password");
+      const back = safeNext();
+      if (back) router.replace(back);
       else if (d.user?.role) router.replace(ROLE_HOME[d.user.role as keyof typeof ROLE_HOME] ?? "/siswa");
     }).catch(() => {});
     fetch("/api/portal/info").then(async (r) => {
@@ -55,26 +55,35 @@ export default function LoginPage() {
     }
     setBusy(true);
     setError("");
-    const r = await fetch("/api/auth/login", {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({ identifier, password }),
-    });
-    const d = await r.json().catch(() => ({}));
-    setBusy(false);
-    if (!r.ok) {
-      setError(d.error ?? "Email/NISN atau kata sandi salah");
-      return;
+    try {
+      const r = await fetch("/api/auth/login", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ identifier, password }),
+      });
+      const d = await r.json().catch(() => ({}));
+      if (!r.ok) {
+        setError(d.error ?? "Email/NISN atau kata sandi salah");
+        return;
+      }
+      if (d.csrfToken) sessionStorage.setItem("csrf", d.csrfToken);
+      const consent = await fetch("/api/auth/consent", {
+        method: "POST",
+        headers: { "content-type": "application/json", "x-csrf-token": sessionStorage.getItem("csrf") ?? "" },
+      });
+      if (!consent.ok) {
+        setError("Login berhasil, tetapi persetujuan belum tercatat. Coba ulangi.");
+        return;
+      }
+      const back = safeNext();
+      if (d.mustChangePassword) router.replace("/change-password");
+      else if (back) router.replace(back);
+      else router.replace(ROLE_HOME[d.user.role as keyof typeof ROLE_HOME] ?? "/siswa");
+    } catch {
+      setError("Koneksi gagal. Periksa internet lalu coba lagi.");
+    } finally {
+      setBusy(false);
     }
-    if (d.csrfToken) sessionStorage.setItem("csrf", d.csrfToken);
-    await fetch("/api/auth/consent", {
-      method: "POST",
-      headers: { "content-type": "application/json", "x-csrf-token": sessionStorage.getItem("csrf") ?? "" },
-    }).catch(() => {});
-    const back = safeNext();
-    if (d.mustChangePassword) router.replace("/change-password");
-    else if (back) router.replace(back);
-    else router.replace(ROLE_HOME[d.user.role as keyof typeof ROLE_HOME] ?? "/siswa");
   }
 
   const input: React.CSSProperties = {
@@ -137,11 +146,11 @@ export default function LoginPage() {
             {notice && <p role="status" style={{ color: "#8a6d1b", background: "#f5c94a33", border: "1px solid #f5c94a", borderRadius: 12, padding: "8px 12px", fontSize: 13, margin: 0 }}>{notice}</p>}
             <label style={{ fontSize: 13, fontWeight: 700 }}>
               Email atau NISN
-              <input value={identifier} onChange={(e) => setIdentifier(e.target.value)} autoComplete="username" required style={input} />
+              <input type="text" id="identifier" value={identifier} onChange={(e) => setIdentifier(e.target.value)} autoComplete="username" required style={input} />
             </label>
             <label style={{ fontSize: 13, fontWeight: 700 }}>
               Kata sandi
-              <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} autoComplete="current-password" required style={input} />
+              <input type="password" id="password" value={password} onChange={(e) => setPassword(e.target.value)} autoComplete="current-password" required style={input} />
             </label>
             {error && <p role="alert" style={{ color: "#c94b35", fontSize: 13, margin: 0 }}>{error}</p>}
             <label style={{ display: "flex", gap: 10, alignItems: "flex-start", fontSize: 12.5, fontWeight: 400, lineHeight: 1.6, color: "#575752", cursor: "pointer" }}>

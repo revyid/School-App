@@ -47,7 +47,10 @@ export default function TimelineClient() {
     if (typeof window === "undefined") return fallback;
     try {
       const s = JSON.parse(localStorage.getItem(STORE) || "null");
-      if (s && Array.isArray(s.events)) return { ...fallback, ...s };
+      if (s && Array.isArray(s.events)) {
+        const events = s.events.filter((e: unknown): e is EventItem => !!e && typeof e === "object" && typeof (e as EventItem).title === "string").map((e: EventItem) => ({ date: String(e.date ?? ""), title: String(e.title), desc: String(e.desc ?? ""), color: /^#[0-9a-f]{6}$/i.test(String(e.color)) ? String(e.color) : PALETTE[0] }));
+        return { ...fallback, ...s, events, scale: [1, 2, 3].includes(Number(s.scale)) ? Number(s.scale) : 2 };
+      }
     } catch {}
     return fallback;
   });
@@ -392,6 +395,7 @@ export default function TimelineClient() {
             <div style={{ display: "flex", border: "1px solid rgba(23,23,22,.18)", borderRadius: 8, overflow: "hidden" }}>
               <button
                 type="button"
+                aria-pressed={state.layout === "vertical"}
                 onClick={() => setState((p) => ({ ...p, layout: "vertical" }))}
                 style={{ flex: 1, padding: 8, border: "none", background: state.layout === "vertical" ? "#171716" : "#fffdf8", color: state.layout === "vertical" ? "#fffdf8" : "#171716", fontWeight: 700, cursor: "pointer" }}
               >
@@ -399,6 +403,7 @@ export default function TimelineClient() {
               </button>
               <button
                 type="button"
+                aria-pressed={state.layout === "horizontal"}
                 onClick={() => setState((p) => ({ ...p, layout: "horizontal" }))}
                 style={{ flex: 1, padding: 8, border: "none", background: state.layout === "horizontal" ? "#171716" : "#fffdf8", color: state.layout === "horizontal" ? "#fffdf8" : "#171716", fontWeight: 700, cursor: "pointer" }}
               >
@@ -412,6 +417,7 @@ export default function TimelineClient() {
             <div style={{ display: "flex", border: "1px solid rgba(23,23,22,.18)", borderRadius: 8, overflow: "hidden" }}>
               <button
                 type="button"
+                aria-pressed={state.theme === "light"}
                 onClick={() => setState((p) => ({ ...p, theme: "light" }))}
                 style={{ flex: 1, padding: 8, border: "none", background: state.theme === "light" ? "#171716" : "#fffdf8", color: state.theme === "light" ? "#fffdf8" : "#171716", fontWeight: 700, cursor: "pointer" }}
               >
@@ -419,6 +425,7 @@ export default function TimelineClient() {
               </button>
               <button
                 type="button"
+                aria-pressed={state.theme === "dark"}
                 onClick={() => setState((p) => ({ ...p, theme: "dark" }))}
                 style={{ flex: 1, padding: 8, border: "none", background: state.theme === "dark" ? "#171716" : "#fffdf8", color: state.theme === "dark" ? "#fffdf8" : "#171716", fontWeight: 700, cursor: "pointer" }}
               >
@@ -454,12 +461,16 @@ export default function TimelineClient() {
                     onChange={(e) => updateEvent(i, { date: e.target.value })}
                     style={{ ...fieldStyle, flex: 1 }}
                   />
-                  <input
+                  <label style={{ display: "grid", gap: 2, fontSize: 10 }}>
+                    <span className="sr-only">Warna peristiwa {i + 1}</span>
+                    <input
+                    aria-label={`Warna peristiwa ${i + 1}`}
                     type="color"
                     value={ev.color}
                     onChange={(e) => updateEvent(i, { color: e.target.value })}
                     style={{ width: 38, height: 36, padding: 2, border: "1px solid rgba(23,23,22,.18)", borderRadius: 6, cursor: "pointer" }}
-                  />
+                    />
+                  </label>
                 </div>
                 <input
                   type="text"
@@ -476,9 +487,9 @@ export default function TimelineClient() {
                   style={{ ...fieldStyle, resize: "vertical" }}
                 />
                 <div style={{ display: "flex", gap: 6 }}>
-                  <button type="button" className="btn-sticker btn-ghost" onClick={() => moveEvent(i, -1)} disabled={i === 0} style={{ padding: "4px 8px", fontSize: 12 }}>Naik</button>
-                  <button type="button" className="btn-sticker btn-ghost" onClick={() => moveEvent(i, 1)} disabled={i === state.events.length - 1} style={{ padding: "4px 8px", fontSize: 12 }}>Turun</button>
-                  <button type="button" className="btn-sticker btn-ghost" onClick={() => deleteEvent(i)} style={{ padding: "4px 8px", fontSize: 12, color: "#e85e43", marginLeft: "auto" }}>Hapus</button>
+                  <button type="button" className="btn-sticker btn-ghost" aria-label={`Naikkan peristiwa ${i + 1}`} onClick={() => moveEvent(i, -1)} disabled={i === 0} style={{ padding: "4px 8px", fontSize: 12 }}>Naik</button>
+                  <button type="button" className="btn-sticker btn-ghost" aria-label={`Turunkan peristiwa ${i + 1}`} onClick={() => moveEvent(i, 1)} disabled={i === state.events.length - 1} style={{ padding: "4px 8px", fontSize: 12 }}>Turun</button>
+                  <button type="button" className="btn-sticker btn-ghost" aria-label={`Hapus peristiwa ${i + 1}`} onClick={() => deleteEvent(i)} style={{ padding: "4px 8px", fontSize: 12, color: "#e85e43", marginLeft: "auto" }}>Hapus</button>
                 </div>
               </div>
             ))}
@@ -496,7 +507,10 @@ export default function TimelineClient() {
 
         {/* PANEL PREVIEW CANVAS */}
         <main className="card" style={{ padding: 16, background: "#fffdf8", borderRadius: 20, border: "1px solid rgba(23,23,22,.16)", overflow: "auto", textAlign: "center" }}>
-          <canvas ref={cvRef} style={{ display: "block", margin: "0 auto", boxShadow: "0 4px 16px rgba(23,23,22,.12)", background: "repeating-conic-gradient(#fff 0 25%, #eef1f5 0 50%) 0 0/16px 16px" }} />
+          <canvas ref={cvRef} role="img" aria-label={`Preview timeline ${state.title}`} style={{ display: "block", margin: "0 auto", boxShadow: "0 4px 16px rgba(23,23,22,.12)", background: "repeating-conic-gradient(#fff 0 25%, #eef1f5 0 50%) 0 0/16px 16px" }} />
+          <ol aria-label="Daftar peristiwa timeline" style={{ textAlign: "left", margin: "16px auto 0", maxWidth: 640, paddingLeft: 24 }}>
+            {state.events.map((ev, i) => <li key={`${ev.title}-${i}`}><strong>{ev.date ? `${ev.date}: ` : ""}{ev.title}</strong>{ev.desc ? ` — ${ev.desc}` : ""}</li>)}
+          </ol>
         </main>
       </div>
 
