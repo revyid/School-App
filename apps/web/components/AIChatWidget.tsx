@@ -289,7 +289,9 @@ export default function AIChatWidget() {
                 role="status"
                 style={{ display: "flex", gap: 10, alignItems: "center", alignSelf: "flex-start", background: "#fff", border: "1px solid rgba(23,23,22,.12)", borderRadius: "4px 16px 16px 16px", padding: "8px 14px 8px 8px" }}
               >
-                <ThinkingOrb state="searching" size={64} theme="light" style={{ width: 44, height: 44 }} speed={reducedMotion ? 0 : 1} paused={reducedMotion} aria-label="RAI sedang mencari jawaban" />
+                <span style={{ width: 44, height: 44, display: "grid", placeItems: "center", flexShrink: 0 }}>
+                  <ThinkingOrb state="searching" size={32} theme="light" speed={reducedMotion ? 0 : 1} paused={reducedMotion} aria-label="RAI sedang mencari jawaban" />
+                </span>
                 <span style={{ fontSize: 12, color: "#808388" }}>RAI berpikir…</span>
               </div>
             )}
