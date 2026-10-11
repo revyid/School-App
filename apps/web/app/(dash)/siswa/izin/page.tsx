@@ -6,6 +6,7 @@
 import { useEffect, useRef, useState } from "react";
 import { api, useFetch } from "@/app/lib/api";
 import { PageHead, Panel, Toolbar, TextInput, TextSelect, Btn, Badge, Note } from "@/components/DashUI";
+import { useCamera } from "@/components/useCamera";
 
 function todayWibInput() {
   const d = new Date(Date.now() + 7 * 3600 * 1000);
@@ -13,9 +14,10 @@ function todayWibInput() {
 }
 
 export default function IzinPage() {
-  const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const [streaming, setStreaming] = useState(false);
+  const cam = useCamera("user");
+  const videoRef = cam.videoRef;
+  const streaming = cam.streaming;
   const [date, setDate] = useState(todayWibInput);
   const [kind, setKind] = useState("IZIN");
   const [desc, setDesc] = useState("");
@@ -37,24 +39,13 @@ export default function IzinPage() {
   }, [preview]);
 
   async function startCamera() {
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" } });
-      if (videoRef.current) {
-        videoRef.current.srcObject = stream;
-        await videoRef.current.play();
-      }
-      setStreaming(true);
-    } catch {
-      setMsg("Kamera tidak tersedia (butuh HTTPS/kamera HP)");
-    }
+    const ok = await cam.start();
+    if (!ok && cam.error) setMsg(cam.error.message);
+    else if (ok) setMsg("Kamera menyala. Posisikan siswa dan orang tua dalam satu frame, lalu jepret.");
   }
 
   function stopCamera() {
-    const v = videoRef.current;
-    const stream = v?.srcObject as MediaStream | null;
-    stream?.getTracks().forEach((t) => t.stop());
-    if (v) v.srcObject = null;
-    setStreaming(false);
+    cam.stop();
   }
 
   function jepret() {

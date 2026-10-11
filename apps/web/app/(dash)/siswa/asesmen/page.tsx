@@ -6,6 +6,7 @@ import { api, useFetch } from "@/app/lib/api";
 import { PageHead, Panel, Toolbar, Btn, Note } from "@/components/DashUI";
 import ConfirmDialog from "@/components/ConfirmDialog";
 
+import { Glyph } from "../../../../components/Glyph";
 interface Q {
   id: string; type: "MCQ" | "SORTING"; stem: string; imageUrl: string | null; options: string[];
 }
@@ -126,8 +127,8 @@ export default function AsesmenSiswaPage() {
                       {(sort[q.id] ?? q.options).map((o, i, arr) => (
                         <li key={`${o}-${i}`} style={{ display: "flex", gap: 8, alignItems: "center" }}>
                           <span style={{ flex: 1 }}>{o}{" "}</span>
-                          <Btn type="button" kind="ghost" onClick={() => move(q.id, q.options, i, -1)}>↑</Btn>
-                          <Btn type="button" kind="ghost" onClick={() => move(q.id, q.options, i, 1)}>↓</Btn>
+                          <Btn type="button" kind="ghost" onClick={() => move(q.id, q.options, i, -1)}><Glyph name="arrowUp" size={14} /></Btn>
+                          <Btn type="button" kind="ghost" onClick={() => move(q.id, q.options, i, 1)}><Glyph name="arrowDown" size={14} /></Btn>
                         </li>
                       ))}
                     </ol>

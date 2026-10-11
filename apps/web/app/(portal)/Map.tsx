@@ -50,7 +50,7 @@ export default function Map({ lat, lng }: { lat?: number | null; lng?: number | 
           className="btn-sticker btn-ghost"
           style={{ textDecoration: "none", fontSize: 12, display: "inline-flex", alignItems: "center", gap: 6 }}
         >
-          Buka di Google Maps ↗
+          Buka di Google Maps
         </a>
       </div>
     </div>

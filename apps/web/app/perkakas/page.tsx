@@ -71,7 +71,7 @@ export default async function ToolsHubPage() {
               Buat peta interaktif dengan rute jalan darat/jalur air, kustomisasi ikon kendaraan per titik (mobil, perahu, pesawat, sepeda), kontrol animasi kamera (kamera ikuti kendaraan / pas di layar), serta ekspor video MP4/WebM.
             </p>
             <span style={{ fontWeight: 800, color: "#e85e43", fontSize: 14 }}>
-              Buka Pembuat Peta →
+              Buka Pembuat Peta
             </span>
           </Link>
 
@@ -116,7 +116,7 @@ export default async function ToolsHubPage() {
               Susun peristiwa bersejarah atau perjalanan proyek jadi infografis timeline vertikal/horizontal (terang, gelap, transparan), lalu unduh sebagai gambar PNG resolusi tinggi.
             </p>
             <span style={{ fontWeight: 800, color: "#e85e43", fontSize: 14 }}>
-              Buka Generator Timeline →
+              Buka Generator Timeline
             </span>
           </Link>
 
@@ -145,7 +145,7 @@ export default async function ToolsHubPage() {
               Koleksi bacaan pindah ke halaman tersendiri di /buku, tetap gratis tanpa login.
             </p>
             <span style={{ fontWeight: 700, color: "#171716", fontSize: 14 }}>
-              Buka /buku →
+              Buka /buku
             </span>
           </Link>
         </div>

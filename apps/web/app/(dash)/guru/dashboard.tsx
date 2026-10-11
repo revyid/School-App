@@ -68,7 +68,7 @@ export default function GuruDashboard() {
             </p>
             <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
               <Link href="/guru/scanner" className="btn-sticker" style={{ background: "#f5c94a", color: "#171716", borderColor: "#171716" }}>
-                Pindai kehadiran ↗
+                Pindai kehadiran
               </Link>
               <Link href="/guru/tugas" className="btn-sticker btn-ghost">
                 Kelola tugas
@@ -117,7 +117,7 @@ export default function GuruDashboard() {
               {leave.loading ? "…" : pendingIzin}
             </p>
             <p style={{ fontSize: 12, margin: 0 }}>
-              <Link href="/guru/izin" style={{ color: "#fffdf8", fontWeight: 700 }}>Tinjau sekarang →</Link>
+              <Link href="/guru/izin" style={{ color: "#fffdf8", fontWeight: 700 }}>Tinjau sekarang</Link>
             </p>
           </div>
         </Reveal>
@@ -159,7 +159,7 @@ export default function GuruDashboard() {
               <p style={{ color: "#74746d" }}>Tugas belum tersedia.</p>
             ) : tasks.data.rows.length === 0 ? (
               <p style={{ color: "#74746d" }}>
-                Belum ada tugas. <Link href="/guru/tugas" style={{ fontWeight: 700, color: "#171716" }}>Buat tugas pertama →</Link>
+                Belum ada tugas. <Link href="/guru/tugas" style={{ fontWeight: 700, color: "#171716" }}>Buat tugas pertama</Link>
               </p>
             ) : (
               <ul style={{ listStyle: "none", margin: 0, padding: 0, display: "grid", gap: 10 }}>
@@ -181,10 +181,10 @@ export default function GuruDashboard() {
           <div className="card" style={{ padding: 20, background: "#aec6a4" }}>
             <h2 style={{ fontSize: 17, fontWeight: 800, margin: "0 0 12px" }}>Jalan pintas</h2>
             <ul style={{ listStyle: "none", margin: 0, padding: 0, display: "grid", gap: 10, fontSize: 14 }}>
-              <li><Link href="/guru/scanner" style={{ fontWeight: 700, color: "#171716" }}>Pindai QR kehadiran →</Link></li>
-              <li><Link href="/guru/kehadiran" style={{ fontWeight: 700, color: "#171716" }}>Rekap kehadiran →</Link></li>
-              <li><Link href="/guru/asesmen" style={{ fontWeight: 700, color: "#171716" }}>Asesmen →</Link></li>
-              <li><Link href="/guru/rapor" style={{ fontWeight: 700, color: "#171716" }}>Rapor →</Link></li>
+              <li><Link href="/guru/scanner" style={{ fontWeight: 700, color: "#171716" }}>Pindai QR kehadiran</Link></li>
+              <li><Link href="/guru/kehadiran" style={{ fontWeight: 700, color: "#171716" }}>Rekap kehadiran</Link></li>
+              <li><Link href="/guru/asesmen" style={{ fontWeight: 700, color: "#171716" }}>Asesmen</Link></li>
+              <li><Link href="/guru/rapor" style={{ fontWeight: 700, color: "#171716" }}>Rapor</Link></li>
             </ul>
           </div>
         </Reveal>

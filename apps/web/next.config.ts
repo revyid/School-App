@@ -11,6 +11,11 @@ const nextConfig: NextConfig = {
   allowedDevOrigins: ["*.localtest.me", "demo.localtest.me"],
   images: {
     remotePatterns: [{ protocol: "https", hostname: "covers.openlibrary.org" }],
+    // Kandidat lebar terkecil dibuang: ikon hero sempat memilih 32w/48w lalu
+    // di-upscale CSS ke ~200px, hasilnya burik di layar kecil.
+    deviceSizes: [256, 384, 640, 750, 828, 1080, 1200, 1920, 2048, 3840],
+    imageSizes: [96, 128, 192, 256, 320, 384],
+    formats: ["image/webp"],
   },
   // Socket.io worker (realtime att:scan + notif:new) diekspos satu origin
   // agar browser tidak perlu konek langsung ke port worker.

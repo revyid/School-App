@@ -15,6 +15,7 @@ import {
   IconBell,
 } from "./Icons";
 
+import { Glyph } from "./Glyph";
 export type MenuItem = { href: string; label: string; badge?: number; icon?: React.ReactNode };
 
 type IconFC = (p: { size?: number; color?: string }) => React.ReactElement;
@@ -243,7 +244,7 @@ export default function DashShell({
                 }}
                 aria-label="Tutup menu"
               >
-                ✕
+                <Glyph name="close" size={16} />
               </button>
             </div>
             {sidebar}
@@ -273,7 +274,7 @@ export default function DashShell({
             aria-label="Buka menu"
             style={{ padding: "8px 12px", display: "none", alignItems: "center", gap: 6 }}
           >
-            <span style={{ fontSize: 16 }}>☰</span>
+            <Glyph name="menu" size={16} />
             <span style={{ fontSize: 12, fontWeight: 700 }}>Menu</span>
           </button>
 

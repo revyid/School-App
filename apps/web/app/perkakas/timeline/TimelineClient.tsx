@@ -500,7 +500,7 @@ export default function TimelineClient() {
           </button>
 
           <button type="button" className="btn-sticker btn-primary" onClick={downloadPNG} style={{ width: "100%", justifyContent: "center", minHeight: 46 }}>
-            Unduh Gambar PNG ↗
+            Unduh Gambar PNG
           </button>
           {infoText && <p style={{ fontSize: 12, color: "#74746d", margin: 0 }}>{infoText}</p>}
         </aside>

@@ -10,6 +10,7 @@ const Map = dynamic(() => import("./Map"), { ssr: false });
 const PopularBooks = dynamic(() => import("./PopularBooks"), { ssr: false });
 import AuthCta from "./AuthCta";
 
+import { Glyph, GlyphBadge, type GlyphName } from "../../components/Glyph";
 // Landing publik per sekolah. LAYOUT mengikuti referensi edukids
 // (hero 3 kolom + orbit, intro split, 3 kartu fitur, grid mapel, pengumuman,
 // panel CTA olive, footer gelap). ISI = data asli sekolah (portal/info),
@@ -25,7 +26,7 @@ type PortalInfo = {
 };
 
 const SUBJECT_COLORS = ["#e85e43", "#f5c94a", "#97c4db", "#aec6a4"];
-const SUBJECT_GLYPH = ["∑", "Aa", "✦", "◎"];
+const SUBJECT_GLYPH: GlyphName[] = ["sigma", "textAa", "spark", "target"];
 
 export default function PortalPage() {
   const info = useFetch<PortalInfo>("/api/portal/info");
@@ -70,7 +71,7 @@ export default function PortalPage() {
           <div style={{ display: "flex", alignItems: "center", gap: 10, marginLeft: "auto" }} className="portal-header-actions">
             <AuthCta className="btn-sticker portal-header-cta" style={{ background: "#171716", color: "#fffdf8", textDecoration: "none", padding: "8px 16px", minHeight: 40, fontSize: 12 }} />
             <details className="portal-burger" style={{ position: "relative" }}>
-              <summary aria-label="Buka menu" style={{ listStyle: "none", cursor: "pointer", display: "grid", placeItems: "center", width: 40, height: 40, border: "1px solid #171716", borderRadius: "50%", background: "#fffdf8", fontSize: 18, userSelect: "none" }}>☰</summary>
+              <summary aria-label="Buka menu" style={{ listStyle: "none", cursor: "pointer", display: "grid", placeItems: "center", width: 40, height: 40, border: "1px solid #171716", borderRadius: "50%", background: "#fffdf8", userSelect: "none" }}><Glyph name="menu" size={18} /></summary>
               <nav style={{ position: "absolute", right: 0, top: 48, display: "flex", flexDirection: "column", gap: 4, minWidth: 200, padding: 10, background: "#fffdf8", border: "1px solid #171716", borderRadius: 16, boxShadow: "0 8px 24px rgba(23,23,22,.15)", zIndex: 50 }}>
                 {[["Tentang", "#tentang"], ["Program", "#program"], ["Mapel", "#mapel"], ["Pengumuman", "#pengumuman"], ["Lokasi", "#lokasi"], ["Tools", "/perkakas"], ["Pesan Anonim", "/anonim"]].map(([label, href]) => (
                   <a key={href} href={href} style={{ padding: "10px 14px", borderRadius: 10, color: "#171716", fontSize: 13, fontWeight: 700, textDecoration: "none" }}>{label}</a>
@@ -93,15 +94,15 @@ export default function PortalPage() {
             overflow: "hidden",
           }}
         >
-          <span className="anim-drift" aria-hidden="true" style={{ position: "absolute", top: "20%", left: "44%", color: "#e85e43", fontSize: 46, zIndex: 0 }}>✳</span>
-          <span className="anim-drift" aria-hidden="true" style={{ position: "absolute", bottom: "32%", right: "42%", color: "#e85e43", fontSize: 24, zIndex: 0 }}>✦</span>
+          
+          
           <div aria-hidden="true" style={{ position: "absolute", left: "calc(50% - 240px)", top: "36%", width: 480, height: 165, border: "1px dashed rgba(232,94,67,.38)", borderRadius: "50%", transform: "rotate(-13deg)", zIndex: 0, pointerEvents: "none" }} />
           <div aria-hidden="true" style={{ position: "absolute", left: "calc(50% - 155px)", top: "41%", width: 310, height: 110, border: "1px dashed rgba(113,132,90,.35)", borderRadius: "50%", transform: "rotate(11deg)", zIndex: 0, pointerEvents: "none" }} />
 
           {/* kiri: siswi — student-hero-transparent (aset baru), fallback char-girl */}
           <div className="portal-hero-side hero-left" style={{ position: "relative", zIndex: 2, justifySelf: "start", width: "min(100%, 250px)", height: 370, transform: "rotate(-5deg)" }}>
             <div style={{ position: "absolute", inset: "40px 0 0", background: "#f5c94a", borderRadius: "48% 52% 38% 62% / 52% 41% 59% 48%", transform: "rotate(-10deg)" }} />
-            <Image src="/assets/student-hero-transparent.webp" alt="Ilustrasi siswi membawa buku" fill sizes="(max-width: 600px) 180px, (max-width: 900px) 220px, 250px" className="anim-floaty" style={{ objectFit: "contain", objectPosition: "center bottom" }} priority />
+            <Image src="/assets/student-hero-transparent.webp" alt="Ilustrasi siswi membawa buku" fill sizes="(max-width: 680px) 200px, 250px" className="anim-floaty" style={{ objectFit: "contain", objectPosition: "center bottom" }} priority />
             <span style={{ position: "absolute", top: 36, left: -28, width: 52, height: 52, display: "grid", placeItems: "center", border: "1px solid #171716", borderRadius: "50%", background: "#fffdf8", boxShadow: "4px 5px 0 #171716", fontSize: 25 }} aria-hidden="true">✎</span>
             <span style={{ position: "absolute", bottom: 33, left: -60, padding: "10px 13px", border: "1px solid #171716", borderRadius: 14, background: "#fffdf8", fontFamily: "var(--font-meta)", fontSize: 8, textTransform: "uppercase", boxShadow: "3px 4px 0 #171716", transform: "rotate(-8deg)" }}>
               kelas<br /><strong style={{ fontFamily: "var(--font-display)", fontSize: 12 }}>ceria</strong>
@@ -121,15 +122,15 @@ export default function PortalPage() {
                 {nama}: pengumuman, bacaan, dan lokasi dalam satu halaman.
               </p>
               <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 25, marginTop: 32, flexWrap: "wrap" }}>
-                <AuthCta className="btn-sticker btn-primary" style={{ textDecoration: "none", minHeight: 50, padding: "0 21px" }} loginLabel="Mulai belajar ↗" />
+                <AuthCta className="btn-sticker btn-primary" style={{ textDecoration: "none", minHeight: 50, padding: "0 21px" }} loginLabel="Mulai belajar" />
                 {info.data?.ctaGtkUrl && (
-                  <a href={info.data.ctaGtkUrl} target="_blank" rel="noreferrer" className="btn-sticker btn-ghost" style={{ textDecoration: "none", minHeight: 50, padding: "0 21px", background: "#fffdf8" }}>Ruang GTK ↗</a>
+                  <a href={info.data.ctaGtkUrl} target="_blank" rel="noreferrer" className="btn-sticker btn-ghost" style={{ textDecoration: "none", minHeight: 50, padding: "0 21px", background: "#fffdf8", display: "inline-flex", alignItems: "center", gap: 7 }}>Ruang GTK <Glyph name="arrowUpRight" size={14} /></a>
                 )}
                 {info.data?.ctaMuridUrl && (
-                  <a href={info.data.ctaMuridUrl} target="_blank" rel="noreferrer" className="btn-sticker btn-ghost" style={{ textDecoration: "none", minHeight: 50, padding: "0 21px", background: "#fffdf8" }}>Ruang Murid ↗</a>
+                  <a href={info.data.ctaMuridUrl} target="_blank" rel="noreferrer" className="btn-sticker btn-ghost" style={{ textDecoration: "none", minHeight: 50, padding: "0 21px", background: "#fffdf8", display: "inline-flex", alignItems: "center", gap: 7 }}>Ruang Murid <Glyph name="arrowUpRight" size={14} /></a>
                 )}
-                <a href="/anonim" className="btn-sticker btn-ghost" style={{ textDecoration: "none", minHeight: 50, padding: "0 21px", background: "#fffdf8" }}>Kirim Pesan / Anonim ✉</a>
-                <a href="#tentang" style={{ color: "#e85e43", fontSize: 12, fontWeight: 700, textDecoration: "none" }}>Kenalan dulu ↓</a>
+                <a href="/anonim" className="btn-sticker btn-ghost" style={{ textDecoration: "none", minHeight: 50, padding: "0 21px", background: "#fffdf8" }}><Glyph name="mail" size={14} /> Kirim Pesan / Anonim</a>
+                <a href="#tentang" style={{ color: "#e85e43", fontSize: 12, fontWeight: 700, textDecoration: "none" }}>Kenalan dulu <Glyph name="arrowDown" size={12} /></a>
               </div>
             </div>
           </Reveal>
@@ -137,7 +138,7 @@ export default function PortalPage() {
           {/* kanan: siswa — student-book (aset baru) */}
           <div className="portal-hero-side hero-right" style={{ position: "relative", zIndex: 2, justifySelf: "end", width: "min(100%, 250px)", height: 370, transform: "rotate(6deg)" }}>
             <div style={{ position: "absolute", inset: "40px 0 0", background: "#97c4db", borderRadius: "48% 52% 38% 62% / 52% 41% 59% 48%", transform: "rotate(10deg)" }} />
-            <Image src="/assets/student-book.webp" alt="Ilustrasi siswa berkacamata membaca buku" fill sizes="(max-width: 600px) 180px, (max-width: 900px) 220px, 250px" loading="lazy" className="anim-floaty" style={{ objectFit: "contain", objectPosition: "center bottom" }} />
+            <Image src="/assets/student-book.webp" alt="Ilustrasi siswa berkacamata membaca buku" fill sizes="(max-width: 680px) 200px, 250px" loading="lazy" className="anim-floaty" style={{ objectFit: "contain", objectPosition: "center bottom" }} />
             <span style={{ position: "absolute", top: 72, right: -27, width: 52, height: 52, display: "grid", placeItems: "center", border: "1px solid #171716", borderRadius: "50%", background: "#f5c94a", boxShadow: "4px 5px 0 #171716", fontSize: 25 }} aria-hidden="true">✺</span>
             <span style={{ position: "absolute", bottom: 66, right: -74, padding: "10px 13px", border: "1px solid #171716", borderRadius: 14, background: "#fffdf8", fontFamily: "var(--font-meta)", fontSize: 8, textTransform: "uppercase", boxShadow: "3px 4px 0 #171716", transform: "rotate(9deg)" }}>
               <strong style={{ fontFamily: "var(--font-display)", fontSize: 12 }}>{counts ? `${counts.students} siswa` : "…"}</strong><br />belajar di sini
@@ -147,7 +148,7 @@ export default function PortalPage() {
           {/* bawah: statistik */}
           <div className="portal-hero-bottom" style={{ gridColumn: "1 / -1", display: "flex", alignItems: "end", justifyContent: "space-between", gap: 20, paddingTop: 32, borderTop: "1px solid rgba(23,23,22,.14)", marginTop: 20 }}>
             <span style={{ display: "flex", alignItems: "center", gap: 9, color: "#575752", fontFamily: "var(--font-meta)", fontSize: 9, textTransform: "uppercase" }}>
-              <span style={{ display: "grid", placeItems: "center", width: 25, height: 25, border: "1px solid rgba(23,23,22,.14)", borderRadius: "50%" }}>↓</span>
+              <span style={{ display: "grid", placeItems: "center", width: 25, height: 25, border: "1px solid rgba(23,23,22,.14)", borderRadius: "50%" }}><Glyph name="arrowDown" size={13} /></span>
               jelajahi sekolah
             </span>
             <div style={{ display: "flex", gap: "clamp(24px, 5vw, 90px)" }}>
@@ -180,7 +181,7 @@ export default function PortalPage() {
                   {nama} mendampingi siswa belajar setiap hari: tugas, asesmen, kehadiran,
                   dan kabar sekolah, semua tercatat rapi dalam satu dasbor.
                 </p>
-                <a href="#program" style={{ color: "#171716", fontSize: 12, fontWeight: 700, textDecoration: "none" }}>Lihat program kami ↗</a>
+                <a href="#program" style={{ color: "#171716", fontSize: 12, fontWeight: 700, textDecoration: "none" }}>Lihat program kami <Glyph name="arrowUpRight" size={12} /></a>
               </div>
             </div>
           </Reveal>
@@ -200,9 +201,9 @@ export default function PortalPage() {
           </Reveal>
           <div className="portal-trio">
             {[
-              { bg: "#e85e43", fg: "#fffdf8", glyph: "☼", title: "Tugas & materi", desc: "Tugas, materi, dan pengumpulan terpantau guru setiap hari." },
-              { bg: "#71845a", fg: "#fffdf8", glyph: "✦", title: "Asesmen adil", desc: "Kuis dan ujian dengan soal acak per siswa, dinilai otomatis." },
-              { bg: "#97c4db", fg: "#171716", glyph: "∞", title: "Kehadiran rapi", desc: "Absensi QR, izin berfoto, dan rekap bulanan siap unduh." },
+              { bg: "#e85e43", fg: "#fffdf8", glyph: "sun" as GlyphName, title: "Tugas & materi", desc: "Tugas, materi, dan pengumpulan terpantau guru setiap hari." },
+              { bg: "#71845a", fg: "#fffdf8", glyph: "spark" as GlyphName, title: "Asesmen adil", desc: "Kuis dan ujian dengan soal acak per siswa, dinilai otomatis." },
+              { bg: "#97c4db", fg: "#171716", glyph: "infinity" as GlyphName, title: "Kehadiran rapi", desc: "Absensi QR, izin berfoto, dan rekap bulanan siap unduh." },
             ].map((f, i) => (
               <Reveal key={f.title} delay={i * 120}>
                 <article
@@ -210,10 +211,10 @@ export default function PortalPage() {
                   style={{ position: "relative", minHeight: 340, padding: "27px 27px 30px", borderRadius: 34, overflow: "hidden", background: f.bg, color: f.fg }}
                 >
                   <div style={{ fontFamily: "var(--font-meta)", fontSize: 11, opacity: 0.68 }}>0{i + 1}</div>
-                  <div style={{ display: "grid", placeItems: "center", width: 73, height: 73, margin: "36px 0 26px", border: "1px solid currentColor", borderRadius: "50%", fontSize: 34 }}>{f.glyph}</div>
+                  <GlyphBadge name={f.glyph} box={73} size={34} />
                   <h3 className="display" style={{ fontSize: "clamp(22px, 2.1vw, 31px)", color: f.fg }}>{f.title}</h3>
                   <p style={{ maxWidth: 250, marginTop: 16, fontSize: 12, lineHeight: 1.65, opacity: 0.78 }}>{f.desc}</p>
-                  <a href="/login" aria-label={f.title} style={{ position: "absolute", right: 27, bottom: 27, display: "grid", placeItems: "center", width: 35, height: 35, border: "1px solid currentColor", borderRadius: "50%", fontSize: 19, color: "inherit", textDecoration: "none" }}>↗</a>
+                  <a href="/login" aria-label={f.title} style={{ position: "absolute", right: 27, bottom: 27, display: "grid", placeItems: "center", width: 35, height: 35, border: "1px solid currentColor", borderRadius: "50%", color: "inherit", textDecoration: "none" }}><Glyph name="arrowUpRight" size={17} /></a>
                 </article>
               </Reveal>
             ))}
@@ -234,7 +235,7 @@ export default function PortalPage() {
                     ? `Ada ${subjects.length} mata pelajaran aktif semester ini. Masuk untuk melihat tugas dan nilaimu.`
                     : "Jadwal dan mata pelajaran diatur admin sekolah. Masuk untuk melihat kelasmu."}
                 </p>
-                <AuthCta className="btn-sticker btn-ghost" style={{ textDecoration: "none" }} loginLabel="Masuk dasbor ↗" />
+                <AuthCta className="btn-sticker btn-ghost" style={{ textDecoration: "none" }} loginLabel="Masuk dasbor" />
               </div>
             </Reveal>
             <Reveal delay={120}>
@@ -245,7 +246,7 @@ export default function PortalPage() {
                     className="card-lift"
                     style={{ position: "relative", display: "flex", flexDirection: "column", justifyContent: "space-between", minHeight: 205, padding: 22, borderRadius: 24, overflow: "hidden", background: SUBJECT_COLORS[i % 4], border: subjects.length > 0 ? undefined : "2px dashed rgba(23,23,22,.35)" }}
                   >
-                    <span style={{ display: "grid", placeItems: "center", width: 56, height: 56, border: "1px solid currentColor", borderRadius: "50%", fontSize: 23 }}>{SUBJECT_GLYPH[i % 4]}</span>
+                    <span style={{ display: "grid", placeItems: "center", width: 56, height: 56, border: "1px solid currentColor", borderRadius: "50%" }}><Glyph name={SUBJECT_GLYPH[i % 4]} size={23} /></span>
                     <span style={{ fontSize: 15, fontWeight: 700, letterSpacing: "-0.04em" }}>{label}</span>
                     {subjects.length === 0 && (
                       <span style={{ fontFamily: "var(--font-meta)", fontSize: 9, textTransform: "uppercase", opacity: 0.7 }}>segera hadir</span>
@@ -331,12 +332,12 @@ export default function PortalPage() {
                 <p style={{ maxWidth: 310, color: "rgba(255,253,248,.74)", fontSize: 13, lineHeight: 1.7, marginBottom: 28 }}>
                   Masuk ke dasbor {nama}: tugas, nilai, dan kabar kelas dalam genggaman.
                 </p>
-                <AuthCta className="btn-sticker" style={{ background: "#fffdf8", color: "#171716", borderColor: "#fffdf8", textDecoration: "none" }} loginLabel="Masuk dasbor ↗" />
+                <AuthCta className="btn-sticker" style={{ background: "#fffdf8", color: "#171716", borderColor: "#fffdf8", textDecoration: "none" }} loginLabel="Masuk dasbor" />
               </div>
               <div style={{ position: "relative", minHeight: 470, padding: "24px 28px 10px 0" }}>
                 <div style={{ position: "absolute", left: "10%", top: "14%", width: 400, height: 400, maxWidth: "86%", maxHeight: "72%", borderRadius: "50%", background: "#f5c94a" }} />
                 <Image src="/assets/classroom-illustration.webp" alt="Ilustrasi suasana kelas" fill sizes="(max-width: 900px) 100vw, 600px" style={{ objectFit: "cover", borderRadius: 24, zIndex: 2 }} />
-                <span aria-hidden="true" className="anim-floaty" style={{ position: "absolute", zIndex: 3, top: "18%", right: "13%", display: "grid", placeItems: "center", width: 63, height: 63, border: "1px solid #171716", borderRadius: "50%", color: "#171716", fontSize: 30, background: "#fffdf8", boxShadow: "5px 6px 0 #171716" }}>✳</span>
+                <span aria-hidden="true" className="anim-floaty" style={{ position: "absolute", zIndex: 3, top: "18%", right: "13%", display: "grid", placeItems: "center", width: 63, height: 63, border: "1px solid #171716", borderRadius: "50%", color: "#171716", fontSize: 30, background: "#fffdf8", boxShadow: "5px 6px 0 #171716" }}><Glyph name="spark" size={28} /></span>
               </div>
             </div>
           </Reveal>
@@ -386,7 +387,7 @@ export default function PortalPage() {
               </div>
               <div>
                 <span>Aksi</span>
-                <AuthCta loginLabel="Masuk ↗" dashLabel="Dasbor ↗" />
+                <AuthCta loginLabel="Masuk" dashLabel="Dasbor" />
               </div>
             </div>
           </div>
@@ -406,13 +407,16 @@ export default function PortalPage() {
       }
       @media (max-width: 680px) {
         .portal-hero {
+          /* 1 layar penuh di mobile: dvh mengikuti browser chrome yang
+             muncul/hilang saat scroll, svh jadi fallback browser lama. */
           display: flex !important;
           flex-direction: column !important;
           align-items: center !important;
-          padding: 40px 16px 28px !important;
+          padding: 24px 16px 28px !important;
           text-align: center !important;
-          min-height: calc(100dvh - 72px) !important;
           justify-content: center !important;
+          min-height: 100svh !important;
+          min-height: 100dvh !important;
         }
         .portal-hero-copy { width: 100% !important; margin-bottom: 20px !important; }
         .portal-hero-side { display: none !important; }
