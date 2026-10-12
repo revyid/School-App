@@ -4,6 +4,7 @@ import { useEffect, useRef, useState, type FormEvent } from "react";
 import { BorderBeam } from "border-beam";
 import { api } from "@/app/lib/api";
 import GrokAvatar from "@/components/GrokAvatar";
+import RaiMarkdown from "./RaiMarkdown";
 
 interface ChatMessage { id: string; sender: "user" | "ai"; text: string }
 type Mood = "idle" | "thinking" | "happy" | "concerned";
@@ -78,8 +79,8 @@ export default function AIChatWidgetEnhanced() {
         <header className="ai-enhanced-header"><div className="ai-enhanced-identity"><GrokAvatar size={48} mood={mood} /><div><h2>Asisten AI Sekolah</h2><p>{loading ? "Sedang berpikir…" : "Siap membantu dengan aman"}</p></div></div><button type="button" onClick={toggle} aria-label="Tutup chat">×</button></header>
         <div className="ai-enhanced-trust"><span /> Akses mengikuti akun dan pengaturan sekolah <b>·</b> Jangan kirim data sensitif</div>
         <div className="ai-enhanced-messages" aria-live="polite">
-          {messages.map((message) => <div className={`ai-enhanced-row ${message.sender}`} key={message.id}>{message.sender === "ai" && <GrokAvatar size={26} mood={message.id[0] === "e" || message.id[0] === "n" ? "concerned" : "idle"} interactive={false} />}<div className={`ai-enhanced-bubble ${message.sender}`}>{message.text}</div></div>)}
-          {loading && <div className="ai-enhanced-row ai"><GrokAvatar size={26} mood="thinking" interactive={false} /><div className="ai-enhanced-bubble ai typing"><span /><span /><span />Mencari jawaban…</div></div>}
+          {messages.map((message) => <div className={`ai-enhanced-row ${message.sender}`} key={message.id}><div className={`ai-enhanced-bubble ${message.sender}`}>{message.sender === "ai" ? <RaiMarkdown text={message.text} /> : message.text}</div></div>)}
+          {loading && <div className="ai-enhanced-row ai"><GrokAvatar size={26} mood="thinking" interactive={false} /><div className="ai-enhanced-bubble ai">Mencari jawaban…</div></div>}
           <div ref={endRef} />
         </div>
         <form className="ai-enhanced-compose" onSubmit={submit}><div className="ai-enhanced-quick">{QUICK_TAGS.map((tag) => <button key={tag} type="button" disabled={loading} onClick={() => void send(tag)}>{tag}</button>)}</div><div className="ai-enhanced-input"><input value={input} onChange={(e) => setInput(e.target.value)} placeholder={PLACEHOLDERS[placeholder]} maxLength={1000} disabled={loading} aria-label="Tulis pertanyaan" /><button type="submit" disabled={loading || !input.trim()} aria-label="Kirim">↑</button></div></form>

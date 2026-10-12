@@ -6,7 +6,7 @@ interface Props { mood?: AvatarMood; size?: number; interactive?: boolean; label
 const MOOD: Record<AvatarMood, { state: AnimationState; expression: string; label: string }> = {
   idle: { state: "Idle", expression: "attentive", label: "Asisten siap membantu" },
   thinking: { state: "Thinking", expression: "curious", label: "Asisten sedang berpikir" },
-  happy: { state: "Play", expression: "happy", label: "Asisten senang membantu" },
+  happy: { state: "Idle", expression: "happy", label: "Asisten senang membantu" },
   concerned: { state: "Alert", expression: "wary", label: "Asisten menemukan kendala" },
 };
 export default function GrokAvatar({ mood = "idle", size = 58, interactive = true, label }: Props) {
