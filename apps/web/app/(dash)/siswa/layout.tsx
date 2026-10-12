@@ -1,17 +1,10 @@
-import { cookies, headers } from "next/headers";
 import { redirect } from "next/navigation";
-import { SESSION_COOKIE } from "@sms/shared/auth";
-import { requirePage } from "@/app/lib/require-page";
+import { getPageAuth } from "@/app/lib/require-page";
 
+// F4: hanya membaca hasil cache getPageAuth + cek peran (tanpa query ulang).
 export default async function SiswaLayout({ children }: { children: React.ReactNode }) {
-  const h = await headers();
-  const c = await cookies();
-  const a = await requirePage({
-    host: h.get("host") ?? "",
-    token: c.get(SESSION_COOKIE)?.value,
-    pathname: "/siswa",
-    roles: ["SISWA"],
-  });
+  const a = await getPageAuth();
   if (!a.ok) redirect(a.redirectTo);
+  if (a.me.role !== "SISWA") redirect(a.home);
   return <>{children}</>;
 }

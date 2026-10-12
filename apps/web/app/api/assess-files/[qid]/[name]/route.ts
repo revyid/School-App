@@ -1,14 +1,15 @@
-import { stat, readFile } from "node:fs/promises";
 import { NextRequest, NextResponse } from "next/server";
 import { SESSION_COOKIE } from "@sms/shared/auth";
 import { requireRole } from "@/server/auth-gate";
 import { db } from "@sms/db/client";
 import { runAsSchool } from "@sms/db/tenant";
-import { assessImgPath } from "@/server/assess-files";
+import { serveFile } from "@/server/files";
 
-// GET /api/assess-files/[qid]/[name] — gambar soal.
-// SISWA: hanya bila soal bagian dari asesmen yang visible untuknya (publishAt lewat + kelasnya).
-// GURU: soal bank miliknya ATAU snapshot asesmen miliknya. ADMIN: semua di sekolahnya.
+// GET /api/assess-files/[qid]/[name]?inline=1 — gambar/video soal.
+// SISWA: hanya bila soal bagian dari asesmen yang visible untuknya.
+// GURU: snapshot asesmen miliknya ATAU soal bank miliknya. ADMIN: semua.
+// A6: nama file WAJIB cocok dengan imageName/videoName milik soal [qid]
+// (sebelumnya hanya cek akses soal — nama file sembarangan diterima).
 export async function GET(
   req: NextRequest,
   { params }: { params: Promise<{ qid: string; name: string }> },
@@ -25,58 +26,45 @@ export async function GET(
   if (!a.ok) return NextResponse.json({ error: a.error }, { status: a.status });
   const { qid, name } = await params;
   const id = qid.slice(0, 64);
-
-  if (a.role === "SISWA") {
-    const prof = await runAsSchool(db, a.school.id, (tx) =>
-      tx.studentProfile.findUnique({ where: { userId: a.userId }, select: { classId: true } }));
-    if (!prof?.classId) return NextResponse.json({ error: "forbidden" }, { status: 403 });
-    const sClassId: string = prof.classId;
-    const ok = await runAsSchool(db, a.school.id, (tx) =>
-      tx.assessQuestion.findFirst({
-        where: {
-          id,
-          assessment: { classId: sClassId, publishAt: { lte: new Date() } },
-        },
-        select: { id: true },
-      }));
-    if (!ok) return NextResponse.json({ error: "forbidden" }, { status: 403 });
-  } else if (a.role === "GURU") {
-    const snap = await runAsSchool(db, a.school.id, (tx) =>
-      tx.assessQuestion.findFirst({
-        where: { id, assessment: { authorId: a.userId } },
-        select: { id: true },
-      }));
-    const bank = snap ? null : await runAsSchool(db, a.school.id, (tx) =>
-      tx.question.findFirst({ where: { id, authorId: a.userId }, select: { id: true } }));
-    if (!snap && !bank) return NextResponse.json({ error: "forbidden" }, { status: 403 });
-  }
-
-  let abs: string;
-  try {
-    abs = assessImgPath(a.school.id, name.slice(0, 255));
-  } catch {
+  const fileName = name.slice(0, 160);
+  if (fileName.includes("/") || fileName.includes("..")) {
     return NextResponse.json({ error: "nama file tidak valid" }, { status: 400 });
   }
-  let st;
-  try {
-    st = await stat(abs);
-  } catch {
-    return NextResponse.json({ error: "file tidak ditemukan" }, { status: 404 });
+
+  // Ambil soal + cocokkan nama file dengan media miliknya.
+  const snap = await runAsSchool(db, a.school.id, (tx) =>
+    tx.assessQuestion.findFirst({
+      where: { id },
+      select: { id: true, imageName: true, videoName: true, assessment: { select: { classId: true, publishAt: true, authorId: true } } },
+    }));
+  let bank: { id: string; imageName: string | null; videoName: string | null; authorId: string } | null = null;
+  if (!snap) {
+    bank = await runAsSchool(db, a.school.id, (tx) =>
+      tx.question.findFirst({ where: { id }, select: { id: true, imageName: true, videoName: true, authorId: true } }));
   }
-  const buf = await readFile(abs);
-  const lower = name.toLowerCase();
-  const ctype = lower.endsWith(".png") ? "image/png"
-    : lower.endsWith(".jpg") || lower.endsWith(".jpeg") ? "image/jpeg"
-    : lower.endsWith(".mp4") ? "video/mp4"
-    : lower.endsWith(".webm") ? "video/webm"
-    : "application/octet-stream";
-  return new NextResponse(new Uint8Array(buf), {
-    headers: {
-      "content-type": ctype,
-      "content-length": String(st.size),
-      "content-disposition": 'inline; filename="soal"',
-      "x-content-type-options": "nosniff",
-      "cache-control": "private, max-age=3600",
-    },
-  });
+  if (!snap && !bank) return NextResponse.json({ error: "forbidden" }, { status: 403 });
+
+  // A6: nama harus persis milik soal ini — cegah akses file lintas soal.
+  const ownName = snap ? (snap.imageName === fileName || snap.videoName === fileName) : (bank!.imageName === fileName || bank!.videoName === fileName);
+  if (!ownName) return NextResponse.json({ error: "not found" }, { status: 404 });
+
+  if (a.role === "SISWA") {
+    if (!snap) return NextResponse.json({ error: "forbidden" }, { status: 403 });
+    const prof = await runAsSchool(db, a.school.id, (tx) =>
+      tx.studentProfile.findUnique({ where: { userId: a.userId }, select: { classId: true } }));
+    if (!prof?.classId || snap.assessment.classId !== prof.classId || snap.assessment.publishAt > new Date()) {
+      return NextResponse.json({ error: "forbidden" }, { status: 403 });
+    }
+  } else if (a.role === "GURU") {
+    const mine = snap ? snap.assessment.authorId === a.userId : bank!.authorId === a.userId;
+    if (!mine) return NextResponse.json({ error: "forbidden" }, { status: 403 });
+  }
+
+  // F6: streaming + Range (video soal bisa di-seek) + inline.
+  return serveFile(
+    [a.school.id, "assess"],
+    fileName,
+    req.headers.get("range"),
+    { inline: true },
+  );
 }
