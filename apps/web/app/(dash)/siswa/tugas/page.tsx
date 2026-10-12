@@ -18,7 +18,9 @@ interface TaskRow {
 
 export default function SiswaTugasPage() {
   const [status, setStatus] = useState("semua");
+  const [tipe, setTipe] = useState("semua");
   const { data, loading, error } = useFetch<{ rows: TaskRow[] }>(`/api/tasks?status=${status}`);
+  const rows = (data?.rows ?? []).filter((t) => tipe === "semua" || t.type === tipe);
 
   return (
     <>
@@ -34,15 +36,26 @@ export default function SiswaTugasPage() {
               <option value="terlambat">Terlambat/tutup</option>
             </TextSelect>
           </label>
+          <label style={{ display: "flex", gap: 8, alignItems: "center", fontSize: 13, color: "#74746d" }}>
+            Kategori:
+            <TextSelect value={tipe} onChange={(e) => setTipe(e.target.value)}>
+              <option value="semua">Semua</option>
+              <option value="REGULAR">Tugas biasa</option>
+              <option value="KUIS">Kuis</option>
+              <option value="PROYEK">Proyek</option>
+              <option value="LATIHAN">Latihan</option>
+            </TextSelect>
+          </label>
         </Toolbar>
         {loading && <Note>Memuat…</Note>}
         {error && <Err>Gagal: {error}</Err>}
-        {data && data.rows.length === 0 && <Note>Tidak ada tugas pada filter ini.</Note>}
-        {data && data.rows.length > 0 && (
-          <WarmTable head={["Judul", "Mapel", "Deadline", "Status", "Nilai"]} minW={0}>
-            {data.rows.map((t) => (
+        {data && rows.length === 0 && <Note>Tidak ada tugas pada filter ini.</Note>}
+        {data && rows.length > 0 && (
+          <WarmTable head={["Judul", "Kategori", "Mapel", "Deadline", "Status", "Nilai"]} minW={0}>
+            {rows.map((t) => (
               <tr key={t.id}>
                 <td style={warmCell()}><a href={`/siswa/tugas/${t.id}`} style={{ fontWeight: 700, color: "#171716" }}>{t.title}</a></td>
+                <td style={warmCell()}><Badge status={t.type}>{t.type}</Badge></td>
                 <td style={warmCell()}>{t.subjectName ?? "-"}</td>
                 <td style={warmCell()}>{t.deadline ? new Date(t.deadline).toLocaleString("id-ID") : "-"}</td>
                 <td style={warmCell()}><Badge status={t.state} /></td>

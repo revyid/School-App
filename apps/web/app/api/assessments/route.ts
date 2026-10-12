@@ -112,13 +112,14 @@ export async function POST(req: NextRequest) {
           create: [
             ...bank.map((q, i) => ({
               schoolId: a.school.id,
-              type: q.type, stem: q.stem, imageName: q.imageName, options: q.options,
+              type: q.type, stem: q.stem, imageName: q.imageName,
+              videoName: (q as { videoName?: string | null }).videoName ?? null, options: q.options,
               points: 10, position: i,
               correctIndex: q.correctIndex, correctOrder: q.correctOrder,
             })),
             ...v.inline.map((q, i) => ({
               schoolId: a.school.id,
-              type: q.type, stem: q.stem, imageName: q.imageName ?? null, options: q.options,
+              type: q.type, stem: q.stem, imageName: q.imageName ?? null, videoName: q.videoName ?? null, options: q.options,
               points: 10, position: bank.length + i,
               correctIndex: q.type === "MCQ" ? (q.correctIndex ?? 0) : null,
               correctOrder: q.type === "SORTING" ? q.options.map((_, j) => j) : [],

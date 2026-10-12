@@ -7,6 +7,7 @@ export const questionInputSchema = z.object({
   type: z.enum(["MCQ", "SORTING"]).default("MCQ"),
   stem: z.string().trim().min(1).max(10000),
   imageName: z.string().max(255).optional().nullable(),
+  videoName: z.string().max(255).optional().nullable(),
   // MCQ: 2-6 opsi + correctIndex. SORTING: 2-8 item + correctOrder implisit = urutan options.
   options: z.array(z.string().trim().min(1).max(2000)).min(2).max(8),
   correctIndex: z.number().int().min(0).max(7).optional().nullable(),
@@ -91,6 +92,7 @@ export type QRow = {
   type: "MCQ" | "SORTING";
   stem: string;
   imageName: string | null;
+  videoName: string | null;
   options: string[];
   correctIndex: number | null;
   correctOrder: number[];
@@ -103,6 +105,7 @@ export type ClientQ = {
   type: "MCQ" | "SORTING";
   stem: string;
   imageUrl: string | null;
+  videoUrl: string | null;
   options: string[];
 };
 
@@ -120,6 +123,7 @@ export function toClientQuestions(
     return {
       id: q.id, type: q.type, stem: q.stem,
       imageUrl: q.imageName ? `/api/assess-files/${q.id}/${q.imageName}` : null,
+      videoUrl: q.videoName ? `/api/assess-files/${q.id}/${q.videoName}` : null,
       options: order.map((i) => q.options[i]),
     };
   });

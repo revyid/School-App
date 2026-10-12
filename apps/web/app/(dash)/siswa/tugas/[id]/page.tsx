@@ -1,9 +1,19 @@
 "use client";
 
-// Siswa: detail tugas + materi + kirim (teks/link/file, kirim ulang sebelum deadline).
+// Siswa: detail tugas + materi utama/contoh dipisah + grupnya + kirim (teks/link/file, kirim ulang sebelum deadline).
 import { useState } from "react";
 import { api, useFetch } from "@/app/lib/api";
 import { PageHead, Panel, Toolbar, TextInput, Btn, Badge, Note, Err } from "@/components/DashUI";
+
+interface Mat {
+  id: string;
+  kind: string;
+  text?: string;
+  fileName: string | null;
+  mime: string | null;
+  isMain: boolean;
+  isExample: boolean;
+}
 
 export default function SiswaTugasDetail({ params }: { params: Promise<{ id: string }> }) {
   const [id, setId] = useState<string | null>(null);
@@ -11,12 +21,15 @@ export default function SiswaTugasDetail({ params }: { params: Promise<{ id: str
     void params.then((p) => setId(p.id));
   });
   const detail = useFetch<{
-    task: { id: string; title: string; instruction: string; deadline: string | null; allowLate: boolean; type: string };
+    task: { id: string; title: string; type: string; instruction: string; deadline: string | null; allowLate: boolean; isGroup: boolean };
     submission: { text: string | null; link: string | null; fileName: string | null; score: number | null; feedback: string | null; isLate: boolean } | null;
     state: string;
   }>(id ? `/api/tasks/${id}` : null);
-  const mats = useFetch<{ rows: { id: string; kind: string; text?: string; fileName: string | null; mime: string | null }[] }>(
+  const mats = useFetch<{ rows: Mat[] }>(
     id ? `/api/tasks/${id}/materials` : null,
+  );
+  const grup = useFetch<{ rows: { id: string; name: string; members: { student: { id: string; name: string } }[] }[] }>(
+    id ? `/api/tasks/${id}/groups` : null,
   );
   const [text, setText] = useState("");
   const [link, setLink] = useState("");
@@ -53,30 +66,76 @@ export default function SiswaTugasDetail({ params }: { params: Promise<{ id: str
   if (!detail.data) return <Note>Memuat…</Note>;
   const t = detail.data;
   const closed = t.state === "TUTUP";
+  const rows = mats.data?.rows ?? [];
+  const main = rows.filter((m) => m.isMain);
+  const examples = rows.filter((m) => m.isExample && !m.isMain);
+  const others = rows.filter((m) => !m.isMain && !m.isExample);
   return (
     <>
       <PageHead
         kicker="Tugas"
         title={t.task.title}
-        desc={t.task.deadline ? `Deadline: ${new Date(t.task.deadline).toLocaleString("id-ID")}` : "Tanpa deadline"}
+        desc={`${t.task.type} · ${t.task.deadline ? `Deadline: ${new Date(t.task.deadline).toLocaleString("id-ID")}` : "Tanpa deadline"}`}
         right={<Badge status={t.state} />}
       />
       <Panel style={{ marginBottom: 16 }}>
         <p style={{ margin: 0, whiteSpace: "pre-wrap" }}>{t.task.instruction}</p>
       </Panel>
+      {main.length > 0 && (
+        <Panel style={{ marginBottom: 16 }}>
+          <h2 className="display" style={{ fontSize: 18, margin: "0 0 10px" }}>Materi utama</h2>
+          <ul style={{ margin: 0, paddingLeft: 18, display: "grid", gap: 6, fontSize: 14 }}>
+            {main.map((m) => (
+              <li key={m.id}>
+                {m.kind === "TEXT" ? m.text : <a href={`/api/task-files/${t.task.id}/${m.fileName}`}>Unduh lampiran utama ({m.mime})</a>}
+              </li>
+            ))}
+          </ul>
+        </Panel>
+      )}
+      {examples.length > 0 && (
+        <Panel style={{ marginBottom: 16 }}>
+          <h2 className="display" style={{ fontSize: 18, margin: "0 0 10px" }}>Contoh {t.task.type}</h2>
+          <ul style={{ margin: 0, paddingLeft: 18, display: "grid", gap: 6, fontSize: 14 }}>
+            {examples.map((m) => (
+              <li key={m.id}>
+                {m.kind === "TEXT" ? m.text : <a href={`/api/task-files/${t.task.id}/${m.fileName}`}>Unduh contoh ({m.mime})</a>}
+              </li>
+            ))}
+          </ul>
+        </Panel>
+      )}
       <Panel style={{ marginBottom: 16 }}>
         <h2 className="display" style={{ fontSize: 18, margin: "0 0 10px" }}>Materi pendukung</h2>
-        {mats.data && mats.data.rows.length === 0 && <Note>Tidak ada materi.</Note>}
-        {mats.data && mats.data.rows.length > 0 && (
+        {mats.data && rows.length === 0 && <Note>Tidak ada materi.</Note>}
+        {others.length > 0 && (
           <ul style={{ margin: 0, paddingLeft: 18, display: "grid", gap: 6, fontSize: 14 }}>
-            {mats.data.rows.map((m) => (
+            {others.map((m) => (
               <li key={m.id}>
                 {m.kind === "TEXT" ? m.text : <a href={`/api/task-files/${t.task.id}/${m.fileName}`}>Unduh lampiran ({m.mime})</a>}
               </li>
             ))}
           </ul>
         )}
+        {others.length === 0 && rows.length > 0 && <Note>Semua materi sudah ditampilkan di atas.</Note>}
       </Panel>
+      {t.task.isGroup && (
+        <Panel style={{ marginBottom: 16 }}>
+          <h2 className="display" style={{ fontSize: 18, margin: "0 0 10px" }}>Kelompok saya</h2>
+          {!grup.data && <Note>Memuat…</Note>}
+          {grup.data && grup.data.rows.length === 0 && <Note>Kamu belum masuk kelompok. Hubungi guru.</Note>}
+          {(grup.data?.rows ?? []).map((g) => (
+            <div key={g.id}>
+              <p style={{ margin: "0 0 6px", fontWeight: 700 }}>{g.name}</p>
+              <ul style={{ margin: 0, paddingLeft: 18, fontSize: 14, display: "grid", gap: 4 }}>
+                {g.members.map((m) => (
+                  <li key={m.student.id}>{m.student.name}</li>
+                ))}
+              </ul>
+            </div>
+          ))}
+        </Panel>
+      )}
       {t.submission && (
         <Panel style={{ marginBottom: 16, background: "#eeeadd" }}>
           <h2 className="display" style={{ fontSize: 18, margin: "0 0 10px" }}>Pengumpulan saya</h2>
