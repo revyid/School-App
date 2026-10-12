@@ -53,7 +53,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
   }
 
   const qs: QRow[] = as.questions.map((q) => ({
-    id: q.id, type: q.type, stem: q.stem, imageName: q.imageName, options: q.options,
+    id: q.id, type: q.type, stem: q.stem, imageName: q.imageName, videoName: (q as { videoName?: string | null }).videoName ?? null, options: q.options,
     correctIndex: q.correctIndex, correctOrder: q.correctOrder, points: q.points,
   }));
   const seed = seedFrom(a.school.id, as.id, a.userId);
@@ -88,6 +88,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
         return {
           id: q.id, type: q.type, stem: q.stem,
           imageUrl: q.imageName ? `/api/assess-files/${q.id}/${q.imageName}` : null,
+          videoUrl: q.videoName ? `/api/assess-files/${q.id}/${q.videoName}` : null,
           options: order.map((i) => q.options[i]),
         };
       });
@@ -130,7 +131,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     return NextResponse.json({ error: "sudah dikumpulkan", score: attempt.score }, { status: 409 });
   }
   const qs: QRow[] = as.questions.map((q) => ({
-    id: q.id, type: q.type, stem: q.stem, imageName: q.imageName, options: q.options,
+    id: q.id, type: q.type, stem: q.stem, imageName: q.imageName, videoName: (q as { videoName?: string | null }).videoName ?? null, options: q.options,
     correctIndex: q.correctIndex, correctOrder: q.correctOrder, points: q.points,
   }));
   const optOrders = (attempt.optOrders as Record<string, number[]> | null) ?? {};

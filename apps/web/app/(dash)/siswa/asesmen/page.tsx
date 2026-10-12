@@ -9,10 +9,10 @@ import ConfirmDialog from "@/components/ConfirmDialog";
 import { Glyph } from "../../../../components/Glyph";
 
 interface Q {
-  id: string; type: "MCQ" | "SORTING"; stem: string; imageUrl: string | null; options: string[];
+  id: string; type: "MCQ" | "SORTING"; stem: string; imageUrl: string | null; videoUrl: string | null; options: string[];
 }
-interface RQSort { id: string; type: "SORTING"; stem: string; imageUrl: string | null; correctSeq: string[]; pickedSeq: string[]; isCorrect: boolean; points: number; maxPoints: number }
-interface RQMcq { id: string; type: "MCQ"; stem: string; imageUrl: string | null; options: string[]; pickedIndex: number | null; correctIndex: number | null; isCorrect: boolean; points: number; maxPoints: number }
+interface RQSort { id: string; type: "SORTING"; stem: string; imageUrl: string | null; videoUrl: string | null; correctSeq: string[]; pickedSeq: string[]; isCorrect: boolean; points: number; maxPoints: number }
+interface RQMcq { id: string; type: "MCQ"; stem: string; imageUrl: string | null; videoUrl: string | null; options: string[]; pickedIndex: number | null; correctIndex: number | null; isCorrect: boolean; points: number; maxPoints: number }
 type RQ = RQSort | RQMcq;
 interface Result {
   submitted: boolean;
@@ -128,6 +128,10 @@ export default function AsesmenSiswaPage() {
                         // eslint-disable-next-line @next/next/no-img-element
                         <img src={q.imageUrl} alt="gambar soal" style={{ maxWidth: "100%", borderRadius: 12, marginBottom: 10 }} />
                       )}
+                      {q.videoUrl && (
+                        // eslint-disable-next-line jsx-a11y/media-has-caption
+                        <video src={q.videoUrl} controls preload="metadata" style={{ maxWidth: "100%", borderRadius: 12, marginBottom: 10 }} />
+                      )}
                       {q.type === "MCQ" ? (
                         <ul style={{ listStyle: "none", margin: 0, padding: 0, display: "grid", gap: 6 }}>
                           {q.options.map((o, i) => {
@@ -176,6 +180,10 @@ export default function AsesmenSiswaPage() {
                   {q.imageUrl && (
                     // eslint-disable-next-line @next/next/no-img-element
                     <img src={q.imageUrl} alt="gambar soal" style={{ maxWidth: "100%", borderRadius: 12, marginBottom: 10 }} />
+                  )}
+                  {q.videoUrl && (
+                    // eslint-disable-next-line jsx-a11y/media-has-caption
+                    <video src={q.videoUrl} controls preload="metadata" style={{ maxWidth: "100%", borderRadius: 12, marginBottom: 10 }} />
                   )}
                   {q.type === "MCQ" ? (
                     <ul style={{ listStyle: "none", margin: 0, padding: 0, display: "grid", gap: 6 }}>

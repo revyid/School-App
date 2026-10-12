@@ -1,8 +1,9 @@
 "use client";
 
-// Guru: buat asesmen (teks massal) + daftar + analisis/chart + histori murid + toggle + cetak PDF.
+// Guru: buat asesmen (teks massal + bank soal bergambar/video) + daftar + analisis/chart + histori murid + toggle + cetak PDF.
 import { useState } from "react";
 import AssessChart from "@/components/AssessChart";
+import AssessmentStemMarkdown from "@/components/AssessmentStemMarkdown";
 import { api, useFetch } from "@/app/lib/api";
 import { PageHead, Panel, Toolbar, TextInput, TextSelect, Btn, Badge, WarmTable, warmCell, Note, Err } from "@/components/DashUI";
 import { parseMultiQuestions, PLACEHOLDER_EXAMPLE } from "@/lib/parse-questions";
@@ -10,6 +11,10 @@ import { parseMultiQuestions, PLACEHOLDER_EXAMPLE } from "@/lib/parse-questions"
 interface Row {
   id: string; title: string; showChart: boolean;
   _count?: { questions: number; attempts: number };
+}
+
+interface BankRow {
+  id: string; type: string; stem: string; imageName: string | null; videoName: string | null; options: string[];
 }
 
 interface AnalysisItem { questionId: string; stem: string; n: number; difficulty: number; distractors: Record<string, number> }
@@ -51,13 +56,47 @@ export default function AsesmenGuruPage() {
   );
   const detail = useFetch<{ assessment: Row }>(sel ? `/api/assessments/${sel}` : null);
   const [msg, setMsg] = useState<string | null>(null);
+  // Bank soal: pilih dari bank + tambah soal baru bergambar/video.
+  const bank = useFetch<{ rows: BankRow[] }>("/api/questions");
+  const [picked, setPicked] = useState<string[]>([]);
+  const [bStem, setBStem] = useState("");
+  const [bType, setBType] = useState("MCQ");
+  const [bOpts, setBOpts] = useState("a \nb \nc ");
+  const [bCorrect, setBCorrect] = useState("0");
+  const [bImg, setBImg] = useState<File | null>(null);
+  const [bVid, setBVid] = useState<File | null>(null);
+
+  function togglePick(id: string) {
+    setPicked((p) => (p.includes(id) ? p.filter((x) => x !== id) : [...p, id]));
+  }
+
+  async function tambahBank(e: React.FormEvent) {
+    e.preventDefault();
+    const opts = bOpts.split("\n").map((s) => s.replace(/^[a-hA-H\d][.)\-:]?\s+/, "").trim()).filter(Boolean);
+    if (!bStem.trim() || opts.length < 2) { setMsg("Isi batang soal + minimal 2 opsi"); return; }
+    const form = new FormData();
+    form.append("type", bType);
+    form.append("stem", bStem);
+    form.append("options", JSON.stringify(opts));
+    form.append("correctIndex", bType === "MCQ" ? bCorrect : "");
+    if (bImg) form.append("image", bImg);
+    if (bVid) form.append("video", bVid);
+    const res = await api("/api/questions", { method: "POST", body: form });
+    const d = await res.json().catch(() => ({}));
+    if (!res.ok) setMsg(d.error || `Gagal (${res.status})`);
+    else {
+      setMsg("Soal masuk bank");
+      setBStem(""); setBOpts("a \nb \nc "); setBImg(null); setBVid(null);
+      bank.reload();
+    }
+  }
 
   const { questions: parsed, errors: parseErrors } = parseMultiQuestions(rawText);
 
   async function buat(e: React.FormEvent) {
     e.preventDefault();
     if (!classId) { setMsg("Pilih kelas dulu"); return; }
-    if (parsed.length === 0) { setMsg("Format soal belum terdeteksi. Gunakan contoh format di bawah."); return; }
+    if (parsed.length === 0 && picked.length === 0) { setMsg("Pilih soal bank atau tulis soal massal."); return; }
     const res = await api("/api/assessments", {
       method: "POST",
       headers: { "content-type": "application/json" },
@@ -65,6 +104,7 @@ export default function AsesmenGuruPage() {
         classId, title,
         showChart,
         shuffleQ: true, shuffleOpt: true,
+        questionIds: picked,
         inline: parsed.map((q) => ({
           type: q.type, stem: q.stem, options: q.options,
           correctIndex: q.type === "MCQ" ? q.correctIndex : null,
@@ -73,7 +113,7 @@ export default function AsesmenGuruPage() {
     });
     const d = await res.json().catch(() => ({}));
     if (!res.ok) setMsg(d.error || `Gagal (${res.status})`);
-    else { setMsg(`Asesmen "${title}" berhasil dibuat dengan ${parsed.length} soal!`); setTitle(""); reload(); }
+    else { setMsg(`Asesmen "${title}" berhasil dibuat dengan ${parsed.length + picked.length} soal!`); setTitle(""); setPicked([]); reload(); }
   }
 
   async function toggle(id: string, patch: { showChart?: boolean }) {
@@ -120,7 +160,6 @@ export default function AsesmenGuruPage() {
             <textarea
               value={rawText}
               onChange={(e) => setRawText(e.target.value)}
-              required
               rows={12}
               style={{ borderRadius: 14, border: "1px solid rgba(23,23,22,.25)", background: "#fffdf8", padding: "12px 14px", fontSize: 13, fontFamily: "var(--font-mono, monospace)" }}
             />
@@ -129,6 +168,12 @@ export default function AsesmenGuruPage() {
               Hanya ISI opsi yang diacak ke siswa.
             </span>
           </label>
+          <div style={{ background: "#fffdf8", border: "1px solid rgba(23,23,22,.14)", padding: 12, borderRadius: 12, fontSize: 12 }}>
+            <strong>Pratinjau ketikan (chip, bukan tombol):</strong>
+            <div style={{ marginTop: 6 }}>
+              <AssessmentStemMarkdown content={rawText} imageAsButton />
+            </div>
+          </div>
 
           <div style={{ background: "#f0ede3", padding: 12, borderRadius: 12, fontSize: 12 }}>
             <strong>Hasil Parsing: {parsed.length} Soal Terdeteksi</strong>
@@ -150,9 +195,66 @@ export default function AsesmenGuruPage() {
             </ul>
           </div>
 
-          <Toolbar><Btn type="submit" disabled={parsed.length === 0}>Buat {parsed.length} Soal</Btn></Toolbar>
+          <Toolbar><Btn type="submit" disabled={parsed.length === 0 && picked.length === 0}>Buat {parsed.length + picked.length} Soal</Btn></Toolbar>
         </form>
         {msg && <p style={{ fontWeight: 700, marginTop: 12, color: msg.includes("berhasil") ? "#50643e" : "#e85e43" }}>{msg}</p>}
+      </Panel>
+
+      <Panel style={{ marginBottom: 16 }}>
+        <h2 className="display" style={{ fontSize: 18, margin: "0 0 12px" }}>Bank soal ({picked.length} dipilih)</h2>
+        {bank.loading && <Note>Memuat…</Note>}
+        {bank.error && <Err>Gagal: {bank.error}</Err>}
+        {bank.data && (bank.data.rows ?? []).length === 0 && <Note>Bank masih kosong. Tambah soal pertama di bawah.</Note>}
+        {(bank.data?.rows ?? []).slice(0, 30).map((b) => (
+          <label key={b.id} style={{ display: "flex", gap: 10, alignItems: "flex-start", padding: "9px 12px", borderRadius: 12, border: "1px solid rgba(23,23,22,.14)", cursor: "pointer", marginBottom: 6, background: picked.includes(b.id) ? "#eeeadd" : "#fffdf8" }}>
+            <input type="checkbox" checked={picked.includes(b.id)} onChange={() => togglePick(b.id)} style={{ width: 18, height: 18, marginTop: 2 }} />
+            <span style={{ fontSize: 13 }}>
+              <AssessmentStemMarkdown content={b.stem} />
+              {b.imageName && (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={`/api/assess-files/${b.id}/${b.imageName}`} alt="gambar soal" loading="lazy" style={{ display: "block", maxWidth: 320, borderRadius: 12, margin: "8px 0" }} />
+              )}
+              {b.videoName && (
+                // eslint-disable-next-line jsx-a11y/media-has-caption
+                <video src={`/api/assess-files/${b.id}/${b.videoName}`} controls preload="metadata" style={{ display: "block", maxWidth: 320, borderRadius: 12, margin: "8px 0" }} />
+              )}
+              <span style={{ color: "#8a8a82" }}> [{b.type}] {b.options.length} opsi</span>
+            </span>
+          </label>
+        ))}
+        <h3 className="display" style={{ fontSize: 15, margin: "16px 0 10px" }}>Tambah soal ke bank (gambar + video mp4/webm)</h3>
+        <form onSubmit={tambahBank} style={{ display: "grid", gap: 12, maxWidth: 640 }}>
+          <label style={{ display: "grid", gap: 6, fontSize: 13, color: "#575752" }}>
+            Tipe:
+            <TextSelect value={bType} onChange={(e) => setBType(e.target.value)}>
+              <option value="MCQ">Pilihan ganda</option>
+              <option value="SORTING">Mengurutkan</option>
+            </TextSelect>
+          </label>
+          <label style={{ display: "grid", gap: 6, fontSize: 13, color: "#575752" }}>
+            Batang soal:
+            <textarea value={bStem} onChange={(e) => setBStem(e.target.value)} required rows={3} style={{ borderRadius: 14, border: "1px solid rgba(23,23,22,.25)", background: "#fffdf8", padding: "9px 14px", fontSize: 14 }} />
+          </label>
+          <label style={{ display: "grid", gap: 6, fontSize: 13, color: "#575752" }}>
+            Opsi (satu per baris):
+            <textarea value={bOpts} onChange={(e) => setBOpts(e.target.value)} required rows={4} style={{ borderRadius: 14, border: "1px solid rgba(23,23,22,.25)", background: "#fffdf8", padding: "9px 14px", fontSize: 14, fontFamily: "var(--font-mono, monospace)" }} />
+          </label>
+          {bType === "MCQ" && (
+            <label style={{ display: "grid", gap: 6, fontSize: 13, color: "#575752" }}>
+              Index jawaban benar (0 = opsi pertama):
+              <TextInput value={bCorrect} onChange={(e) => setBCorrect(e.target.value)} inputMode="numeric" />
+            </label>
+          )}
+          <label style={{ display: "grid", gap: 6, fontSize: 13, color: "#575752" }}>
+            Gambar (JPEG/PNG, maks 5MB, opsional):
+            <input type="file" accept="image/jpeg,image/png" onChange={(e) => setBImg(e.target.files?.[0] ?? null)} />
+          </label>
+          <label style={{ display: "grid", gap: 6, fontSize: 13, color: "#575752" }}>
+            Video (MP4/WebM, maks 20MB, opsional):
+            <input type="file" accept="video/mp4,video/webm" onChange={(e) => setBVid(e.target.files?.[0] ?? null)} />
+          </label>
+          <Toolbar><Btn type="submit">Simpan ke bank</Btn></Toolbar>
+        </form>
       </Panel>
 
       <Panel style={{ marginBottom: 16 }}>

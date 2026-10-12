@@ -61,7 +61,7 @@ async function askAI(
             ...history,
             { role: "user", content: userMsg },
           ],
-          temperature: 0.6,
+          temperature: 0.3,
           max_tokens: maxTokens,
         }),
         signal: ctrl.signal,
@@ -123,7 +123,7 @@ async function askAIStream(
           ...history,
           { role: "user", content: userMsg },
         ],
-        temperature: 0.6,
+        temperature: 0.3,
         max_tokens: maxTokens,
       }),
       signal: ctrl.signal,
@@ -279,14 +279,14 @@ async function saveMsg(schoolId: string, sessionId: string, role: "user" | "assi
   });
 }
 
-// Riwayat singkat (3 pasang terakhir) sebagai konteks lanjutan percakapan
+// Riwayat singkat (5 pasang terakhir) sebagai konteks lanjutan percakapan
 async function recentHistory(schoolId: string, sessionId: string) {
   const rows = await runAsSchool(db, schoolId, (tx) =>
     tx.aiChatMessage.findMany({
       where: { sessionId },
       select: { role: true, content: true },
       orderBy: { createdAt: "desc" },
-      take: 6,
+      take: 10,
     }));
   return rows.reverse().map((r) => ({
     role: r.role === "user" ? ("user" as const) : ("assistant" as const),

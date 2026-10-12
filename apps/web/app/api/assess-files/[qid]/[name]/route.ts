@@ -64,9 +64,15 @@ export async function GET(
     return NextResponse.json({ error: "file tidak ditemukan" }, { status: 404 });
   }
   const buf = await readFile(abs);
+  const lower = name.toLowerCase();
+  const ctype = lower.endsWith(".png") ? "image/png"
+    : lower.endsWith(".jpg") || lower.endsWith(".jpeg") ? "image/jpeg"
+    : lower.endsWith(".mp4") ? "video/mp4"
+    : lower.endsWith(".webm") ? "video/webm"
+    : "application/octet-stream";
   return new NextResponse(new Uint8Array(buf), {
     headers: {
-      "content-type": name.endsWith(".png") ? "image/png" : "image/jpeg",
+      "content-type": ctype,
       "content-length": String(st.size),
       "content-disposition": 'inline; filename="soal"',
       "x-content-type-options": "nosniff",

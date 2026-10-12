@@ -25,7 +25,7 @@ export default function GuruTugasPage() {
     (r, i, a) => a.findIndex((x) => x.class.id === r.class.id) === i,
   );
   const tasks = useFetch<{ rows: TaskRow[] }>(`/api/tasks${classId ? `?classId=${classId}` : ""}`);
-  const [form, setForm] = useState({ title: "", instruction: "", deadline: "", allowLate: false });
+  const [form, setForm] = useState({ title: "", instruction: "", type: "REGULAR", deadline: "", allowLate: false });
   const [msg, setMsg] = useState<string | null>(null);
 
   async function buat(e: React.FormEvent) {
@@ -41,6 +41,7 @@ export default function GuruTugasPage() {
         classId,
         title: form.title,
         instruction: form.instruction,
+        type: form.type,
         deadline: form.deadline ? new Date(form.deadline).toISOString() : null,
         allowLate: form.allowLate,
       }),
@@ -49,7 +50,7 @@ export default function GuruTugasPage() {
     if (!res.ok) setMsg(d.error || `Gagal (${res.status})`);
     else {
       setMsg("Tugas dibuat");
-      setForm({ title: "", instruction: "", deadline: "", allowLate: false });
+      setForm({ title: "", instruction: "", type: "REGULAR", deadline: "", allowLate: false });
       tasks.reload();
     }
   }
@@ -73,10 +74,11 @@ export default function GuruTugasPage() {
         {tasks.error && <Err>Gagal: {tasks.error}</Err>}
         {tasks.data && tasks.data.rows.length === 0 && <Note>Belum ada tugas di kelas ini. Buat yang pertama di bawah.</Note>}
         {tasks.data && tasks.data.rows.length > 0 && (
-          <WarmTable head={["Judul", "Kelas", "Deadline", "Terlihat", "Terkumpul"]}>
+          <WarmTable head={["Judul", "Kategori", "Kelas", "Deadline", "Terlihat", "Terkumpul"]}>
             {tasks.data.rows.map((t) => (
               <tr key={t.id}>
                 <td style={warmCell()}><a href={`/guru/tugas/${t.id}`} style={{ fontWeight: 700, color: "#171716" }}>{t.title}</a></td>
+                <td style={warmCell()}><Badge status={t.type}>{t.type}</Badge></td>
                 <td style={warmCell()}>{t.class.name}</td>
                 <td style={warmCell({ whiteSpace: "nowrap" })}>{t.deadline ? new Date(t.deadline).toLocaleString("id-ID") : "-"}</td>
                 <td style={warmCell()}><Badge status={t.visible ? "AKTIF" : "PENDING"}>{t.visible ? "Ya" : "Terjadwal"}</Badge></td>
@@ -89,6 +91,15 @@ export default function GuruTugasPage() {
       <Panel>
         <h2 className="display" style={{ fontSize: 18, margin: "0 0 12px" }}>Buat tugas baru</h2>
         <form onSubmit={buat} style={{ display: "grid", gap: 12, maxWidth: 560 }}>
+          <label style={{ display: "grid", gap: 6, fontSize: 13, color: "#74746d" }}>
+            Kategori:
+            <TextSelect value={form.type} onChange={(e) => setForm({ ...form, type: e.target.value })}>
+              <option value="REGULAR">Tugas biasa</option>
+              <option value="KUIS">Kuis</option>
+              <option value="PROYEK">Proyek</option>
+              <option value="LATIHAN">Latihan</option>
+            </TextSelect>
+          </label>
           <label style={{ display: "grid", gap: 6, fontSize: 13, color: "#74746d" }}>
             Judul:
             <TextInput value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} required maxLength={200} />

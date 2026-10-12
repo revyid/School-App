@@ -69,6 +69,8 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     if (kind !== "FILE" && kind !== "IMAGE") return NextResponse.json({ error: "kind harus FILE/IMAGE" }, { status: 400 });
     const f = form.get("file");
     if (!f || typeof f === "string") return NextResponse.json({ error: "file wajib ada" }, { status: 400 });
+    const isMain = form.get("isMain") === "1" || form.get("isMain") === "true";
+    const isExample = form.get("isExample") === "1" || form.get("isExample") === "true";
     const buf = Buffer.from(await f.arrayBuffer());
     let saved;
     try {
@@ -78,7 +80,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     }
     const row = await runAsSchool(db, a.school.id, (tx) =>
       tx.taskMaterial.create({
-        data: { schoolId: a.school.id, taskId, kind, fileName: saved.fileName, mime: saved.mime, size: saved.size },
+        data: { schoolId: a.school.id, taskId, kind, fileName: saved.fileName, mime: saved.mime, size: saved.size, isMain, isExample },
       }));
     await logAuth(a.school.id, "TASK.MATERIAL_ADD", { actorId: a.userId, meta: { taskId } });
     return NextResponse.json({ material: row }, { status: 201 });
@@ -89,7 +91,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   }
   const row = await runAsSchool(db, a.school.id, (tx) =>
     tx.taskMaterial.create({
-      data: { schoolId: a.school.id, taskId, kind: "TEXT", text: body.data.text },
+      data: { schoolId: a.school.id, taskId, kind: "TEXT", text: body.data.text, isMain: body.data.isMain ?? false, isExample: body.data.isExample ?? false },
     }));
   await logAuth(a.school.id, "TASK.MATERIAL_ADD", { actorId: a.userId, meta: { taskId } });
   return NextResponse.json({ material: row }, { status: 201 });

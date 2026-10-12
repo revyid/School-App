@@ -5,7 +5,7 @@ export const taskInputSchema = z.object({
   subjectId: z.string().min(1).max(64).optional().nullable(),
   title: z.string().trim().min(1).max(200),
   instruction: z.string().trim().min(1).max(20000),
-  type: z.enum(["UPLOAD", "DIAGNOSTIC", "REGULAR"]).default("REGULAR"),
+  type: z.enum(["UPLOAD", "DIAGNOSTIC", "REGULAR", "KUIS", "PROYEK", "LATIHAN"]).default("REGULAR"),
   deadline: z.string().datetime({ offset: true }).optional().nullable(),
   publishAt: z.string().datetime({ offset: true }).optional().nullable(),
   allowLate: z.boolean().default(false),
@@ -20,6 +20,8 @@ export const materialSchema = z.object({
   fileName: z.string().max(255).optional().nullable(),
   mime: z.string().max(128).optional().nullable(),
   size: z.number().int().nonnegative().max(50 * 1024 * 1024).optional().nullable(),
+  isMain: z.boolean().default(false),
+  isExample: z.boolean().default(false),
 });
 
 export const submitSchema = z.object({

@@ -46,6 +46,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
       return {
         id: q.id, type: q.type, stem: q.stem,
         imageUrl: q.imageName ? `/api/assess-files/${q.id}/${q.imageName}` : null,
+        videoUrl: (q as { videoName?: string | null }).videoName ? `/api/assess-files/${q.id}/${(q as { videoName?: string | null }).videoName}` : null,
         correctSeq, pickedSeq, isCorrect: an?.isCorrect ?? false,
         points: an?.points ?? 0, maxPoints: q.points,
       };
@@ -53,6 +54,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
     return {
       id: q.id, type: q.type, stem: q.stem,
       imageUrl: q.imageName ? `/api/assess-files/${q.id}/${q.imageName}` : null,
+      videoUrl: (q as { videoName?: string | null }).videoName ? `/api/assess-files/${q.id}/${(q as { videoName?: string | null }).videoName}` : null,
       options: q.options,
       pickedIndex: an?.pickedIndex ?? null,
       correctIndex: q.correctIndex,

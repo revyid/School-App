@@ -28,7 +28,7 @@ async function loadTask(schoolId: string, id: string) {
         class: { select: { id: true, name: true } },
         subject: { select: { id: true, name: true } },
         author: { select: { id: true, name: true } },
-        materials: { select: { id: true, kind: true, text: true, fileName: true, mime: true, size: true, createdAt: true } },
+        materials: { select: { id: true, kind: true, text: true, fileName: true, mime: true, size: true, isMain: true, isExample: true, createdAt: true } },
       },
     }));
 }

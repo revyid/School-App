@@ -37,6 +37,9 @@ enum TaskType {
   UPLOAD
   DIAGNOSTIC
   REGULAR
+  KUIS
+  PROYEK
+  LATIHAN
 }
 
 enum MaterialKind {
@@ -110,6 +113,8 @@ model School {
   assessAnswers   AssessAnswer[]
   studyGroups     StudyGroup[]
   studyGroupMembers StudyGroupMember[]
+  taskGroups      TaskGroup[]
+  taskGroupMembers TaskGroupMember[]
   expLogs         ExpLog[]
   expBadges       ExpBadge[]
   announcements   Announcement[]
@@ -152,6 +157,7 @@ model User {
   assessAttempts     AssessAttempt[]  @relation("AssessStudent")
   gradedAttempts     AssessAttempt[]  @relation("AssessGrader")
   groupMemberships   StudyGroupMember[]
+  taskGroupMemberships TaskGroupMember[]
   expLogs            ExpLog[]
   expBadges          ExpBadge[]
   collabThreads      CollabThread[] @relation("CollabSender")
@@ -375,6 +381,7 @@ model Task {
   isGroup     Boolean  @default(false)
   materials   TaskMaterial[]
   submissions Submission[]
+  groups      TaskGroup[]
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
   @@index([schoolId, classId, publishAt])
@@ -392,6 +399,8 @@ model TaskMaterial {
   fileName String?      @db.VarChar(255)
   mime     String?      @db.VarChar(128)
   size     Int?
+  isMain    Boolean @default(false)
+  isExample Boolean @default(false)
   createdAt DateTime    @default(now())
   @@index([schoolId, taskId])
 }
@@ -420,6 +429,32 @@ model Submission {
   @@unique([taskId, studentId])
   @@index([schoolId, taskId])
   @@index([schoolId, studentId])
+}
+
+model TaskGroup {
+  id       String   @id @default(cuid())
+  schoolId String
+  school   School   @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  taskId   String
+  task     Task     @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  name     String   @db.VarChar(100)
+  members  TaskGroupMember[]
+  @@unique([taskId, name])
+  @@index([schoolId, taskId])
+}
+
+model TaskGroupMember {
+  id        String    @id @default(cuid())
+  schoolId  String
+  school    School    @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  groupId   String
+  group     TaskGroup @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  taskId    String
+  studentId String
+  student   User      @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  // Satu siswa = satu grup per tugas.
+  @@unique([taskId, studentId])
+  @@index([schoolId, groupId])
 }
 
 model Notification {
@@ -559,9 +594,10 @@ model Question {
   subject   Subject? @relation(fields: [subjectId], references: [id], onDelete: SetNull)
   authorId  String
   type      QType    @default(MCQ)
-  stem      String   @db.Text
-  imageName String?  @db.VarChar(255)
-  options   String[] @db.Text
+  stem      String     @db.Text
+  imageName String?    @db.VarChar(255)
+  videoName String?    @db.VarChar(255)
+  options   String[]   @db.Text
   // KUNCI: hanya dibaca server-side (route attempt + grading + analisis).
   correctIndex Int?
   correctOrder Int[]  @default([])
@@ -580,6 +616,7 @@ model AssessQuestion {
   type         QType      @default(MCQ)
   stem         String     @db.Text
   imageName    String?    @db.VarChar(255)
+  videoName    String?    @db.VarChar(255)
   options      String[]   @db.Text
   points       Int        @default(10)
   position     Int        @default(0)

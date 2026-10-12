@@ -36,7 +36,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
       take: 5000,
     }));
   const qs: QRow[] = as.questions.map((q) => ({
-    id: q.id, type: q.type, stem: q.stem.slice(0, 120), imageName: null, options: q.options,
+    id: q.id, type: q.type, stem: q.stem.slice(0, 120), imageName: null, videoName: null, options: q.options,
     correctIndex: null, correctOrder: [], points: q.points,
   }));
   const items = itemAnalysis(qs, answers.map((r) => ({

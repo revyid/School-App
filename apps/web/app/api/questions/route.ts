@@ -5,7 +5,7 @@ import { db } from "@sms/db/client";
 import { runAsSchool } from "@sms/db/tenant";
 import { logAuth } from "@/server/audit";
 import { questionInputSchema } from "@sms/shared/assess";
-import { saveAssessImg } from "@/server/assess-files";
+import { saveAssessImg, saveAssessVideo } from "@/server/assess-files";
 
 async function gate(req: NextRequest, roles: ("ADMIN" | "GURU")[]) {
   return requireRole({
@@ -31,14 +31,14 @@ export async function GET(req: NextRequest) {
   const rows = await runAsSchool(db, a.school.id, (tx) =>
     tx.question.findMany({
       where,
-      select: { id: true, subjectId: true, type: true, stem: true, imageName: true, options: true, createdAt: true },
+      select: { id: true, subjectId: true, type: true, stem: true, imageName: true, videoName: true, options: true, createdAt: true },
       orderBy: { createdAt: "desc" },
       take: 200,
     }));
   return NextResponse.json({ rows });
 }
 
-// POST /api/questions (multipart: fields + image?) — simpan ke bank. Kunci ikut tersimpan tapi tak dikembalikan.
+// POST /api/questions (multipart: fields + image? + video?) — simpan ke bank. Kunci ikut tersimpan tapi tak dikembalikan.
 export async function POST(req: NextRequest) {
   const a = await gate(req, ["ADMIN", "GURU"]);
   if (!a.ok) return NextResponse.json({ error: a.error }, { status: a.status });
@@ -75,6 +75,15 @@ export async function POST(req: NextRequest) {
     }
   }
   const v = parsed.data;
+  const vid = form.get("video");
+  let videoName: string | null = null;
+  if (vid && typeof vid !== "string") {
+    try {
+      videoName = await saveAssessVideo(a.school.id, Buffer.from(await vid.arrayBuffer()));
+    } catch (e) {
+      return NextResponse.json({ error: (e as Error).message }, { status: 400 });
+    }
+  }
   const row = await runAsSchool(db, a.school.id, (tx) =>
     tx.question.create({
       data: {
@@ -84,6 +93,7 @@ export async function POST(req: NextRequest) {
         type: v.type,
         stem: v.stem,
         imageName,
+        videoName,
         options: v.options,
         correctIndex: v.type === "MCQ" ? (v.correctIndex ?? 0) : null,
         correctOrder: v.type === "SORTING" ? v.options.map((_, i) => i) : [],
