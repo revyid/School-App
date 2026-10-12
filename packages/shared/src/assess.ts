@@ -50,6 +50,12 @@ export const answerSubmitSchema = z.object({
   })).max(100),
 });
 
+export const assessGradeSchema = z.object({
+  attemptId: z.string().min(1).max(64),
+  score: z.number().int().min(0).max(1_000_000),
+  feedback: z.string().trim().max(2000).optional().nullable(),
+});
+
 export const groupInputSchema = z.object({
   name: z.string().trim().min(1).max(100),
   studentIds: z.array(z.string().min(1).max(64)).min(1).max(50),

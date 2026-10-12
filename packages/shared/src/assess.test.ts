@@ -59,6 +59,15 @@ describe("gradeAttempt via koordinat acak", () => {
     expect(part.perQ[0].isCorrect).toBe(false);
   });
 
+  it("SORTING tetap benar saat opsi diacak dan teks opsi mungkin duplikat", () => {
+    const duplicateOptions: QRow = { ...sorting, options: ["Langkah", "Langkah", "Akhir"] };
+    const result = gradeAttempt([duplicateOptions], { q2: [2, 0, 1] }, [
+      { questionId: "q2", pickedOrder: [1, 2, 0] },
+    ]);
+    expect(result.score).toBe(9);
+    expect(result.perQ[0].pickedOrder).toEqual([0, 1, 2]);
+  });
+
   it("tanpa jawaban -> nol, tak crash", () => {
     const r = gradeAttempt([mcq, sorting], { q1: [0, 1, 2], q2: [0, 1, 2] }, []);
     expect(r.score).toBe(0);

@@ -430,8 +430,10 @@ model Notification {
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   title     String   @db.VarChar(200)
   body      String   @db.VarChar(2000)
+  dedupeKey String?  @db.VarChar(128)
   readAt    DateTime?
   createdAt DateTime @default(now())
+  @@unique([schoolId, dedupeKey])
   @@index([schoolId, userId, createdAt])
 }
 
@@ -605,6 +607,8 @@ model AssessAttempt {
   maxScore     Int?
   gradedById   String?
   gradedBy     User?      @relation("AssessGrader", fields: [gradedById], references: [id], onDelete: SetNull)
+  gradedAt     DateTime?
+  feedback     String?    @db.VarChar(2000)
   answers      AssessAnswer[]
   // Satu attempt per (asesmen, siswa): kirim ulang = update attempt yang sama.
   @@unique([assessmentId, studentId])

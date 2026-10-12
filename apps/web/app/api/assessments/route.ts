@@ -7,6 +7,8 @@ import { runAsSchool } from "@sms/db/tenant";
 import { logAuth } from "@/server/audit";
 import { assessmentInputSchema } from "@sms/shared/assess";
 import { guruClassIds } from "@/server/lms-scope";
+import { assessImgOwnedBy } from "@/server/assess-files";
+import { finalizeAssessmentImageUrls, hasInvalidPendingAssessmentImage, pendingAssessmentImageNames } from "@/server/assessment-markdown";
 
 async function gate(req: NextRequest, roles: ("ADMIN" | "GURU" | "SISWA")[]) {
   return requireRole({
@@ -39,18 +41,25 @@ export async function GET(req: NextRequest) {
     const rows = await runAsSchool(db, a.school.id, (tx) =>
       tx.assessment.findMany({
         where: { classId, publishAt: { lte: now } },
-        select: { id: true, kind: true, title: true, deadline: true, durationMin: true, createdAt: true },
+        select: {
+          id: true, kind: true, title: true, deadline: true, durationMin: true, createdAt: true,
+          attempts: { where: { studentId: a.userId }, select: { submittedAt: true, score: true, maxScore: true } },
+        },
         orderBy: { createdAt: "desc" },
         take: 100,
       }));
-    return NextResponse.json({ rows });
+    return NextResponse.json({ rows: rows.map(({ attempts, ...row }) => ({ ...row, attempt: attempts[0] ?? null })) });
   }
   const where: { authorId?: string } = {};
   if (a.role === "GURU") where.authorId = a.userId;
   const rows = await runAsSchool(db, a.school.id, (tx) =>
     tx.assessment.findMany({
       where,
-      include: { _count: { select: { questions: true, attempts: true } } },
+      include: {
+        _count: { select: { questions: true, attempts: true } },
+        class: { select: { name: true } },
+        subject: { select: { name: true } },
+      },
       orderBy: { createdAt: "desc" },
       take: 200,
     }));
@@ -68,6 +77,15 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "input tidak valid", detail: body.error.issues[0]?.message }, { status: 400 });
   }
   const v = body.data;
+  if (v.inline.some((q) => hasInvalidPendingAssessmentImage(q.stem))) {
+    return NextResponse.json({ error: "Format gambar Markdown asesmen tidak valid." }, { status: 400 });
+  }
+  const pendingImages = [...new Set(v.inline.flatMap((q) => pendingAssessmentImageNames(q.stem)))];
+  for (const name of pendingImages) {
+    if (!(await assessImgOwnedBy(a.school.id, name, a.userId))) {
+      return NextResponse.json({ error: "Gambar asesmen tidak ditemukan atau bukan unggahan Anda." }, { status: 403 });
+    }
+  }
   if (a.role === "GURU") {
     const mine = await guruClassIds(a.school.id, a.userId);
     if (!mine.has(v.classId)) {
@@ -92,8 +110,8 @@ export async function POST(req: NextRequest) {
   if (bank.length !== v.questionIds.length) {
     return NextResponse.json({ error: "sebagian soal bank bukan milik Anda / tidak ditemukan" }, { status: 403 });
   }
-  const row = await runAsSchool(db, a.school.id, (tx) =>
-    tx.assessment.create({
+  const row = await runAsSchool(db, a.school.id, async (tx) => {
+    const created = await tx.assessment.create({
       data: {
         schoolId: a.school.id,
         classId: v.classId,
@@ -125,8 +143,21 @@ export async function POST(req: NextRequest) {
           ],
         },
       },
-      include: { _count: { select: { questions: true } } },
-    }));
+      include: {
+        _count: { select: { questions: true } },
+        questions: { select: { id: true, stem: true, position: true } },
+      },
+    });
+    for (const question of created.questions) {
+      if (question.position < bank.length) continue;
+      const stem = finalizeAssessmentImageUrls(question.stem, question.id);
+      if (stem !== question.stem) {
+        await tx.assessQuestion.update({ where: { id: question.id }, data: { stem } });
+      }
+    }
+    const { questions: _questions, ...assessment } = created;
+    return assessment;
+  });
   await logAuth(a.school.id, "ASSESS.CREATE", { actorId: a.userId, meta: { id: row.id } });
   return NextResponse.json({ assessment: row }, { status: 201 });
 }
