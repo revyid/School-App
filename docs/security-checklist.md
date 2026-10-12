@@ -46,4 +46,6 @@
 - AI chat nonaktif secara default (`AI_CHAT_ENABLED=false`).
 - Berbagi data siswa ke vendor pihak ketiga hanya aktif jika flag env, toggle admin sekolah, dan teks kebijakan privasi yang mendokumentasikan AI/pihak ketiga semuanya mengizinkan.
 - Nama, NISN, email, dan identifier siswa tidak dimasukkan ke system prompt; tugas/asesmen yang dikirim ke konteks harus sudah `publishAt <= now()`.
+- Matriks akses: tamu hanya data publik sekolah; `SISWA` hanya konteks belajarnya sendiri; `GURU` hanya kelas/mapel/tugas pada assignment-nya; `ADMIN` hanya ringkasan operasional dan pengumuman. Tidak ada role yang menerima password, token, nomor kontak, data siswa mentah, atau kunci jawaban.
+- Konteks role tetap dibatasi dua lapis opt-in (`AI_ALLOW_STUDENT_DATA_SHARING` di deployment dan `aiShareStudentData` di pengaturan sekolah). Jika salah satunya mati, pengguna hanya mendapat mode umum tanpa data personal.
 - `DATABASE_URL`, `SYSTEM_URL`, `VAPID_PRIVATE`, `INTERNAL_TOKEN`, dan credential lain yang pernah tersimpan di `.env.local` harus ditinjau/dirotasi bila aktif; ikuti `docs/secret-rotation.md` dan jangan commit nilainya.
