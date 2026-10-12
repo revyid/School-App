@@ -4,28 +4,35 @@ import { z } from "zod";
 
 export const questionInputSchema = z.object({
   subjectId: z.string().min(1).max(64).optional().nullable(),
-  type: z.enum(["MCQ", "SORTING"]).default("MCQ"),
+  type: z.enum(["MCQ", "SORTING", "SHORT"]).default("MCQ"),
   stem: z.string().trim().min(1).max(10000),
   imageName: z.string().max(255).optional().nullable(),
   videoName: z.string().max(255).optional().nullable(),
-  // MCQ: 2-6 opsi + correctIndex. SORTING: 2-8 item + correctOrder implisit = urutan options.
-  options: z.array(z.string().trim().min(1).max(2000)).min(2).max(8),
+  // MCQ: 2-6 opsi + correctIndex. SORTING: 2-8 item (correctOrder implisit = urutan).
+  // SHORT: opsi kosong; kunci di answers (1..n alternatif diterima).
+  options: z.array(z.string().trim().min(1).max(2000)).max(8).default([]),
   correctIndex: z.number().int().min(0).max(7).optional().nullable(),
+  answers: z.array(z.string().trim().min(1).max(500)).max(5).optional(),
 }).superRefine((v, ctx) => {
   if (v.type === "MCQ") {
-    if (v.options.length > 6) {
-      ctx.addIssue({ code: z.ZodIssueCode.custom, message: "MCQ maksimal 6 opsi", path: ["options"] });
+    if (v.options.length < 2 || v.options.length > 6) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, message: "MCQ butuh 2-6 opsi", path: ["options"] });
     }
     if (v.correctIndex == null || v.correctIndex >= v.options.length) {
       ctx.addIssue({ code: z.ZodIssueCode.custom, message: "correctIndex wajib & dalam rentang opsi", path: ["correctIndex"] });
     }
+  }
+  if (v.type === "SORTING" && v.options.length < 2) {
+    ctx.addIssue({ code: z.ZodIssueCode.custom, message: "SORTING butuh 2-8 item", path: ["options"] });
+  }
+  if (v.type === "SHORT" && (!v.answers || v.answers.length === 0)) {
+    ctx.addIssue({ code: z.ZodIssueCode.custom, message: "SHORT wajib punya jawaban benar", path: ["answers"] });
   }
 });
 
 export const assessmentInputSchema = z.object({
   classId: z.string().min(1).max(64),
   subjectId: z.string().min(1).max(64).optional().nullable(),
-  // Regular-only: field kind lawas diabaikan bila dikirim.
   kind: z.enum(["DIAGNOSTIC", "REGULAR"]).default("REGULAR"),
   showChart: z.boolean().default(true),
   title: z.string().trim().min(1).max(200),
@@ -35,7 +42,6 @@ export const assessmentInputSchema = z.object({
   deadline: z.string().datetime({ offset: true }).optional().nullable(),
   shuffleQ: z.boolean().default(true),
   shuffleOpt: z.boolean().default(true),
-  // questionIds dari bank (snapshot saat attach) ATAU buat inline. Minimal 1 soal.
   questionIds: z.array(z.string().min(1).max(64)).max(100).default([]),
   inline: z.array(questionInputSchema).max(100).default([]),
 }).superRefine((v, ctx) => {
@@ -50,6 +56,8 @@ export const answerSubmitSchema = z.object({
     questionId: z.string().min(1).max(64),
     pickedIndex: z.number().int().min(0).max(7).optional().nullable(),
     pickedOrder: z.array(z.number().int().min(0).max(7)).max(8).default([]),
+    // A4: jawaban teks SHORT.
+    pickedText: z.string().trim().max(500).optional().nullable(),
   })).max(100),
 });
 
@@ -89,20 +97,22 @@ export function shuffled<T>(arr: T[], seed: number): T[] {
 
 export type QRow = {
   id: string;
-  type: "MCQ" | "SORTING";
+  type: "MCQ" | "SORTING" | "SHORT";
   stem: string;
   imageName: string | null;
   videoName: string | null;
   options: string[];
+  // A4: kunci SHORT (server-side saja).
+  shortAnswers?: string[];
   correctIndex: number | null;
   correctOrder: number[];
   points: number;
 };
 
-// Soal versi KLIEN: tanpa kunci. options diacak bila shuffleOpt; qOrder disimpan di attempt.
+// Soal versi KLIEN: tanpa kunci. SHORT tanpa opsi.
 export type ClientQ = {
   id: string;
-  type: "MCQ" | "SORTING";
+  type: "MCQ" | "SORTING" | "SHORT";
   stem: string;
   imageUrl: string | null;
   videoUrl: string | null;
@@ -118,7 +128,10 @@ export function toClientQuestions(
   const optOrders: Record<string, number[]> = {};
   const clientQs: ClientQ[] = ordered.map((q) => {
     const idx = q.options.map((_, i) => i);
-    const order = opts.shuffleOpt ? shuffled(idx, opts.seed ^ seedFrom(q.id)) : idx;
+    // BENAR/SALAH (MCQ 2 opsi) & SHORT: jangan acak opsi.
+    const noShuffle = q.type === "SHORT" || (q.type === "MCQ" && q.options.length === 2 &&
+      /^(benar|salah|true|false)$/i.test(q.options[0] ?? ""));
+    const order = opts.shuffleOpt && !noShuffle ? shuffled(idx, opts.seed ^ seedFrom(q.id)) : idx;
     optOrders[q.id] = order;
     return {
       id: q.id, type: q.type, stem: q.stem,
@@ -130,15 +143,28 @@ export function toClientQuestions(
   return { clientQs, qOrder, optOrders };
 }
 
-// Nilai jawaban klien (koordinat acak) -> koordinat asli via optOrders server. MCQ: exact. SORTING: proporsional posisi benar.
+// A4: normalisasi jawaban teks — trim, huruf kecil, spasi ganda jadi satu,
+// koma desimal = titik (1,5 = 1.5). Koma pemisah ribuan ("1.000") = "1000".
+export function normalizeShortAnswer(s: string): string {
+  let t = s.trim().toLowerCase();
+  t = t.replace(/\s+/g, " ");
+  // 1.000 / 1,5 → 1000 / 1.5 (angka saja).
+  t = t.replace(/(\d)\.(\d{3})(?!\d)/g, "$1$2"); // titik ribuan
+  t = t.replace(/(\d),(\d)/g, "$1.$2"); // koma desimal
+  t = t.replace(/[.,]$/, "");
+  return t;
+}
+
+// Nilai jawaban klien (koordinat acak) -> koordinat asli via optOrders server.
+// MCQ: exact. SORTING: proporsional posisi benar. SHORT: normalisasi + alternatif kunci.
 export function gradeAttempt(
   qs: QRow[],
   optOrders: Record<string, number[]>,
-  answers: { questionId: string; pickedIndex?: number | null; pickedOrder?: number[] }[],
-): { perQ: { questionId: string; isCorrect: boolean; points: number; pickedIndex: number | null; pickedOrder: number[] }[]; score: number; maxScore: number } {
+  answers: { questionId: string; pickedIndex?: number | null; pickedOrder?: number[]; pickedText?: string | null }[],
+): { perQ: { questionId: string; isCorrect: boolean; points: number; pickedIndex: number | null; pickedOrder: number[]; pickedText: string | null }[]; score: number; maxScore: number } {
   const byId = new Map(qs.map((q) => [q.id, q]));
   const ansById = new Map(answers.map((a) => [a.questionId, a]));
-  const perQ: { questionId: string; isCorrect: boolean; points: number; pickedIndex: number | null; pickedOrder: number[] }[] = [];
+  const perQ: { questionId: string; isCorrect: boolean; points: number; pickedIndex: number | null; pickedOrder: number[]; pickedText: string | null }[] = [];
   let score = 0;
   let maxScore = 0;
   for (const q of qs) {
@@ -146,14 +172,19 @@ export function gradeAttempt(
     const a = ansById.get(q.id);
     const order = optOrders[q.id] ?? q.options.map((_, i) => i);
     if (q.type === "MCQ") {
-      // pickedIndex klien -> indeks asli = order[picked].
       const picked = a?.pickedIndex == null ? null : (order[a.pickedIndex] ?? -1);
       const ok = picked != null && picked >= 0 && picked === q.correctIndex;
       const pts = ok ? q.points : 0;
       score += pts;
-      perQ.push({ questionId: q.id, isCorrect: ok, points: pts, pickedIndex: picked, pickedOrder: [] });
+      perQ.push({ questionId: q.id, isCorrect: ok, points: pts, pickedIndex: picked, pickedOrder: [], pickedText: null });
+    } else if (q.type === "SHORT") {
+      const text = a?.pickedText?.trim() ?? "";
+      const keys = (q.shortAnswers ?? []).map(normalizeShortAnswer);
+      const ok = text.length > 0 && keys.includes(normalizeShortAnswer(text));
+      const pts = ok ? q.points : 0;
+      score += pts;
+      perQ.push({ questionId: q.id, isCorrect: ok, points: pts, pickedIndex: null, pickedOrder: [], pickedText: text });
     } else {
-      // pickedOrder klien = susunan opsi-acakan menurut siswa -> petakan ke indeks asli, bandingkan dengan correctOrder.
       const raw = a?.pickedOrder ?? [];
       const mapped = raw.map((i) => order[i] ?? -1);
       const n = q.options.length;
@@ -164,9 +195,10 @@ export function gradeAttempt(
       const ok = n > 0 && correct === n;
       const pts = n === 0 ? 0 : Math.round((q.points * correct) / n);
       score += pts;
-      perQ.push({ questionId: q.id, isCorrect: ok, points: pts, pickedIndex: null, pickedOrder: mapped });
+      perQ.push({ questionId: q.id, isCorrect: ok, points: pts, pickedIndex: null, pickedOrder: mapped, pickedText: null });
     }
   }
+  void byId;
   return { perQ, score, maxScore };
 }
 

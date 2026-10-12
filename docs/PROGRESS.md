@@ -251,3 +251,48 @@
   Data tetap asli Open Library (judul/penulis/tahun/subjek).
 - Test 126 hijau, tsc 0, build 49/49. Screenshot /buku: zigzag playful
   terkonfirmasi visual, tanpa elemen rusak.
+
+## Tugas v2 — kategori, kelompok, roster, nudge (DONE)
+- T1 Fondasi data: enum TaskStatus (DRAFT/PUBLISHED) + UploadAccept (PDF/IMAGE/VIDEO/DOC)
+  + MaterialKind VIDEO + QType SHORT; model TaskCategory (0..n kategori unggahan per
+  tugas, required + accept + position) + SubmissionFile (file per kategori, partial
+  unique index NULL/non-NULL); kolom Task groupMin/groupMax; backfill file lama
+  Submission → SubmissionFile(categoryId=null). Migrasi 20261012130000_task_v2_categories
+  (RLS + FORCE + policy tenant + GRANT app_user, gaya migrasi AI/push).
+- T2 Materi + kategori: /api/tasks/[id]/materials GET (siswa hanya PUBLISHED) /
+  POST multipart (FILE/IMAGE/VIDEO hingga 50MB streaming >8MB, Teks JSON) dengan
+  categoryId validasi milik tugas; DELETE /materials/[mid] + removeFile disk (B7).
+  Kategori: POST /categories + PATCH/DELETE /categories/[cid] (rate limit 60/mnt).
+- T3 Contoh per kategori: TaskMaterial.categoryId (SetNull) + isExample menempel
+  di kategorinya.
+- T4 UI siswa: detail tugas = Ringkasan · Instruksi & Materi · Kelompok · Kumpulkan
+  per kategori (file_<categoryId>, validasi required/accept klien + server) · Hasil.
+- T5 UI guru: detail tugas = tabs Ringkasan · Daftar siswa (roster) · Kelompok ·
+  Pengaturan (kategori, tenggat, publish). PUT /grades (bulk nilai + feedback).
+  GET /roster (status kumpul per siswa/kelompok).
+- T6/D1/D2 Kelompok: GroupSheet tunggal (mode teacher|student, Sheet shadcn kanan/
+  bawah HP): buat/ganti nama/hapus kelompok, tambah/keluarkan anggota, ketua
+  (leaderId), keluar sendiri (/groups/[gid]/leave). TaskGroup v2 (+createdById/
+  leaderId/createdAt); Submission.groupId + submittedById + unique parsial
+  (taskId, groupId) — satu pengumpulan per kelompok, anggota siapa pun boleh
+  kumpul; kunci kelompok saat tenggat lewat / sudah ada pengumpulan (guru tetap bebas).
+- T7 Nudge: POST /api/tasks/[id]/nudge (per siswa / massal; tahap reminder|deadline|
+  overdue|thanks; inapp + wa). Dedupe WA per TAHAP+JAM (nudge-<tahap>-<task>-<siswa>-<yyyymmddHH>)
+  — pengingat kedua di jam berbeda tetap terkirim (bug lama diperbaiki); route lama
+  /api/tasks/nudge dihapus. GET /api/wa/ready (proxy worker, GURU/ADMIN) untuk tombol WA.
+- T8 EXP: awardSubmitExp tepat waktu/terlambat, dedupe per (tugas, siswa), kelompok =
+  semua anggota.
+- D6 Video: detectMime magic bytes; purpose video-answer/video-material; streaming
+  saveFileStream >8MB.
+- D7/N5: SchoolSettings.timezone (default Asia/Jakarta) untuk format tenggat WA;
+  Notification.href + kind (klik notifikasi → /siswa/tugas/<id>).
+- A4: QType SHORT + Question/AssessQuestion.shortAnswers (kunci server-side saja).
+- B1 drift: FK schoolId TaskGroup/TaskGroupMember + policy tenant_isolation
+  disamakan (current_setting fallback true).
+- Fix sesi lanjutan: route materials yang salah nama (id]) dirapikan menjadi
+  /materials/[mid]/route.ts (DELETE); guru tugas page TS2367 (narrowing nudgeTarget
+  "massal" berulang) diperbaiki.
+- Verifikasi: tsc 0 (5 paket), lint OK, prisma validate OK, build penuh sukses
+  (shared+db+worker+cli+web 49+ rute). Test shared 64 hijau; tes DB-integrasi
+  (web server/__tests__ + worker + isolasi) butuh SYSTEM_URL Postgres RLs —
+  tidak tersedia di sandbox, jalankan di lingkungan deploy.

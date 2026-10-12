@@ -1,427 +1,503 @@
 "use client";
 
-// Guru: detail tugas + materi utama/contoh + chart nilai + kelompok (Sheet geser custom) + nilai + pengingat (in-app + WA ortu).
-import { useEffect, useState } from "react";
+// T5: detail tugas guru — Tabs: Ringkasan · Daftar siswa · Kelompok · Pengaturan.
+// Roster SATU tabel: status, file per kategori (klik buka), nilai inline (Enter simpan),
+// pengingat per siswa & massal (dialog pratinjau + hasil per siswa), chart donut + histogram.
+import { use, useRef, useState } from "react";
+import Link from "next/link";
 import { api, useFetch } from "@/app/lib/api";
-import { PageHead, Panel, Toolbar, TextInput, TextSelect, Btn, Badge, WarmTable, warmCell, SegStat, Note, Err } from "@/components/DashUI";
+import RichText from "@/components/RichText";
+import GroupSheet from "@/components/GroupSheet";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
+import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsList, TabsTab, TabsContent } from "@/components/ui/tabs";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Switch } from "@/components/ui/switch";
+import {
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
+} from "@/components/ui/dialog";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription,
+  AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import { TASK_TYPE_LABEL, SUBMIT_STATE_LABEL } from "@sms/shared/lms";
+import { ArrowLeftIcon, BellIcon, FileTextIcon, UsersIcon, Trash2Icon, PlusIcon } from "lucide-react";
 
-interface Sub {
-  id: string;
-  studentId: string;
-  text: string | null;
-  link: string | null;
-  fileName: string | null;
-  submittedAt: string;
-  isLate: boolean;
+interface Detail {
+  task: {
+    id: string; title: string; type: string; instruction: string; deadline: string | null; publishAt: string;
+    allowLate: boolean; isGroup: boolean; groupMin: number; groupMax: number; status: string;
+    class: { id: string; name: string }; subject: { id: string; name: string } | null;
+    materials: { id: string; kind: string; text: string | null; fileName: string | null; mime: string | null; isMain: boolean; isExample: boolean; categoryId: string | null }[];
+    categories: { id: string; name: string; instruction: string | null; required: boolean; accept: string[]; examples: unknown[] }[];
+  };
+  visible: boolean;
+  stats: { submitted: number; late: number; avgScore: number; totalStudents: number };
+}
+
+interface RosterRow {
+  student: { id: string; name: string };
+  submissionId: string | null;
+  group: { id: string; name: string } | null;
+  state: string;
+  submittedAt: string | null;
+  isLate: boolean | null;
+  files: { categoryId: string | null; name: string; mime: string; size: number }[];
+  hasText: boolean; hasLink: boolean;
   score: number | null;
   feedback: string | null;
-  student: { id: string; name: string; nisn: string | null };
+  parent: { hasPhone: boolean };
 }
 
-interface Mat {
-  id: string;
-  kind: string;
-  text: string | null;
-  fileName: string | null;
-  mime: string | null;
-  isMain: boolean;
-  isExample: boolean;
-}
-
-interface Group {
-  id: string;
-  name: string;
-  members: { studentId: string; student: { id: string; name: string; nisn: string | null } }[];
-}
-
-interface TaskDetail {
-  task: { id: string; title: string; instruction: string; type: string; deadline: string | null; allowLate: boolean; isGroup: boolean; class: { name: string } };
-  visible: boolean;
-  submissions: Sub[];
-  pending: { id: string; name: string }[];
-}
-
-// Panel geser custom (pengganti shadcn Sheet): buat/lihat/edit kelompok.
-function GroupSheet({ taskId, open, onClose }: { taskId: string; open: boolean; onClose: () => void }) {
-  const groups = useFetch<{ rows: Group[]; ungrouped?: { id: string; name: string }[] }>(
-    open ? `/api/tasks/${taskId}/groups` : null,
-  );
-  const [name, setName] = useState("");
-  const [addTo, setAddTo] = useState("");
-  const [msg, setMsg] = useState<string | null>(null);
-
-  useEffect(() => {
-    if (!open) return;
-    function esc(e: KeyboardEvent) {
-      if (e.key === "Escape") onClose();
-    }
-    window.addEventListener("keydown", esc);
-    return () => window.removeEventListener("keydown", esc);
-  }, [open, onClose]);
-
-  if (!open) return null;
-
-  async function buatGrup(e: React.FormEvent) {
-    e.preventDefault();
-    const res = await api(`/api/tasks/${taskId}/groups`, {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({ name }),
-    });
-    const d = await res.json().catch(() => ({}));
-    if (!res.ok) setMsg(d.error || `Gagal (${res.status})`);
-    else {
-      setMsg(null);
-      setName("");
-      groups.reload();
-    }
-  }
-
-  async function tambahAnggota(gid: string, studentId: string) {
-    const res = await api(`/api/tasks/${taskId}/groups/${gid}/members`, {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({ studentId }),
-    });
-    const d = await res.json().catch(() => ({}));
-    if (!res.ok) setMsg(d.error || `Gagal (${res.status})`);
-    else {
-      setMsg(null);
-      setAddTo("");
-      groups.reload();
-    }
-  }
-
-  async function keluarkan(gid: string, studentId: string) {
-    const res = await api(`/api/tasks/${taskId}/groups/${gid}/members?studentId=${encodeURIComponent(studentId)}`, {
-      method: "DELETE",
-    });
-    if (!res.ok) {
-      const d = await res.json().catch(() => ({}));
-      setMsg(d.error || `Gagal (${res.status})`);
-    } else groups.reload();
-  }
-
-  async function hapusGrup(gid: string) {
-    const res = await api(`/api/tasks/${taskId}/groups/${gid}`, { method: "DELETE" });
-    if (!res.ok) {
-      const d = await res.json().catch(() => ({}));
-      setMsg(d.error || `Gagal (${res.status})`);
-    } else groups.reload();
-  }
-
-  return (
-    <div
-      role="dialog"
-      aria-label="Kelola kelompok"
-      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
-      style={{ position: "fixed", inset: 0, background: "rgba(23,23,22,.45)", zIndex: 60, display: "flex", justifyContent: "flex-end" }}
-    >
-      <div style={{ width: "min(420px, 100vw)", height: "100%", background: "#fffdf8", overflowY: "auto", padding: 20, boxShadow: "-8px 0 24px rgba(23,23,22,.2)" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 16 }}>
-          <h2 className="display" style={{ fontSize: 18, margin: 0, flex: 1 }}>Kelompok</h2>
-          <Btn kind="ghost" type="button" onClick={onClose}>Tutup</Btn>
-        </div>
-        <form onSubmit={buatGrup} style={{ display: "flex", gap: 8, marginBottom: 16 }}>
-          <TextInput value={name} onChange={(e) => setName(e.target.value)} placeholder="Nama grup baru" required maxLength={100} style={{ flex: 1 }} />
-          <Btn type="submit">Buat</Btn>
-        </form>
-        {groups.loading && <Note>Memuat…</Note>}
-        {groups.error && <Err>Gagal: {groups.error}</Err>}
-        {(groups.data?.rows ?? []).map((g) => (
-          <div key={g.id} style={{ border: "1px solid rgba(23,23,22,.14)", borderRadius: 14, padding: 12, marginBottom: 12 }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
-              <strong style={{ flex: 1 }}>{g.name}</strong>
-              <span style={{ fontSize: 12, color: "#74746d" }}>{g.members.length} anggota</span>
-              <Btn kind="ghost" type="button" onClick={() => hapusGrup(g.id)}>Hapus</Btn>
-            </div>
-            <ul style={{ margin: "0 0 8px", paddingLeft: 18, fontSize: 14, display: "grid", gap: 4 }}>
-              {g.members.map((m) => (
-                <li key={m.studentId} style={{ display: "flex", gap: 8, alignItems: "center" }}>
-                  <span style={{ flex: 1 }}>{m.student.name}</span>
-                  <button type="button" onClick={() => keluarkan(g.id, m.studentId)} style={{ fontSize: 12, color: "#c94b35", background: "none", border: "none", cursor: "pointer" }}>keluarkan</button>
-                </li>
-              ))}
-              {g.members.length === 0 && <li style={{ color: "#8a8a82" }}>Belum ada anggota.</li>}
-            </ul>
-            {(groups.data?.ungrouped ?? []).length > 0 && (
-              <div style={{ display: "flex", gap: 8 }}>
-                <TextSelect value={addTo} onChange={(e) => setAddTo(e.target.value)} style={{ flex: 1 }}>
-                  <option value="">— tambah siswa —</option>
-                  {(groups.data?.ungrouped ?? []).map((u) => (
-                    <option key={u.id} value={u.id}>{u.name}</option>
-                  ))}
-                </TextSelect>
-                <Btn kind="ghost" type="button" disabled={!addTo} onClick={() => addTo && tambahAnggota(g.id, addTo)}>Tambah</Btn>
-              </div>
-            )}
-          </div>
-        ))}
-        {msg && <p style={{ fontWeight: 700, color: "#c94b35" }}>{msg}</p>}
-      </div>
-    </div>
-  );
-}
-
-function ScoreChart({ subs }: { subs: Sub[] }) {
-  const scored = subs.filter((s) => s.score != null) as (Sub & { score: number })[];
-  if (scored.length === 0) return <Note>Belum ada nilai untuk chart.</Note>;
-  const buckets = [
-    { label: "0–59", min: 0, max: 59 },
-    { label: "60–69", min: 60, max: 69 },
-    { label: "70–79", min: 70, max: 79 },
-    { label: "80–89", min: 80, max: 89 },
-    { label: "90–100", min: 90, max: 100 },
-  ];
-  const counts = buckets.map((b) => scored.filter((s) => s.score >= b.min && s.score <= b.max).length);
-  const max = Math.max(...counts, 1);
-  const avg = Math.round(scored.reduce((a, s) => a + s.score, 0) / scored.length);
-  return (
-    <div>
-      <p style={{ margin: "0 0 10px", fontSize: 13, color: "#575752" }}>
-        {scored.length} dinilai · rata-rata <strong>{avg}</strong>
-      </p>
-      <div style={{ display: "grid", gap: 8 }}>
-        {buckets.map((b, i) => (
-          <div key={b.label} style={{ display: "flex", gap: 10, alignItems: "center", fontSize: 13 }}>
-            <span style={{ width: 64, color: "#74746d" }}>{b.label}</span>
-            <div style={{ flex: 1, background: "#eeeadd", borderRadius: 8, height: 18, overflow: "hidden" }}>
-              <div style={{ width: `${Math.round((counts[i] / max) * 100)}%`, height: "100%", background: "#50643e", borderRadius: 8 }} />
-            </div>
-            <span style={{ width: 28, textAlign: "right", fontWeight: 700 }}>{counts[i]}</span>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
+const STATUS_BADGE: Record<string, "success" | "warning" | "danger" | "secondary" | "outline"> = {
+  SUDAH: "success", TERLAMBAT: "warning", BELUM: "outline", TUTUP: "danger",
+};
 
 export default function GuruTugasDetail({ params }: { params: Promise<{ id: string }> }) {
-  const [id, setId] = useState<string | null>(null);
-  useState(() => {
-    void params.then((p) => setId(p.id));
-  });
-  const detail = useFetch<TaskDetail>(id ? `/api/tasks/${id}` : null);
-  const mats = useFetch<{ rows: Mat[] }>(id ? `/api/tasks/${id}/materials` : null);
-  const [grades, setGrades] = useState<Record<string, { score: string; feedback: string }>>({});
-  const [msg, setMsg] = useState<string | null>(null);
-  const [sheet, setSheet] = useState(false);
-  // Form materi.
-  const [mKind, setMKind] = useState("TEXT");
-  const [mText, setMText] = useState("");
-  const [mFile, setMFile] = useState<File | null>(null);
-  const [mMain, setMMain] = useState(false);
-  const [mExample, setMExample] = useState(false);
+  const { id } = use(params);
+  const detail = useFetch<Detail>(`/api/tasks/${id}`);
+  const [statusF, setStatusF] = useState("");
+  const [q, setQ] = useState("");
+  const roster = useFetch<{ rows: RosterRow[]; stats: { total: number; done: number; late: number; missing: number; avg: number | null } }>(
+    `/api/tasks/${id}/roster${statusF ? `?status=${statusF}` : ""}${statusF && q ? "&" : ""}${q ? `${statusF ? "" : "?"}q=${encodeURIComponent(q)}` : ""}`,
+  );
+  const [groupOpen, setGroupOpen] = useState(false);
+  const [nudgeTarget, setNudgeTarget] = useState<RosterRow | "massal" | null>(null);
+  const [nudgeInapp, setNudgeInapp] = useState(true);
+  const [nudgeWa, setNudgeWa] = useState(false);
+  const [nudgeResult, setNudgeResult] = useState<{ summary?: { total: number; waQueued: number; noPhone: string[] } } | null>(null);
+  const [nudgeBusy, setNudgeBusy] = useState(false);
+  const [edit, setEdit] = useState({ title: "", instruction: "", deadline: "", allowLate: false });
+  const [editMsg, setEditMsg] = useState<string | null>(null);
+  const [savedScore, setSavedScore] = useState<Record<string, string>>({});
+  const waReady = useFetch<{ connected: boolean }>(`/api/wa/ready`);
 
-  async function nilai(subId: string) {
-    const g = grades[subId];
-    if (!g?.score) return;
-    const res = await api(`/api/submissions/${subId}/grade`, {
+  const t = detail.data?.task;
+  const cats = t?.categories ?? [];
+  const rows = roster.data?.rows ?? [];
+  const stats = roster.data?.stats;
+
+  async function saveScore(r: RosterRow) {
+    if (!r.submissionId) return;
+    const val = savedScore[r.student.id];
+    const score = val === undefined || val === "" ? null : Math.max(0, Math.min(100, Number(val)));
+    if (score === null) return;
+    const res = await api(`/api/tasks/${id}/grades`, {
+      method: "PUT",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ grades: [{ submissionId: r.submissionId, score, applyToMembers: true }] }),
+    });
+    if (res.ok) {
+      setSavedScore((p) => ({ ...p, [r.student.id]: String(score) }));
+      roster.reload();
+    }
+  }
+
+  async function kirimNudge() {
+    if (!nudgeTarget) return;
+    setNudgeBusy(true);
+    const res = await api(`/api/tasks/${id}/nudge`, {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ score: Number(g.score), feedback: g.feedback || null }),
+      body: JSON.stringify({
+        ...(nudgeTarget === "massal" ? {} : { studentIds: [nudgeTarget.student.id] }),
+        stage: "reminder",
+        inapp: nudgeInapp,
+        wa: nudgeWa,
+      }),
     });
     const d = await res.json().catch(() => ({}));
-    if (!res.ok) setMsg(d.error || `Gagal (${res.status})`);
-    else {
-      setMsg("Nilai tersimpan");
-      detail.reload();
-    }
+    setNudgeBusy(false);
+    if (!res.ok) { setNudgeResult({ summary: undefined }); return; }
+    setNudgeResult(d);
+    roster.reload();
   }
 
-  async function ingatkan(kind: "reminder" | "thanks") {
-    if (!id) return;
-    const res = await api("/api/tasks/nudge", {
-      method: "POST",
+  async function simpanPengaturan() {
+    if (!t) return;
+    const res = await api(`/api/tasks/${t.id}`, {
+      method: "PATCH",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ taskId: id, kind }),
+      body: JSON.stringify({
+        title: edit.title || t.title,
+        instruction: edit.instruction || t.instruction,
+        deadline: edit.deadline ? new Date(edit.deadline).toISOString() : null,
+        allowLate: edit.allowLate,
+      }),
     });
     const d = await res.json().catch(() => ({}));
-    if (!res.ok) setMsg(d.error || `Gagal (${res.status})`);
-    else setMsg(`Terkirim: ${d.inapp} in-app + ${d.wa} WA ortu`);
+    if (!res.ok) setEditMsg(d.error || "Gagal menyimpan");
+    else { setEditMsg("Tersimpan"); detail.reload(); }
   }
 
-  async function tambahMateri(e: React.FormEvent) {
-    e.preventDefault();
-    if (!id) return;
-    let res: Response;
-    if (mKind === "TEXT") {
-      res = await api(`/api/tasks/${id}/materials`, {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({ kind: "TEXT", text: mText, isMain: mMain, isExample: mExample }),
-      });
-    } else {
-      if (!mFile) { setMsg("Pilih file dulu"); return; }
-      const form = new FormData();
-      form.append("kind", mKind);
-      form.append("file", mFile);
-      form.append("isMain", mMain ? "1" : "0");
-      form.append("isExample", mExample ? "1" : "0");
-      res = await api(`/api/tasks/${id}/materials`, { method: "POST", body: form });
-    }
-    const d = await res.json().catch(() => ({}));
-    if (!res.ok) setMsg(d.error || `Gagal (${res.status})`);
-    else {
-      setMsg("Materi ditambahkan");
-      setMText("");
-      setMFile(null);
-      setMMain(false);
-      setMExample(false);
-      mats.reload();
-    }
+  async function terbitkan(publish: boolean) {
+    if (!t) return;
+    const res = await api(`/api/tasks/${t.id}`, {
+      method: "PATCH",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ status: publish ? "PUBLISHED" : "DRAFT" }),
+    });
+    if (res.ok) detail.reload();
   }
 
-  if (!detail.data && detail.loading) return <Note>Memuat…</Note>;
-  if (detail.error) return <Err>Gagal: {detail.error}</Err>;
-  if (!detail.data) return <Note>Memuat…</Note>;
-  const t = detail.data;
-  const main = (mats.data?.rows ?? []).filter((m) => m.isMain);
-  const examples = (mats.data?.rows ?? []).filter((m) => m.isExample && !m.isMain);
-  const others = (mats.data?.rows ?? []).filter((m) => !m.isMain && !m.isExample);
+  async function hapusTugas() {
+    if (!t) return;
+    const res = await api(`/api/tasks/${t.id}`, { method: "DELETE" });
+    if (res.ok) window.location.href = "/guru/tugas";
+  }
+
+  if (detail.loading && !detail.data) {
+    return <div className="space-y-4"><Skeleton className="h-8 w-2/3" /><Skeleton className="h-64 w-full" /></div>;
+  }
+  if (detail.error) {
+    return (
+      <div className="rounded-2xl border border-destructive/40 bg-destructive/5 p-4">
+        <p className="font-bold text-destructive">Gagal memuat</p>
+        <p className="mt-1 text-sm text-muted-foreground">{detail.error}</p>
+        <Button variant="outline" className="mt-3" onClick={() => detail.reload()}>Coba lagi</Button>
+      </div>
+    );
+  }
+  if (!t) return null;
+
+  const deadline = t.deadline ? new Date(t.deadline) : null;
+  const hoursLeft = deadline ? (deadline.getTime() - Date.now()) / 3600000 : null;
+  const missingCount = stats?.missing ?? 0;
+
+  // Chart data: donut status + histogram nilai (5 rentang).
+  const donut = [
+    { label: "Sudah", n: stats?.done ?? 0, color: "#71845a" },
+    { label: "Terlambat", n: stats?.late ?? 0, color: "#f5c94a" },
+    { label: "Belum", n: stats?.missing ?? 0, color: "#e85e43" },
+  ];
+  const total = donut.reduce((s, d) => s + d.n, 0) || 1;
+  const buckets = [0, 0, 0, 0, 0];
+  for (const r of rows) if (r.score != null) buckets[Math.min(4, Math.floor(r.score / 20))]++;
+
   return (
-    <>
-      <PageHead
-        kicker="Tugas"
-        title={t.task.title}
-        desc={`Kelas: ${t.task.class.name} · Kategori: ${t.task.type}`}
-        right={<Badge status={t.visible ? "AKTIF" : "PENDING"}>{t.visible ? "Terlihat siswa" : "Terjadwal/belum publish"}</Badge>}
-      />
-      <Panel style={{ marginBottom: 16 }}>
-        <p style={{ margin: "0 0 12px", whiteSpace: "pre-wrap" }}>{t.task.instruction}</p>
-        <SegStat stats={[
-          { label: "Terkumpul", value: t.submissions.length },
-          { label: "Belum", value: t.pending.length },
-        ]} />
-        <Toolbar>
-          <Btn type="button" onClick={() => ingatkan("reminder")}>Kirim pengingat ke yang belum mengumpulkan</Btn>
-          <Btn kind="ghost" type="button" onClick={() => ingatkan("thanks")}>Kirim terima kasih ke yang sudah mengumpulkan</Btn>
-          {t.task.isGroup && <Btn kind="dark" type="button" onClick={() => setSheet(true)}>Kelola kelompok</Btn>}
-        </Toolbar>
-        {msg && <p style={{ fontWeight: 700 }}>{msg}</p>}
-      </Panel>
-      <Panel style={{ marginBottom: 16 }}>
-        <h2 className="display" style={{ fontSize: 18, margin: "0 0 12px" }}>Materi utama</h2>
-        {main.length === 0 && <Note>Belum ada materi utama. Tandai materi sebagai utama saat menambah di bawah.</Note>}
-        {main.length > 0 && (
-          <ul style={{ margin: 0, paddingLeft: 18, display: "grid", gap: 6, fontSize: 14 }}>
-            {main.map((m) => (
-              <li key={m.id}>
-                {m.kind === "TEXT" ? m.text : <a href={`/api/task-files/${t.task.id}/${m.fileName}`}>Unduh lampiran utama ({m.mime})</a>}
-                {m.isExample && <Badge status="CONTOH">Contoh</Badge>}
-              </li>
-            ))}
-          </ul>
-        )}
-      </Panel>
-      <Panel style={{ marginBottom: 16 }}>
-        <h2 className="display" style={{ fontSize: 18, margin: "0 0 12px" }}>Contoh per kategori ({t.task.type})</h2>
-        {examples.length === 0 && <Note>Belum ada contoh untuk kategori ini.</Note>}
-        {examples.length > 0 && (
-          <ul style={{ margin: 0, paddingLeft: 18, display: "grid", gap: 6, fontSize: 14 }}>
-            {examples.map((m) => (
-              <li key={m.id}>
-                {m.kind === "TEXT" ? m.text : <a href={`/api/task-files/${t.task.id}/${m.fileName}`}>Unduh contoh ({m.mime})</a>}
-              </li>
-            ))}
-          </ul>
-        )}
-        {others.length > 0 && (
-          <>
-            <h3 className="display" style={{ fontSize: 15, margin: "14px 0 8px" }}>Materi pendukung lain</h3>
-            <ul style={{ margin: 0, paddingLeft: 18, display: "grid", gap: 6, fontSize: 14 }}>
-              {others.map((m) => (
-                <li key={m.id}>
-                  {m.kind === "TEXT" ? m.text : <a href={`/api/task-files/${t.task.id}/${m.fileName}`}>Unduh lampiran ({m.mime})</a>}
-                </li>
+    <div className="space-y-4">
+      <div>
+        <Link href="/guru/tugas" className="inline-flex items-center gap-1.5 text-sm font-bold text-muted-strong hover:text-ink">
+          <ArrowLeftIcon className="size-4" /> Kembali
+        </Link>
+        <div className="mt-2 flex flex-wrap items-center gap-2">
+          <Badge variant="secondary">{TASK_TYPE_LABEL[t.type] ?? t.type}</Badge>
+          <Badge variant={t.status === "PUBLISHED" ? "success" : "warning"}>{t.status === "PUBLISHED" ? "Terbit" : "Draf"}</Badge>
+          {!detail.data?.visible && <Badge variant="outline">Terjadwal</Badge>}
+        </div>
+        <h1 className="display mt-2 text-2xl">{t.title}</h1>
+        <p className="text-sm text-muted-foreground">
+          {t.class.name}{t.subject ? ` · ${t.subject.name}` : ""}
+          {deadline ? ` · Tenggat: ${deadline.toLocaleString("id-ID", { dateStyle: "full", timeStyle: "short" })} WIB` : " · Tanpa tenggat"}
+        </p>
+      </div>
+
+      {/* Banner kontekstual pengingat (muncul bila deadline <24 jam atau terlewat) */}
+      {(hoursLeft !== null && hoursLeft < 24 || missingCount > 0) && (hoursLeft === null || hoursLeft < 24) && (
+        <div className="card flex flex-wrap items-center justify-between gap-3 border-l-4 p-4" style={{ borderLeftColor: "var(--color-terracotta)" }}>
+          <p className="text-sm font-medium">
+            {missingCount} siswa belum mengumpulkan
+            {hoursLeft !== null && hoursLeft > 0 ? ` · deadline ${Math.round(hoursLeft)} jam lagi` : " · deadline sudah lewat"}
+          </p>
+          <Button variant="sticker" size="sm" onClick={() => { setNudgeTarget("massal"); setNudgeResult(null); }}>
+            <BellIcon className="size-4" /> Kirim pengingat WA ke orang tua
+          </Button>
+        </div>
+      )}
+
+      <Tabs defaultValue="ringkasan">
+        <TabsList>
+          <TabsTab value="ringkasan">Ringkasan</TabsTab>
+          <TabsTab value="siswa">Daftar siswa</TabsTab>
+          {t.isGroup && <TabsTab value="kelompok">Kelompok</TabsTab>}
+          <TabsTab value="pengaturan">Pengaturan</TabsTab>
+        </TabsList>
+
+        {/* ---- Ringkasan ---- */}
+        <TabsContent value="ringkasan">
+          <div className="grid gap-3 sm:grid-cols-2">
+            <div className="card p-5 sm:col-span-2">
+              <h2 className="mb-2 text-xs font-extrabold uppercase tracking-wide text-muted-strong">Instruksi</h2>
+              <RichText text={t.instruction} compact />
+              {cats.length > 0 && (
+                <div className="mt-4 border-t border-line pt-3">
+                  <h3 className="text-xs font-extrabold uppercase tracking-wide text-muted-strong">Kategori unggahan</h3>
+                  <ul className="mt-2 space-y-1 text-sm">
+                    {cats.map((c) => (
+                      <li key={c.id}><strong>{c.name}</strong> {c.required ? "(wajib)" : "(opsional)"} — {c.accept.join(", ")}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </div>
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 sm:col-span-2">
+              {[
+                { label: "Terkumpul", n: stats?.done ?? 0 }, { label: "Terlambat", n: stats?.late ?? 0 },
+                { label: "Belum", n: missingCount }, { label: "Rata-rata", n: stats?.avg ?? "-" },
+              ].map((s) => (
+                <div key={s.label} className="card p-4 text-center">
+                  <p className="display text-2xl">{s.n}</p>
+                  <p className="text-xs font-bold uppercase tracking-wide text-muted-strong">{s.label}</p>
+                </div>
               ))}
-            </ul>
-          </>
+            </div>
+            {/* Chart donut status */}
+            <div className="card p-5">
+              <h3 className="mb-3 text-xs font-extrabold uppercase tracking-wide text-muted-strong">Status pengumpulan</h3>
+              <div className="flex items-center gap-4">
+                <svg viewBox="0 0 42 42" className="size-28 -rotate-90" role="img" aria-label="Diagram status pengumpulan">
+                  {(() => { let acc = 0; return donut.map((d) => {
+                    const frac = d.n / total;
+                    const el = (
+                      <circle key={d.label} cx="21" cy="21" r="15.9" fill="none" stroke={d.color} strokeWidth="7"
+                        strokeDasharray={`${frac * 100} ${100 - frac * 100}`} strokeDashoffset={-acc * 100} pathLength={100} />
+                    );
+                    acc += frac; return el;
+                  }); })()}
+                </svg>
+                <ul className="space-y-1.5 text-sm">
+                  {donut.map((d) => (
+                    <li key={d.label} className="flex items-center gap-2">
+                      <span className="inline-block size-3 rounded-full" style={{ background: d.color }} /> {d.label}: <strong>{d.n}</strong>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </div>
+            {/* Histogram nilai */}
+            <div className="card p-5">
+              <h3 className="mb-3 text-xs font-extrabold uppercase tracking-wide text-muted-strong">Distribusi nilai</h3>
+              <div className="flex h-28 items-end gap-2">
+                {buckets.map((n, i) => (
+                  <div key={i} className="flex flex-1 flex-col items-center gap-1">
+                    <span className="text-xs font-bold">{n || ""}</span>
+                    <div className="w-full rounded-t-lg bg-olive" style={{ height: `${Math.max(3, (n / Math.max(1, ...buckets)) * 100)}%` }} />
+                    <span className="text-[10px] text-muted-strong">{i * 20}–{i * 20 + 19}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </TabsContent>
+
+        {/* ---- Daftar siswa (roster) ---- */}
+        <TabsContent value="siswa">
+          <div className="card overflow-hidden">
+            <div className="flex flex-wrap items-center gap-2 border-b border-line p-3">
+              <Input placeholder="Cari nama…" value={q} onChange={(e) => setQ(e.target.value)} className="h-9 w-44" inputMode="search" />
+              {["", "sudah", "belum", "terlambat"].map((s) => (
+                <button key={s} type="button" onClick={() => setStatusF(s)}
+                  className={`cursor-pointer rounded-full px-3 py-1.5 text-xs font-bold transition-colors ${statusF === s ? "bg-ink text-cream" : "bg-paper text-muted-strong hover:bg-paper-deep"}`}>
+                  {s === "" ? "Semua" : SUBMIT_STATE_LABEL[s === "sudah" ? "SUDAH" : s === "belum" ? "BELUM" : "TERLAMBAT"]}
+                </button>
+              ))}
+            </div>
+            {/* Tabel → kartu bertumpuk ≤640px (U4) */}
+            <div className="hidden overflow-x-auto sm:block">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-line text-left text-xs uppercase tracking-wide text-muted-strong">
+                    <th className="px-3 py-2.5">Nama</th>
+                    {t.isGroup && <th className="px-3 py-2.5">Kelompok</th>}
+                    <th className="px-3 py-2.5">Status</th>
+                    <th className="px-3 py-2.5">Waktu</th>
+                    <th className="px-3 py-2.5">File</th>
+                    <th className="px-3 py-2.5">Nilai</th>
+                    <th className="px-3 py-2.5">Aksi</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {rows.map((r) => (
+                    <tr key={r.student.id} className="border-b border-line/60 align-middle">
+                      <td className="px-3 py-2.5 font-semibold">{r.student.name}</td>
+                      {t.isGroup && <td className="px-3 py-2.5 text-muted-foreground">{r.group?.name ?? "—"}</td>}
+                      <td className="px-3 py-2.5"><Badge variant={STATUS_BADGE[r.state] ?? "outline"}>{SUBMIT_STATE_LABEL[r.state] ?? r.state}</Badge></td>
+                      <td className="px-3 py-2.5 text-xs text-muted-foreground">{r.submittedAt ? new Date(r.submittedAt).toLocaleString("id-ID", { dateStyle: "short", timeStyle: "short" }) : "—"}</td>
+                      <td className="px-3 py-2.5">
+                        <div className="flex flex-wrap gap-1">
+                          {r.files.map((f) => (
+                            <a key={f.name} href={`/api/task-files/${t.id}/${encodeURIComponent(f.name)}`} className="rounded-full border border-line px-2 py-0.5 text-[10px] font-bold hover:bg-paper" title={f.name}>
+                              {cats.find((c) => c.id === f.categoryId)?.name ?? "file"}
+                            </a>
+                          ))}
+                          {r.hasText && <span className="rounded-full bg-paper px-2 py-0.5 text-[10px] font-bold">teks</span>}
+                          {r.files.length + (r.hasText ? 1 : 0) === 0 && <span className="text-xs text-muted-foreground">—</span>}
+                        </div>
+                      </td>
+                      <td className="px-3 py-2.5">
+                        <Input
+                          className="h-8 w-16"
+                          inputMode="numeric"
+                          defaultValue={r.score ?? ""}
+                          placeholder="0-100"
+                          onChange={(e) => setSavedScore((p) => ({ ...p, [r.student.id]: e.target.value }))}
+                          onKeyDown={(e) => { if (e.key === "Enter") void saveScore(r); }}
+                          aria-label={`Nilai ${r.student.name}`}
+                        />
+                      </td>
+                      <td className="px-3 py-2.5">
+                        {(r.state === "BELUM" || r.state === "TUTUP") && (
+                          <Button variant="ghost" size="icon-sm" onClick={() => { setNudgeTarget(r); setNudgeResult(null); }} aria-label={`Ingatkan ${r.student.name}`}>
+                            <BellIcon className="size-4" />
+                          </Button>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            {/* Versi kartu mobile */}
+            <div className="divide-y divide-line sm:hidden">
+              {rows.map((r) => (
+                <div key={r.student.id} className="space-y-2 p-4">
+                  <div className="flex items-center justify-between gap-2">
+                    <p className="font-bold">{r.student.name}</p>
+                    <Badge variant={STATUS_BADGE[r.state] ?? "outline"}>{SUBMIT_STATE_LABEL[r.state] ?? r.state}</Badge>
+                  </div>
+                  {t.isGroup && r.group && <p className="text-xs text-muted-foreground">Kelompok: {r.group.name}</p>}
+                  <p className="text-xs text-muted-foreground">{r.submittedAt ? new Date(r.submittedAt).toLocaleString("id-ID") : "Belum mengumpulkan"}</p>
+                  <div className="flex flex-wrap gap-1">
+                    {r.files.map((f) => (
+                      <a key={f.name} href={`/api/task-files/${t.id}/${encodeURIComponent(f.name)}`} className="rounded-full border border-line px-2 py-0.5 text-[10px] font-bold">
+                        {cats.find((c) => c.id === f.categoryId)?.name ?? "file"}
+                      </a>
+                    ))}
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Input className="h-8 w-20" inputMode="numeric" defaultValue={r.score ?? ""} placeholder="Nilai"
+                      onChange={(e) => setSavedScore((p) => ({ ...p, [r.student.id]: e.target.value }))}
+                      onKeyDown={(e) => { if (e.key === "Enter") void saveScore(r); }} aria-label={`Nilai ${r.student.name}`} />
+                    {(r.state === "BELUM" || r.state === "TUTUP") && (
+                      <Button variant="ghost" size="sm" onClick={() => { setNudgeTarget(r); setNudgeResult(null); }}>
+                        <BellIcon className="size-4" /> Ingatkan
+                      </Button>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+            {roster.loading && !roster.data && <div className="p-4"><Skeleton className="h-40 w-full" /></div>}
+            {roster.data && rows.length === 0 && <p className="p-6 text-center text-sm text-muted-foreground">Tidak ada siswa pada filter ini.</p>}
+          </div>
+        </TabsContent>
+
+        {/* ---- Kelompok ---- */}
+        {t.isGroup && (
+          <TabsContent value="kelompok">
+            <div className="card p-5">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <div>
+                  <h2 className="font-extrabold">Kelompok</h2>
+                  <p className="text-sm text-muted-foreground">Aturan {t.groupMin}–{t.groupMax} anggota. Guru bisa mengubah kapan pun.</p>
+                </div>
+                <Button variant="sticker-ghost" onClick={() => setGroupOpen(true)}><UsersIcon className="size-4" /> Kelola kelompok</Button>
+              </div>
+            </div>
+          </TabsContent>
         )}
-      </Panel>
-      <Panel style={{ marginBottom: 16 }}>
-        <h2 className="display" style={{ fontSize: 18, margin: "0 0 12px" }}>Tambah materi</h2>
-        <form onSubmit={tambahMateri} style={{ display: "grid", gap: 12, maxWidth: 560 }}>
-          <label style={{ display: "grid", gap: 6, fontSize: 13, color: "#74746d" }}>
-            Jenis:
-            <TextSelect value={mKind} onChange={(e) => setMKind(e.target.value)}>
-              <option value="TEXT">Teks</option>
-              <option value="FILE">File</option>
-              <option value="IMAGE">Gambar</option>
-            </TextSelect>
-          </label>
-          {mKind === "TEXT" ? (
-            <label style={{ display: "grid", gap: 6, fontSize: 13, color: "#74746d" }}>
-              Isi materi:
-              <textarea value={mText} onChange={(e) => setMText(e.target.value)} required rows={3} style={{ borderRadius: 14, border: "1px solid rgba(23,23,22,.25)", background: "#fffdf8", padding: "9px 14px", fontSize: 14 }} />
+
+        {/* ---- Pengaturan ---- */}
+        <TabsContent value="pengaturan">
+          <div className="grid gap-3 lg:grid-cols-2">
+            <div className="card space-y-3 p-5">
+              <h2 className="font-extrabold">Edit tugas</h2>
+              <div className="grid gap-1.5">
+                <Label htmlFor="ed-title">Judul</Label>
+                <Input id="ed-title" value={edit.title || t.title} onChange={(e) => setEdit((p) => ({ ...p, title: e.target.value }))} maxLength={200} />
+              </div>
+              <div className="grid gap-1.5">
+                <Label htmlFor="ed-instr">Instruksi (markdown)</Label>
+                <Textarea id="ed-instr" rows={6} value={edit.instruction || t.instruction} onChange={(e) => setEdit((p) => ({ ...p, instruction: e.target.value }))} />
+              </div>
+              <div className="grid gap-1.5">
+                <Label htmlFor="ed-deadline">Tenggat</Label>
+                <Input id="ed-deadline" type="datetime-local" value={edit.deadline || (t.deadline ? new Date(t.deadline).toISOString().slice(0, 16) : "")} onChange={(e) => setEdit((p) => ({ ...p, deadline: e.target.value }))} />
+              </div>
+              <label className="flex items-center gap-2 text-sm font-medium">
+                <Checkbox checked={edit.allowLate || t.allowLate} onCheckedChange={(v) => setEdit((p) => ({ ...p, allowLate: v === true }))} />
+                Boleh terlambat
+              </label>
+              <Button variant="sticker" onClick={() => void simpanPengaturan()}>Simpan</Button>
+              {editMsg && <p className="text-sm font-bold text-olive-deep">{editMsg}</p>}
+            </div>
+            <div className="card space-y-3 p-5">
+              <h2 className="font-extrabold">Materi & kategori</h2>
+              <ul className="space-y-1 text-sm">
+                {(t.materials ?? []).map((m) => (
+                  <li key={m.id} className="flex items-center justify-between gap-2">
+                    <span className="truncate">{m.kind === "TEXT" ? m.text?.slice(0, 60) : m.fileName}</span>
+                    <Button variant="ghost" size="icon-xs" aria-label="Hapus materi"
+                      onClick={async () => { await api(`/api/tasks/${t.id}/materials/${m.id}`, { method: "DELETE" }); detail.reload(); }}>
+                      <Trash2Icon className="size-3.5" />
+                    </Button>
+                  </li>
+                ))}
+              </ul>
+              <p className="text-xs text-muted-foreground">Tambah materi/kategori dari wizard "Tugas baru" atau tombol edit di daftar tugas.</p>
+              <h3 className="pt-2 font-extrabold">Status</h3>
+              <div className="flex gap-2">
+                {t.status === "DRAFT" ? (
+                  <Button variant="sticker" onClick={() => void terbitkan(true)}>Terbitkan</Button>
+                ) : (
+                  <Button variant="outline" onClick={() => void terbitkan(false)}>Batalkan terbit</Button>
+                )}
+                <AlertDialog>
+                  <AlertDialogTrigger render={<Button variant="destructive" />}>Hapus tugas</AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Hapus tugas ini?</AlertDialogTitle>
+                      <AlertDialogDescription>Tugas dan semua materi akan dihapus permanen. Hanya bisa bila belum ada pengumpulan.</AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Batal</AlertDialogCancel>
+                      <AlertDialogAction onClick={() => void hapusTugas()}>Hapus</AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+              </div>
+            </div>
+          </div>
+        </TabsContent>
+      </Tabs>
+
+      {/* Dialog pratinjau pengingat */}
+      <Dialog open={!!nudgeTarget} onOpenChange={(o) => { if (!o) { setNudgeTarget(null); setNudgeResult(null); } }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Kirim pengingat</DialogTitle>
+            <DialogDescription>
+              {nudgeTarget === "massal" ? `Kirim ke semua siswa yang belum mengumpulkan (${missingCount} siswa).` : `Kirim ke ${nudgeTarget ? nudgeTarget.student.name : ""}.`}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="rounded-2xl border border-line bg-paper p-3 text-sm">
+            "Yth. Bapak/Ibu, mohon bantuan mengingatkan ananda … tugas "{t.title}" berbatas … WIB …"
+            <p className="mt-2 text-xs text-muted-foreground">Pesan lengkap otomatis menyebut nama anak, judul, tenggat WIB, dan tautan masuk.</p>
+          </div>
+          <div className="space-y-2">
+            <label className="flex items-center gap-2 text-sm font-medium"><Checkbox checked={nudgeInapp} onCheckedChange={(v) => setNudgeInapp(v === true)} /> Notifikasi dalam aplikasi</label>
+            <label className="flex items-center gap-2 text-sm font-medium">
+              <Checkbox checked={nudgeWa} onCheckedChange={(v) => setNudgeWa(v === true)} disabled={!waReady.data?.connected} />
+              WhatsApp orang tua {!waReady.data?.connected && <span className="text-xs text-destructive">(sesi WhatsApp putus)</span>}
             </label>
-          ) : (
-            <label style={{ display: "grid", gap: 6, fontSize: 13, color: "#74746d" }}>
-              File:
-              <input type="file" onChange={(e) => setMFile(e.target.files?.[0] ?? null)} />
-            </label>
+          </div>
+          {nudgeResult && (
+            <p className="text-sm font-bold text-olive-deep">
+              {nudgeResult.summary ? `Terkirim: ${nudgeResult.summary.total} · WA masuk antrean: ${nudgeResult.summary.waQueued}${nudgeResult.summary.noPhone.length ? ` · tanpa nomor ortu: ${nudgeResult.summary.noPhone.join(", ")}` : ""}` : "Gagal mengirim."}
+            </p>
           )}
-          <label style={{ display: "flex", gap: 8, alignItems: "center", fontSize: 14 }}>
-            <input type="checkbox" checked={mMain} onChange={(e) => setMMain(e.target.checked)} /> Materi utama
-          </label>
-          <label style={{ display: "flex", gap: 8, alignItems: "center", fontSize: 14 }}>
-            <input type="checkbox" checked={mExample} onChange={(e) => setMExample(e.target.checked)} /> Contoh untuk kategori {t.task.type}
-          </label>
-          <Toolbar><Btn type="submit">Tambah materi</Btn></Toolbar>
-        </form>
-      </Panel>
-      <Panel style={{ marginBottom: 16 }}>
-        <h2 className="display" style={{ fontSize: 18, margin: "0 0 12px" }}>Chart nilai</h2>
-        <ScoreChart subs={t.submissions} />
-      </Panel>
-      <Panel style={{ marginBottom: 16 }}>
-        <h2 className="display" style={{ fontSize: 18, margin: "0 0 12px" }}>Pengumpulan</h2>
-        {t.submissions.length === 0 && <Note>Belum ada yang mengumpulkan.</Note>}
-        {t.submissions.length > 0 && (
-          <WarmTable head={["Nama", "Waktu", "Terlambat", "File/Link", "Nilai", "Beri nilai"]}>
-            {t.submissions.map((s) => (
-              <tr key={s.id}>
-                <td style={warmCell({ fontWeight: 700 })}>{s.student.name}</td>
-                <td style={warmCell({ whiteSpace: "nowrap" })}>{new Date(s.submittedAt).toLocaleString("id-ID")}</td>
-                <td style={warmCell()}>{s.isLate ? <Badge status="TERLAMBAT">Ya</Badge> : "Tidak"}</td>
-                <td style={warmCell()}>
-                  {s.fileName && <a href={`/api/task-files/${t.task.id}/${s.fileName}`}>unduh</a>}
-                  {s.link && <> <a href={s.link} target="_blank" rel="noreferrer">tautan</a></>}
-                  {s.text && <span> (teks)</span>}
-                </td>
-                <td style={warmCell({ fontWeight: 700 })}>{s.score ?? "-"}</td>
-                <td style={warmCell()}>
-                  <span style={{ display: "flex", gap: 6, flexWrap: "wrap", flexDirection: "row" }}>
-                    <TextInput
-                      type="number" min={0} max={100} placeholder="0-100" style={{ width: 80 }}
-                      value={grades[s.id]?.score ?? ""}
-                      onChange={(e) => setGrades({ ...grades, [s.id]: { score: e.target.value, feedback: grades[s.id]?.feedback ?? "" } })}
-                    />
-                    <TextInput
-                      placeholder="umpan balik" style={{ minWidth: 120, flex: 1 }}
-                      value={grades[s.id]?.feedback ?? ""}
-                      onChange={(e) => setGrades({ ...grades, [s.id]: { score: grades[s.id]?.score ?? "", feedback: e.target.value } })}
-                    />
-                    <Btn kind="ghost" type="button" onClick={() => nilai(s.id)}>Simpan</Btn>
-                  </span>
-                </td>
-              </tr>
-            ))}
-          </WarmTable>
-        )}
-      </Panel>
-      <Panel>
-        <h2 className="display" style={{ fontSize: 18, margin: "0 0 12px" }}>Belum mengumpulkan ({t.pending.length})</h2>
-        {t.pending.length === 0 && <Note>Semua sudah mengumpulkan.</Note>}
-        {t.pending.length > 0 && (
-          <ul style={{ margin: 0, paddingLeft: 18, display: "grid", gap: 4, fontSize: 14 }}>
-            {t.pending.map((p) => (
-              <li key={p.id}>{p.name}</li>
-            ))}
-          </ul>
-        )}
-      </Panel>
-      <GroupSheet taskId={t.task.id} open={sheet} onClose={() => setSheet(false)} />
-    </>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => { setNudgeTarget(null); setNudgeResult(null); }}>Tutup</Button>
+            <Button onClick={() => void kirimNudge()} disabled={nudgeBusy || (!nudgeInapp && !nudgeWa)}>{nudgeBusy ? "Mengirim…" : "Kirim pengingat"}</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <GroupSheet taskId={t.id} mode="teacher" open={groupOpen} onOpenChange={setGroupOpen} onChanged={() => { roster.reload(); detail.reload(); }} />
+    </div>
   );
 }
