@@ -11,9 +11,9 @@ const Map = dynamic(() => import("./Map"), { ssr: false });
 const PopularBooks = dynamic(() => import("./PopularBooks"), { ssr: false });
 import AuthCta from "./AuthCta";
 
-import { Glyph, GlyphBadge, type GlyphName } from "../../components/Glyph";
+import { Glyph } from "../../components/Glyph";
 // Landing publik per sekolah. LAYOUT mengikuti referensi edukids
-// (hero 3 kolom + orbit, intro split, 3 kartu fitur, grid mapel, pengumuman,
+// (hero 3 kolom + orbit, intro split, pengumuman,
 // panel CTA olive, footer gelap). ISI = data asli sekolah (portal/info),
 // tanpa angka khayalan: kosong = ajakan.
 type PortalInfo = {
@@ -23,11 +23,7 @@ type PortalInfo = {
   ctaMuridUrl: string | null;
   announcements: { id: string; title: string; body: string; publishAt: string }[];
   counts: { students: number; teachers: number; classes: number };
-  subjects: { id: string; name: string }[];
 };
-
-const SUBJECT_COLORS = ["#e85e43", "#f5c94a", "#97c4db", "#aec6a4"];
-const SUBJECT_GLYPH: GlyphName[] = ["sigma", "textAa", "spark", "target"];
 
 export default function PortalPage() {
   const info = useFetch<PortalInfo>("/api/portal/info");
@@ -38,7 +34,6 @@ export default function PortalPage() {
   }, [info.data, nama]);
   const ann = info.data?.announcements ?? [];
   const counts = info.data?.counts;
-  const subjects = info.data?.subjects ?? [];
 
   return (
     <div style={{ background: "#eeeadd", minHeight: "100vh" }}>
@@ -64,8 +59,6 @@ export default function PortalPage() {
           <PublicLogo name={nama} />
           <nav style={{ display: "flex", gap: "clamp(18px, 3vw, 44px)", marginLeft: "auto", fontSize: 12, fontWeight: 600 }} className="portal-nav">
             <a href="#tentang" style={{ color: "#575752", textDecoration: "none" }}>Tentang</a>
-            <a href="#program" style={{ color: "#575752", textDecoration: "none" }}>Program</a>
-            <a href="#mapel" style={{ color: "#575752", textDecoration: "none" }}>Mapel</a>
             <a href="#pengumuman" style={{ color: "#575752", textDecoration: "none" }}>Pengumuman</a>
             <a href="#lokasi" style={{ color: "#575752", textDecoration: "none" }}>Lokasi</a>
             <a href="/perkakas" style={{ color: "#575752", textDecoration: "none" }}>Tools</a>
@@ -77,7 +70,7 @@ export default function PortalPage() {
             <details className="portal-burger" style={{ position: "relative" }}>
               <summary aria-label="Buka menu" style={{ listStyle: "none", cursor: "pointer", display: "grid", placeItems: "center", width: 40, height: 40, border: "1px solid #171716", borderRadius: "50%", background: "#fffdf8", userSelect: "none" }}><Glyph name="menu" size={18} /></summary>
               <nav style={{ position: "absolute", right: 0, top: 48, display: "flex", flexDirection: "column", gap: 4, minWidth: 200, padding: 10, background: "#fffdf8", border: "1px solid #171716", borderRadius: 16, boxShadow: "0 8px 24px rgba(23,23,22,.15)", zIndex: 50 }}>
-                {[["Tentang", "#tentang"], ["Program", "#program"], ["Mapel", "#mapel"], ["Pengumuman", "#pengumuman"], ["Lokasi", "#lokasi"], ["Tools", "/perkakas"], ["Pesan Anonim", "/anonim"]].map(([label, href]) => (
+                {[["Tentang", "#tentang"], ["Pengumuman", "#pengumuman"], ["Lokasi", "#lokasi"], ["Tools", "/perkakas"], ["Pesan Anonim", "/anonim"]].map(([label, href]) => (
                   <a key={href} href={href} style={{ padding: "10px 14px", borderRadius: 10, color: "#171716", fontSize: 13, fontWeight: 700, textDecoration: "none" }}>{label}</a>
                 ))}
               </nav>
@@ -185,81 +178,10 @@ export default function PortalPage() {
                   {nama} mendampingi siswa belajar setiap hari: tugas, asesmen, kehadiran,
                   dan kabar sekolah, semua tercatat rapi dalam satu dasbor.
                 </p>
-                <a href="#program" style={{ color: "#171716", fontSize: 12, fontWeight: 700, textDecoration: "none" }}>Lihat program kami <Glyph name="arrowUpRight" size={12} /></a>
+                <a href="#pengumuman" style={{ color: "#171716", fontSize: 12, fontWeight: 700, textDecoration: "none" }}>Lihat kabar sekolah <Glyph name="arrowUpRight" size={12} /></a>
               </div>
             </div>
           </Reveal>
-        </section>
-
-        {/* 3 KARTU FITUR */}
-        <section id="program" style={{ background: "#fffdf8", padding: "104px clamp(24px, 7vw, 112px)" }}>
-          <Reveal>
-            <div className="portal-split" style={{ marginBottom: 45 }}>
-              <h2 className="display" style={{ fontSize: "clamp(38px, 5.2vw, 72px)" }}>
-                Kecil-kecil,<br /><span style={{ color: "#e85e43" }}>berani besar.</span>
-              </h2>
-              <p style={{ maxWidth: 245, color: "#575752", fontSize: 12, lineHeight: 1.7 }}>
-                Tiga hal yang membuat belajar di {nama} terasa dekat dan ingin diulang.
-              </p>
-            </div>
-          </Reveal>
-          <div className="portal-trio">
-            {[
-              { bg: "#e85e43", fg: "#fffdf8", glyph: "sun" as GlyphName, title: "Tugas & materi", desc: "Tugas, materi, dan pengumpulan terpantau guru setiap hari." },
-              { bg: "#71845a", fg: "#fffdf8", glyph: "spark" as GlyphName, title: "Asesmen adil", desc: "Kuis dan ujian dengan soal acak per siswa, dinilai otomatis." },
-              { bg: "#97c4db", fg: "#171716", glyph: "infinity" as GlyphName, title: "Kehadiran rapi", desc: "Absensi QR, izin berfoto, dan rekap bulanan siap unduh." },
-            ].map((f, i) => (
-              <Reveal key={f.title} delay={i * 120}>
-                <article
-                  className="card-lift"
-                  style={{ position: "relative", minHeight: 340, padding: "27px 27px 30px", borderRadius: 34, overflow: "hidden", background: f.bg, color: f.fg }}
-                >
-                  <div style={{ fontFamily: "var(--font-meta)", fontSize: 11, opacity: 0.68 }}>0{i + 1}</div>
-                  <GlyphBadge name={f.glyph} box={73} size={34} />
-                  <h3 className="display" style={{ fontSize: "clamp(22px, 2.1vw, 31px)", color: f.fg }}>{f.title}</h3>
-                  <p style={{ maxWidth: 250, marginTop: 16, fontSize: 12, lineHeight: 1.65, opacity: 0.78 }}>{f.desc}</p>
-                  <a href="/login" aria-label={f.title} style={{ position: "absolute", right: 27, bottom: 27, display: "grid", placeItems: "center", width: 35, height: 35, border: "1px solid currentColor", borderRadius: "50%", color: "inherit", textDecoration: "none" }}><Glyph name="arrowUpRight" size={17} /></a>
-                </article>
-              </Reveal>
-            ))}
-          </div>
-        </section>
-
-        {/* MAPEL */}
-        <section id="mapel" style={{ padding: "104px clamp(24px, 7vw, 112px)" }}>
-          <div className="portal-split" style={{ alignItems: "center" }}>
-            <Reveal>
-              <div>
-                <p className="kicker" style={{ marginBottom: 20 }}>Peta belajar</p>
-                <h2 className="display" style={{ fontSize: "clamp(38px, 5.2vw, 72px)" }}>
-                  Satu tempat,<br /><span style={{ color: "#e85e43" }}>seribu kemungkinan.</span>
-                </h2>
-                <p style={{ maxWidth: 390, margin: "26px 0 29px", color: "#575752", fontSize: 13, lineHeight: 1.75 }}>
-                  {subjects.length > 0
-                    ? `Ada ${subjects.length} mata pelajaran aktif semester ini. Masuk untuk melihat tugas dan nilaimu.`
-                    : "Jadwal dan mata pelajaran diatur admin sekolah. Masuk untuk melihat kelasmu."}
-                </p>
-                <AuthCta className="btn-sticker btn-ghost" style={{ textDecoration: "none" }} loginLabel="Masuk dasbor" />
-              </div>
-            </Reveal>
-            <Reveal delay={120}>
-              <div className="portal-duo">
-                {(subjects.length > 0 ? subjects.slice(0, 4).map((s) => s.name) : ["Matematika", "Bahasa Indonesia", "IPA", "IPS"]).slice(0, 4).map((label, i) => (
-                  <div
-                    key={label}
-                    className="card-lift"
-                    style={{ position: "relative", display: "flex", flexDirection: "column", justifyContent: "space-between", minHeight: 205, padding: 22, borderRadius: 24, overflow: "hidden", background: SUBJECT_COLORS[i % 4], border: subjects.length > 0 ? undefined : "2px dashed rgba(23,23,22,.35)" }}
-                  >
-                    <span style={{ display: "grid", placeItems: "center", width: 56, height: 56, border: "1px solid currentColor", borderRadius: "50%" }}><Glyph name={SUBJECT_GLYPH[i % 4]} size={23} /></span>
-                    <span style={{ fontSize: 15, fontWeight: 700, letterSpacing: "-0.04em" }}>{label}</span>
-                    {subjects.length === 0 && (
-                      <span style={{ fontFamily: "var(--font-meta)", fontSize: 9, textTransform: "uppercase", opacity: 0.7 }}>segera hadir</span>
-                    )}
-                  </div>
-                ))}
-              </div>
-            </Reveal>
-          </div>
         </section>
 
         {/* PENGUMUMAN */}
@@ -380,9 +302,7 @@ export default function PortalPage() {
               <div>
                 <span>Jelajah</span>
                 <a href="#tentang">Tentang</a>
-                <a href="#program">Program</a>
-                <a href="#mapel">Mapel</a>
-              </div>
+                </div>
               <div>
                 <span>Sekolah</span>
                 <a href="#pengumuman">Pengumuman</a>
