@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
+import { Eye, EyeOff } from "lucide-react";
 import { ROLE_HOME } from "@sms/shared/auth";
 import PublicLogo from "@/components/PublicLogo";
 
@@ -15,6 +16,7 @@ export default function LoginPage() {
   const [schoolName, setSchoolName] = useState<string | undefined>(undefined);
   const [notice, setNotice] = useState("");
   const [setuju, setSetuju] = useState(false);
+  const [showPw, setShowPw] = useState(false);
 
   function safeNext(): string | null {
     try {
@@ -151,7 +153,18 @@ export default function LoginPage() {
             </label>
             <label style={{ fontSize: 13, fontWeight: 700 }}>
               Kata sandi
-              <input type="password" id="password" value={password} onChange={(e) => setPassword(e.target.value)} autoComplete="current-password" required style={input} />
+              <span style={{ position: "relative", display: "block", marginTop: 6 }}>
+                <input type={showPw ? "text" : "password"} id="password" value={password} onChange={(e) => setPassword(e.target.value)} autoComplete="current-password" required style={{ ...input, marginTop: 0, paddingRight: 52 }} />
+                <button
+                  type="button"
+                  onClick={() => setShowPw((v) => !v)}
+                  aria-label={showPw ? "Sembunyikan kata sandi" : "Tampilkan kata sandi"}
+                  aria-pressed={showPw}
+                  style={{ position: "absolute", right: 4, top: "50%", transform: "translateY(-50%)", width: 44, height: 44, display: "grid", placeItems: "center", border: "none", borderRadius: 12, background: "transparent", color: "#575752", cursor: "pointer" }}
+                >
+                  {showPw ? <EyeOff size={20} /> : <Eye size={20} />}
+                </button>
+              </span>
             </label>
             {error && <p role="alert" style={{ color: "#c94b35", fontSize: 13, margin: 0 }}>{error}</p>}
             <label style={{ display: "flex", gap: 10, alignItems: "flex-start", fontSize: 12.5, fontWeight: 400, lineHeight: 1.6, color: "#575752", cursor: "pointer" }}>
