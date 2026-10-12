@@ -222,7 +222,7 @@ export function parseMultiQuestions(raw: string): { questions: ParsedQ[]; errors
 }
 
 /** Contoh format untuk placeholder textarea guru. */
-export const PLACEHOLDER_EXAMPLE = `1. Ibu kota negara Indonesia adalah...
+export const PLACEHOLDER_EXAMPLE = `1. Ibu kota negara adalah...
 a Surabaya
 b Jakarta (BENAR)
 c Bandung
@@ -233,7 +233,7 @@ a Evaporasi
 b Kondensasi
 c Presipitasi
 
-3. Indonesia merdeka pada tahun 1945 (BENAR/SALAH)
+3. Air mendidih pada suhu 100°C (BENAR/SALAH)
 a Benar (BENAR)
 b Salah
 

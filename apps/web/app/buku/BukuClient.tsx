@@ -61,10 +61,10 @@ export default function BukuClient({ schoolName }: { schoolName: string }) {
         <Reveal>
           <p className="kicker">Koleksi Terbuka</p>
           <h1 className="display" style={{ fontSize: "clamp(36px, 5vw, 64px)", margin: "8px 0 12px" }}>
-            E-Book Sejarah & <span style={{ color: "#e85e43" }}>Indonesia.</span>
+            E-Book & <span style={{ color: "#e85e43" }}>Materi Pelajaran.</span>
           </h1>
           <p style={{ color: "#74746d", maxWidth: 580 }}>
-            {searching ? "Hasil penelusuran arsip sejarah & materi Indonesia." : "Buku teks resmi Kemendikbud & literatur sejarah Indonesia gratis. Dilengkapi sampul & baca langsung."}
+            {searching ? "Hasil penelusuran arsip & materi pelajaran." : "Buku teks resmi Kemendikbud & literatur pelajaran gratis. Dilengkapi sampul & baca langsung."}
           </p>
         </Reveal>
 
@@ -72,7 +72,7 @@ export default function BukuClient({ schoolName }: { schoolName: string }) {
           <input
             value={q}
             onChange={(e) => setQ(e.target.value)}
-            placeholder="Cari buku sejarah, kemerdekaan, tokoh, dsb…"
+            placeholder="Cari buku, materi, tokoh, dsb…"
             aria-label="Cari buku"
             style={{ flex: 1, minWidth: 200, borderRadius: 999, border: "1px solid rgba(23,23,22,.3)", background: "#fffdf8", padding: "10px 18px", fontSize: 14, color: "#171716" }}
           />
@@ -88,7 +88,7 @@ export default function BukuClient({ schoolName }: { schoolName: string }) {
         {msg && <p role="status" aria-live="polite" style={{ color: "#74746d", fontSize: 13 }}>{msg}</p>}
 
         {popular.loading && !searching ? (
-          <p role="status" style={{ color: "#74746d" }}>Memuat katalog buku sejarah…</p>
+          <p role="status" style={{ color: "#74746d" }}>Memuat katalog buku…</p>
         ) : popular.error && !searching ? (
           <div className="card" style={{ padding: 28 }}><p role="alert" style={{ color: "#c94b35", margin: "0 0 12px" }}>Katalog gagal dimuat. Periksa koneksi lalu coba lagi.</p><button type="button" className="btn-sticker btn-ghost" onClick={popular.reload}>Coba lagi</button></div>
         ) : items.length === 0 ? (
@@ -128,7 +128,7 @@ function BookCard({ b, color }: { b: Book; color: string }) {
         </div>
       )}
       <span className="book-tag" style={{ alignSelf: "flex-start", background: "#fffdf8", padding: "2px 8px", borderRadius: 99, fontSize: 11, fontWeight: 600, border: "1px solid #171716", marginBottom: 6 }}>
-        {b.subject ?? "Sejarah"}
+        {b.subject ?? "Umum"}
       </span>
       <strong style={{ fontSize: 15, lineHeight: 1.3, color: "#171716", marginBottom: 6, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>
         {b.title}
