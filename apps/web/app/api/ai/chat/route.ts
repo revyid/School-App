@@ -98,6 +98,107 @@ async function askAI(
   throw new Error(lastErr || "router gagal");
 }
 
+// Varian stream (SSE): token diteruskan ke client apa adanya via onToken.
+async function askAIStream(
+  systemPrompt: string,
+  userMsg: string,
+  maxTokens = 600,
+  history: { role: "user" | "assistant"; content: string }[] = [],
+  onToken: (token: string) => void
+): Promise<string> {
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), 55000);
+  try {
+    const aiRes = await fetch(`${AI_ROUTER_BASE}/chat/completions`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${AI_ROUTER_KEY}`,
+      },
+      body: JSON.stringify({
+        model: AI_MODEL,
+        stream: true,
+        messages: [
+          { role: "system", content: systemPrompt },
+          ...history,
+          { role: "user", content: userMsg },
+        ],
+        temperature: 0.6,
+        max_tokens: maxTokens,
+      }),
+      signal: ctrl.signal,
+    }).finally(() => clearTimeout(timer));
+    if (!aiRes.ok || !aiRes.body) {
+      const t = await aiRes.text().catch(() => "");
+      throw new Error(`router ${aiRes.status} ${t.slice(0, 120)}`);
+    }
+    const reader = aiRes.body.getReader();
+    const dec = new TextDecoder();
+    let buf = "";
+    let full = "";
+    for (;;) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      buf += dec.decode(value, { stream: true });
+      const lines = buf.split("\n");
+      buf = lines.pop() ?? "";
+      for (const line of lines) {
+        const t = line.trim();
+        if (!t.startsWith("data:")) continue;
+        const payload = t.slice(5).trim();
+        if (!payload || payload === "[DONE]") continue;
+        try {
+          const j = JSON.parse(payload);
+          const delta: unknown =
+            j?.choices?.[0]?.delta?.content ?? j?.choices?.[0]?.message?.content ?? "";
+          if (typeof delta === "string" && delta) {
+            full += delta;
+            onToken(delta);
+          }
+        } catch {
+          // Potongan SSE tak lengkap — abaikan, lanjut baca.
+        }
+      }
+    }
+    if (!full.trim()) throw new Error("empty-choices");
+    return full;
+  } catch (e: any) {
+    if (e?.name === "AbortError") throw new Error("timeout");
+    throw e instanceof Error ? e : new Error("router gagal");
+  }
+}
+
+// Bungkus generator stream jadi Response SSE + simpan hasil akhir.
+function streamReply(
+  run: (send: (token: string) => void) => Promise<string>,
+  save: (full: string) => Promise<void>
+) {
+  const stream = new ReadableStream({
+    async start(controller) {
+      const enc = new TextEncoder();
+      const send = (token: string) =>
+        controller.enqueue(enc.encode(`data: ${JSON.stringify({ token })}\n\n`));
+      try {
+        const full = await run(send);
+        await save(full).catch(() => {});
+        controller.enqueue(enc.encode("data: [DONE]\n\n"));
+      } catch (e: any) {
+        const h = honestError(String(e?.message ?? ""));
+        controller.enqueue(enc.encode(`data: ${JSON.stringify({ error: h.error })}\n\n`));
+      } finally {
+        controller.close();
+      }
+    },
+  });
+  return new Response(stream, {
+    headers: {
+      "content-type": "text/event-stream; charset=utf-8",
+      "cache-control": "no-cache, no-transform",
+      connection: "keep-alive",
+    },
+  });
+}
+
 export const maxDuration = 60;
 
 export async function GET(req: NextRequest) {
@@ -279,9 +380,21 @@ export async function POST(req: NextRequest) {
   // tanpa profil, tugas, nilai, kehadiran, pengumpulan, atau pengumuman non-publik siapa pun.
   const pub = await publicSiteInfo(a.school.id, a.school.name);
   const systemPrompt = siteGuidePrompt(pub, a.role);
+  const sess0 = await getOrCreateSession(a.school.id, a.userId);
+  const hist = await recentHistory(a.school.id, sess0.id);
+  const wantsStream = new URL(req.url).searchParams.get("stream") === "1";
+  if (wantsStream) {
+    return streamReply(
+      (send) => askAIStream(systemPrompt, userMsg, 600, hist, send),
+      async (full) => {
+        const sess = await getOrCreateSession(a.school.id, a.userId);
+        await saveMsg(a.school.id, sess.id, "user", userMsg).catch(() => {});
+        await saveMsg(a.school.id, sess.id, "assistant", full).catch(() => {});
+      }
+    );
+  }
   try {
     const sess = await getOrCreateSession(a.school.id, a.userId);
-    const hist = await recentHistory(a.school.id, sess.id);
     const reply = await askAI(systemPrompt, userMsg, 600, hist);
     await saveMsg(a.school.id, sess.id, "user", userMsg).catch(() => {});
     await saveMsg(a.school.id, sess.id, "assistant", reply).catch(() => {});

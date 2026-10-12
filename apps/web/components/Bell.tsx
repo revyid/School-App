@@ -224,6 +224,9 @@ export default function Bell() {
   useEffect(() => {
     if (!open) return;
     const handler = (e: MouseEvent) => {
+      const t = e.target as HTMLElement;
+      // Klik di popup detail / toast bukan klik-luar: inbox tetap terbuka.
+      if (t.closest?.('[role="dialog"]') || t.closest?.(".swipe-toast")) return;
       if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
     };
     document.addEventListener("mousedown", handler);
@@ -388,12 +391,12 @@ export default function Bell() {
             {/* List notifikasi */}
             <ul style={{ margin: 0, padding: 0, listStyle: "none", maxHeight: 340, overflowY: "auto" }}>
               {!data && (
-                <li style={{ padding: "20px 18px", color: "#74746d", fontSize: 13 }}>
+                <li style={{ padding: "20px 18px", color: "#74746d", fontSize: 13, textAlign: "left" }}>
                   Memuat notifikasi…
                 </li>
               )}
               {data && localRows.length === 0 && (
-                <li style={{ padding: "24px 18px", color: "#74746d", fontSize: 13, textAlign: "center" }}>
+                <li style={{ padding: "24px 18px", color: "#74746d", fontSize: 13, textAlign: "left" }}>
                   Belum ada notifikasi.
                 </li>
               )}
@@ -441,6 +444,9 @@ export default function Bell() {
                           fontSize: 13,
                           lineHeight: 1.4,
                           color: "#171716",
+                          textAlign: "left",
+                          overflowWrap: "anywhere",
+                          wordBreak: "break-word",
                         }}
                       >
                         {n.title}
@@ -555,7 +561,7 @@ export default function Bell() {
                 >
                   Pemberitahuan
                 </span>
-                <h3 id="notification-detail-title" className="display" style={{ margin: "8px 0 2px", fontSize: 20, lineHeight: 1.25 }}>
+                <h3 id="notification-detail-title" className="display" style={{ margin: "8px 0 2px", fontSize: 20, lineHeight: 1.25, overflowWrap: "anywhere", wordBreak: "break-word" }}>
                   {activeNotif.title}
                 </h3>
                 <span style={{ fontSize: 11, color: "#74746d" }}>
@@ -599,6 +605,8 @@ export default function Bell() {
                   overflowWrap: "anywhere",
                   wordBreak: "break-word",
                 border: "1px solid rgba(23,23,22,.1)",
+                maxHeight: "38vh",
+                overflowY: "auto",
               }}
             >
               {activeNotif.body}
