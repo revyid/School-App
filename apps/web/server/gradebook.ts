@@ -3,12 +3,24 @@ import { runAsSchool } from "@sms/db/tenant";
 import { guruClassIds } from "./lms-scope";
 
 export type Gradebook = {
-  tasks: { id: string; title: string }[];
-  assessments: { id: string; title: string }[];
+  tasks: { id: string; title: string; deadline: string | null }[];
+  assessments: { id: string; title: string; deadline: string | null }[];
   rows: {
-    studentId: string; name: string; nisn: string | null;
+    studentId: string;
+    name: string;
+    nisn: string | null;
     taskScores: Record<string, number | null>;
     assessScores: Record<string, number | null>;
+    taskHistory: {
+      taskId: string; title: string; state: string; deadline: string | null;
+      submittedAt: string | null; isLate: boolean; score: number | null;
+      feedback: string | null; gradedAt: string | null;
+    }[];
+    assessmentHistory: {
+      assessmentId: string; title: string; state: string; attemptId: string | null;
+      startedAt: string | null; submittedAt: string | null; score: number | null;
+      maxScore: number | null; feedback: string | null; gradedAt: string | null;
+    }[];
     avg: number | null;
   }[];
 };
@@ -34,75 +46,113 @@ export async function buildGradebook(
       take: 200,
     }));
   const ids = students.map((s) => s.userId);
-
   const tasks = await runAsSchool(db, schoolId, (tx) =>
     tx.task.findMany({
       where: { classId, ...(subjectId ? { subjectId } : {}) },
-      select: { id: true, title: true },
+      select: { id: true, title: true, deadline: true, allowLate: true },
       take: 200,
     }));
-  const subs = ids.length > 0
-    ? await runAsSchool(db, schoolId, (tx) =>
-      tx.submission.findMany({
-        where: { studentId: { in: ids }, taskId: { in: tasks.map((t) => t.id) } },
-        select: { studentId: true, taskId: true, score: true },
-        take: 5000,
-      }))
-    : [];
-
   const assessments = await runAsSchool(db, schoolId, (tx) =>
     tx.assessment.findMany({
       where: { classId, ...(subjectId ? { subjectId } : {}) },
-      select: { id: true, title: true },
+      select: { id: true, title: true, deadline: true },
       take: 200,
     }));
-  const attempts = ids.length > 0
+
+  const submissions = ids.length && tasks.length
+    ? await runAsSchool(db, schoolId, (tx) =>
+      tx.submission.findMany({
+        where: { studentId: { in: ids }, taskId: { in: tasks.map((t) => t.id) } },
+        select: { id: true, studentId: true, taskId: true, submittedAt: true, isLate: true, score: true, feedback: true, gradedAt: true },
+        take: 10000,
+      }))
+    : [];
+  const attempts = ids.length && assessments.length
     ? await runAsSchool(db, schoolId, (tx) =>
       tx.assessAttempt.findMany({
-        where: { studentId: { in: ids }, assessmentId: { in: assessments.map((x) => x.id) }, submittedAt: { not: null } },
-        select: { studentId: true, assessmentId: true, score: true, maxScore: true },
-        take: 5000,
+        where: { studentId: { in: ids }, assessmentId: { in: assessments.map((x) => x.id) } },
+        select: { id: true, studentId: true, assessmentId: true, startedAt: true, submittedAt: true, score: true, maxScore: true, feedback: true, gradedAt: true },
+        take: 10000,
       }))
     : [];
 
-  const subByKey = new Map(subs.map((s) => [`${s.studentId}:${s.taskId}`, s]));
-  const attByKey = new Map(attempts.map((t) => [`${t.studentId}:${t.assessmentId}`, t]));
-  const rows = students.map((s) => {
+  const subByKey = new Map(submissions.map((s) => [`${s.studentId}:${s.taskId}`, s]));
+  const attemptByKey = new Map(attempts.map((a) => [`${a.studentId}:${a.assessmentId}`, a]));
+  const now = Date.now();
+  const rows = students.map((student) => {
     const taskScores: Record<string, number | null> = {};
-    let tSum = 0;
-    let tN = 0;
-    for (const t of tasks) {
-      const sub = subByKey.get(`${s.userId}:${t.id}`);
-      taskScores[t.id] = sub?.score ?? null;
-      if (sub?.score != null) {
-        tSum += sub.score;
-        tN++;
-      }
-    }
+    let taskSum = 0;
+    let taskCount = 0;
+    const taskHistory = tasks.map((task) => {
+      const submission = subByKey.get(`${student.userId}:${task.id}`);
+      taskScores[task.id] = submission?.score ?? null;
+      if (submission?.score != null) { taskSum += submission.score; taskCount++; }
+      const state = submission
+        ? (submission.isLate ? "TERKUMPUL TERLAMBAT" : "TERKUMPUL")
+        : task.deadline && task.deadline.getTime() < now
+          ? (task.allowLate ? "BELUM TERKUMPUL · LEWAT (TERIMA TELAT)" : "BELUM TERKUMPUL · LEWAT")
+          : "BELUM TERKUMPUL";
+      return {
+        taskId: task.id,
+        title: task.title,
+        state,
+        deadline: task.deadline?.toISOString() ?? null,
+        submittedAt: submission?.submittedAt.toISOString() ?? null,
+        isLate: submission?.isLate ?? false,
+        score: submission?.score ?? null,
+        feedback: submission?.feedback ?? null,
+        gradedAt: submission?.gradedAt?.toISOString() ?? null,
+      };
+    });
+
     const assessScores: Record<string, number | null> = {};
-    let aSum = 0;
-    let aN = 0;
-    for (const x of assessments) {
-      const at = attByKey.get(`${s.userId}:${x.id}`);
-      const norm = at?.score != null && at.maxScore ? Math.round((at.score / at.maxScore) * 100) : null;
-      assessScores[x.id] = norm;
-      if (norm != null) {
-        aSum += norm;
-        aN++;
-      }
-    }
+    let assessSum = 0;
+    let assessCount = 0;
+    const assessmentHistory = assessments.map((assessment) => {
+      const attempt = attemptByKey.get(`${student.userId}:${assessment.id}`);
+      const normalized = attempt?.score != null && attempt.maxScore
+        ? Math.round((attempt.score / attempt.maxScore) * 100)
+        : null;
+      assessScores[assessment.id] = attempt?.submittedAt ? normalized : null;
+      if (attempt?.submittedAt && normalized != null) { assessSum += normalized; assessCount++; }
+      const state = attempt?.submittedAt
+        ? "TERKUMPUL"
+        : attempt
+          ? assessment.deadline && assessment.deadline.getTime() < now ? "BELUM TERKUMPUL · LEWAT" : "SEDANG DIKERJAKAN"
+          : assessment.deadline && assessment.deadline.getTime() < now ? "BELUM MULAI · LEWAT" : "BELUM MULAI";
+      return {
+        assessmentId: assessment.id,
+        title: assessment.title,
+        state,
+        attemptId: attempt?.id ?? null,
+        startedAt: attempt?.startedAt.toISOString() ?? null,
+        submittedAt: attempt?.submittedAt?.toISOString() ?? null,
+        score: attempt?.submittedAt ? attempt.score : null,
+        maxScore: attempt?.submittedAt ? attempt.maxScore : null,
+        feedback: attempt?.submittedAt ? attempt.feedback : null,
+        gradedAt: attempt?.submittedAt ? attempt.gradedAt?.toISOString() ?? null : null,
+      };
+    });
+
     const parts: number[] = [];
-    if (tN > 0) parts.push(tSum / tN);
-    if (aN > 0) parts.push(aSum / aN);
+    if (taskCount > 0) parts.push(taskSum / taskCount);
+    if (assessCount > 0) parts.push(assessSum / assessCount);
     const avg = parts.length > 0 ? Math.round((parts.reduce((p, c) => p + c, 0) / parts.length) * 10) / 10 : null;
     return {
-      studentId: s.userId, name: s.user.name, nisn: s.user.nisn,
-      taskScores, assessScores, avg,
+      studentId: student.userId,
+      name: student.user.name,
+      nisn: student.user.nisn,
+      taskScores,
+      assessScores,
+      taskHistory,
+      assessmentHistory,
+      avg,
     };
   });
+
   return {
-    tasks: tasks.map((t) => ({ id: t.id, title: t.title })),
-    assessments: assessments.map((x) => ({ id: x.id, title: x.title })),
+    tasks: tasks.map((task) => ({ id: task.id, title: task.title, deadline: task.deadline?.toISOString() ?? null })),
+    assessments: assessments.map((assessment) => ({ id: assessment.id, title: assessment.title, deadline: assessment.deadline?.toISOString() ?? null })),
     rows,
   };
 }

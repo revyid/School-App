@@ -93,7 +93,13 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
       });
   }
   return NextResponse.json({
-    attempt: { id: attempt.id, submittedAt: attempt.submittedAt, score: attempt.submittedAt ? attempt.score : undefined },
+    attempt: {
+      id: attempt.id,
+      submittedAt: attempt.submittedAt,
+      score: attempt.submittedAt ? attempt.score : undefined,
+      maxScore: attempt.submittedAt ? attempt.maxScore : undefined,
+      feedback: attempt.submittedAt ? attempt.feedback : undefined,
+    },
     assessment: { id: as.id, title: as.title, instruction: as.instruction, durationMin: as.durationMin, deadline: as.deadline, kind: as.kind },
     questions: attempt.submittedAt ? [] : clientQs,
   });
@@ -136,21 +142,27 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   const optOrders = (attempt.optOrders as Record<string, number[]> | null) ?? {};
   const { perQ, score, maxScore } = gradeAttempt(qs, optOrders, body.data.answers);
   const now = new Date();
-  await runAsSchool(db, a.school.id, (tx) =>
-    tx.assessAttempt.update({
-      where: { id: attempt.id },
+  const saved = await runAsSchool(db, a.school.id, async (tx) => {
+    // Conditional write prevents two concurrent submits from overwriting one another.
+    const updated = await tx.assessAttempt.updateMany({
+      where: { id: attempt.id, submittedAt: null },
       data: { submittedAt: now, score, maxScore },
-    }));
-  for (const p of perQ) {
-    await runAsSchool(db, a.school.id, (tx) =>
-      tx.assessAnswer.upsert({
+    });
+    if (updated.count !== 1) return false;
+    for (const p of perQ) {
+      await tx.assessAnswer.upsert({
         where: { attemptId_questionId: { attemptId: attempt.id, questionId: p.questionId } },
         update: { pickedIndex: p.pickedIndex, pickedOrder: p.pickedOrder, isCorrect: p.isCorrect, points: p.points },
         create: {
           schoolId: a.school.id, attemptId: attempt.id, questionId: p.questionId,
           pickedIndex: p.pickedIndex, pickedOrder: p.pickedOrder, isCorrect: p.isCorrect, points: p.points,
         },
-      }));
+      });
+    }
+    return true;
+  });
+  if (!saved) {
+    return NextResponse.json({ error: "sudah dikumpulkan" }, { status: 409 });
   }
   await logAuth(a.school.id, "ASSESS.SUBMIT", { actorId: a.userId, meta: { id: as.id, score } });
   // EXP: nilai penuh / tepat waktu -> catat via outbox-less langsung (idempoten dedupeKey).

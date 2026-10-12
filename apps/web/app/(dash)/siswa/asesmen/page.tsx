@@ -5,30 +5,33 @@ import { useState } from "react";
 import { api, useFetch } from "@/app/lib/api";
 import { PageHead, Panel, Toolbar, Btn, Note } from "@/components/DashUI";
 import ConfirmDialog from "@/components/ConfirmDialog";
+import AssessmentStemMarkdown from "@/components/AssessmentStemMarkdown";
 
 interface Q {
   id: string; type: "MCQ" | "SORTING"; stem: string; imageUrl: string | null; options: string[];
 }
 
 export default function AsesmenSiswaPage() {
-  const { data, loading, reload } = useFetch<{ rows: { id: string; title: string; deadline: string | null }[] }>("/api/assessments");
+  const { data, loading, reload } = useFetch<{ rows: { id: string; title: string; deadline: string | null; attempt: { submittedAt: string | null; score: number | null; maxScore: number | null } | null }[] }>("/api/assessments");
   const [aid, setAid] = useState<string | null>(null);
-  const attempt = useFetch<{ attempt: { id: string; submittedAt: string | null; score?: number }; assessment: { title: string }; questions: Q[] }>(
+  const attempt = useFetch<{ attempt: { id: string; submittedAt: string | null; score?: number; maxScore?: number; feedback?: string | null }; assessment: { title: string; instruction: string | null }; questions: Q[] }>(
     aid ? `/api/assessments/${aid}/attempt` : null,
   );
   const [mcq, setMcq] = useState<Record<string, number>>({});
-  const [sort, setSort] = useState<Record<string, string[]>>({});
+  const [sort, setSort] = useState<Record<string, number[]>>({});
   const [msg, setMsg] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [confirmKumpul, setConfirmKumpul] = useState(false);
 
-  function move(qid: string, opts: string[], from: number, dir: -1 | 1) {
-    const cur = sort[qid] ?? opts;
-    const to = from + dir;
-    if (to < 0 || to >= cur.length) return;
-    const next = [...cur];
-    [next[from], next[to]] = [next[to], next[from]];
-    setSort({ ...sort, [qid]: next });
+  function move(qid: string, optionCount: number, from: number, dir: -1 | 1) {
+    setSort((previous) => {
+      const current = previous[qid] ?? Array.from({ length: optionCount }, (_, index) => index);
+      const to = from + dir;
+      if (to < 0 || to >= current.length) return previous;
+      const next = [...current];
+      [next[from], next[to]] = [next[to], next[from]];
+      return { ...previous, [qid]: next };
+    });
   }
 
   async function kumpul() {
@@ -55,8 +58,8 @@ export default function AsesmenSiswaPage() {
     // Petakan jawaban SORTING (teks) kembali ke indeks koordinat acak.
     const answers = attempt.data.questions.map((q) => {
       if (q.type === "MCQ") return { questionId: q.id, pickedIndex: mcq[q.id] ?? null };
-      const cur = sort[q.id] ?? q.options;
-      return { questionId: q.id, pickedOrder: cur.map((t) => q.options.indexOf(t)) };
+      const cur = sort[q.id] ?? q.options.map((_, index) => index);
+      return { questionId: q.id, pickedOrder: cur };
     });
     try {
       const res = await api(`/api/assessments/${aid}/attempt`, {
@@ -88,7 +91,8 @@ export default function AsesmenSiswaPage() {
               <li key={r.id} style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
                 <span style={{ flex: 1, minWidth: 200, fontWeight: 700 }}>{r.title}</span>
                 {r.deadline && <span style={{ fontSize: 12.5, color: "#74746d" }}>deadline {r.deadline.slice(0, 10)}</span>}
-                <Btn type="button" kind="dark" onClick={() => setAid(r.id)}>Kerjakan</Btn>
+                <span style={{ fontSize: 12, color: r.attempt?.submittedAt ? "#426047" : "#74746d" }}>{r.attempt?.submittedAt ? `Terkumpul · skor ${r.attempt.score ?? 0}/${r.attempt.maxScore ?? 0}` : r.attempt ? "Sedang dikerjakan" : "Belum mulai"}</span>
+                <Btn type="button" kind="dark" onClick={() => setAid(r.id)}>{r.attempt?.submittedAt ? "Lihat hasil" : r.attempt ? "Lanjutkan" : "Kerjakan"}</Btn>
               </li>
             ))}
           </ul>
@@ -97,13 +101,17 @@ export default function AsesmenSiswaPage() {
       {aid && attempt.data && (
         <Panel>
           <h2 className="display" style={{ fontSize: 20, margin: "0 0 14px" }}>{attempt.data.assessment.title}</h2>
+          {attempt.data.assessment.instruction && <p style={{ margin: "0 0 14px", whiteSpace: "pre-wrap" }}>{attempt.data.assessment.instruction}</p>}
           {attempt.data.attempt.submittedAt ? (
-            <Note>Sudah dikumpulkan{attempt.data.attempt.score != null ? `, skor: ${attempt.data.attempt.score}` : ""}.</Note>
+            <>
+              <Note>Sudah dikumpulkan{attempt.data.attempt.score != null ? `, skor: ${attempt.data.attempt.score}/${attempt.data.attempt.maxScore ?? "-"}` : ""}.</Note>
+              {attempt.data.attempt.feedback && <Note>Umpan balik guru: {attempt.data.attempt.feedback}</Note>}
+            </>
           ) : (
             <>
               {attempt.data.questions.map((q, qi) => (
                 <div key={q.id} style={{ marginBottom: 18, padding: 14, border: "1px solid rgba(23,23,22,.14)", borderRadius: 16 }}>
-                  <p style={{ fontWeight: 700, margin: "0 0 10px" }}>{qi + 1}. {q.stem}</p>
+                  <div style={{ fontWeight: 700, margin: "0 0 10px" }}><strong>{qi + 1}. </strong><AssessmentStemMarkdown content={q.stem} /></div>
                   {q.imageUrl && (
                     // eslint-disable-next-line @next/next/no-img-element
                     <img src={q.imageUrl} alt="gambar soal" style={{ maxWidth: "100%", borderRadius: 12, marginBottom: 10 }} />
@@ -122,15 +130,18 @@ export default function AsesmenSiswaPage() {
                       ))}
                     </ul>
                   ) : (
-                    <ol style={{ margin: 0, paddingLeft: 20, display: "grid", gap: 6 }}>
-                      {(sort[q.id] ?? q.options).map((o, i, arr) => (
-                        <li key={`${o}-${i}`} style={{ display: "flex", gap: 8, alignItems: "center" }}>
-                          <span style={{ flex: 1 }}>{o}{" "}</span>
-                          <Btn type="button" kind="ghost" onClick={() => move(q.id, q.options, i, -1)}>↑</Btn>
-                          <Btn type="button" kind="ghost" onClick={() => move(q.id, q.options, i, 1)}>↓</Btn>
-                        </li>
-                      ))}
-                    </ol>
+                    <>
+                      <p style={{ margin: "0 0 8px", fontSize: 12, color: "#74746d" }}>Susun item dari atas ke bawah menggunakan tombol Naikkan/Turunkan.</p>
+                      <ol style={{ margin: 0, paddingLeft: 20, display: "grid", gap: 6 }}>
+                        {(sort[q.id] ?? q.options.map((_, index) => index)).map((optionIndex, i, order) => (
+                          <li key={`${q.id}-${optionIndex}`} style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                            <span style={{ flex: 1 }}>{q.options[optionIndex]}</span>
+                            <Btn type="button" kind="ghost" disabled={i === 0} aria-label={`Naikkan item ${i + 1}`} onClick={() => move(q.id, q.options.length, i, -1)}>Naikkan</Btn>
+                            <Btn type="button" kind="ghost" disabled={i === order.length - 1} aria-label={`Turunkan item ${i + 1}`} onClick={() => move(q.id, q.options.length, i, 1)}>Turunkan</Btn>
+                          </li>
+                        ))}
+                      </ol>
+                    </>
                   )}
                 </div>
               ))}

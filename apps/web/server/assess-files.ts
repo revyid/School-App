@@ -1,10 +1,11 @@
-// Gambar soal/jawaban: /data/uploads/<schoolId>/assess/<assessQId|bank>-<acak>.jpg|png.
+// Gambar soal/jawaban: /data/uploads/<schoolId>/assess/<acak>.jpg|png.
 // JPEG/PNG asli, maks 5MB. Nama file acak; akses via /api/assess-files (otorisasi peran).
 import { randomBytes } from "node:crypto";
-import { mkdir, writeFile, unlink } from "node:fs/promises";
+import { mkdir, readFile, unlink, writeFile } from "node:fs/promises";
 import path from "node:path";
 
 export const MAX_ASSESS_IMG = 5 * 1024 * 1024;
+const ASSESS_IMG_NAME = /^q-[a-f0-9]{16}\.(?:jpg|png)$/;
 
 export function detectAssessImg(buf: Buffer): "jpg" | "png" | null {
   if (buf.length > MAX_ASSESS_IMG) return null;
@@ -18,31 +19,50 @@ function dir(schoolId: string): string {
   return path.join(/*turbopackIgnore: true*/ root, schoolId, "assess");
 }
 
-export async function saveAssessImg(schoolId: string, buf: Buffer): Promise<string> {
+function ownerPath(schoolId: string, name: string): string {
+  return `${assessImgPath(schoolId, name)}.owner`;
+}
+
+export async function saveAssessImg(schoolId: string, buf: Buffer, ownerId?: string): Promise<string> {
   const ext = detectAssessImg(buf);
   if (!ext) throw new Error("gambar harus JPEG/PNG asli (maks 5MB)");
   const name = `q-${randomBytes(8).toString("hex")}.${ext}`;
   await mkdir(dir(schoolId), { recursive: true });
-  await writeFile(path.join(/*turbopackIgnore: true*/ dir(schoolId), name), buf);
+  const target = assessImgPath(schoolId, name);
+  await writeFile(target, buf, { flag: "wx" });
+  if (ownerId) {
+    try {
+      await writeFile(ownerPath(schoolId, name), ownerId, { flag: "wx", mode: 0o600 });
+    } catch (error) {
+      await unlink(target).catch(() => {});
+      throw error;
+    }
+  }
   return name;
 }
 
-export async function deleteAssessImg(schoolId: string, name: string): Promise<void> {
-  const base = path.basename(name);
-  if (base !== name || base.includes("..")) return;
-  const p = path.join(/*turbopackIgnore: true*/ dir(schoolId), base);
-  if (!p.startsWith(dir(schoolId))) return;
+export async function assessImgOwnedBy(schoolId: string, name: string, ownerId: string): Promise<boolean> {
+  if (!ASSESS_IMG_NAME.test(name) || !ownerId) return false;
   try {
-    await unlink(p);
+    const [owner] = await Promise.all([
+      readFile(ownerPath(schoolId, name), "utf8"),
+      readFile(assessImgPath(schoolId, name)),
+    ]);
+    return owner === ownerId;
   } catch {
-    // hilang = beres
+    return false;
   }
 }
 
+export async function deleteAssessImg(schoolId: string, name: string): Promise<void> {
+  if (!ASSESS_IMG_NAME.test(name)) return;
+  const p = assessImgPath(schoolId, name);
+  await Promise.all([unlink(p).catch(() => {}), unlink(`${p}.owner`).catch(() => {})]);
+}
+
 export function assessImgPath(schoolId: string, name: string): string {
-  const base = path.basename(name);
-  if (base !== name || base.includes("..")) throw new Error("nama file tidak valid");
-  const p = path.join(/*turbopackIgnore: true*/ dir(schoolId), base);
-  if (!p.startsWith(dir(schoolId))) throw new Error("path tidak valid");
+  if (!ASSESS_IMG_NAME.test(name) || path.basename(name) !== name) throw new Error("nama file tidak valid");
+  const p = path.join(/*turbopackIgnore: true*/ dir(schoolId), name);
+  if (!p.startsWith(dir(schoolId) + path.sep)) throw new Error("path tidak valid");
   return p;
 }

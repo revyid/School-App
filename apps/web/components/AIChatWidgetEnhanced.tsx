@@ -6,6 +6,7 @@ import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { api } from "@/app/lib/api";
 import GrokAvatar from "@/components/GrokAvatar";
+import ConfirmDialog from "@/components/ConfirmDialog";
 
 interface ChatMessage { id: string; sender: "user" | "ai"; text: string }
 type Mood = "idle" | "thinking" | "happy" | "concerned";
@@ -33,6 +34,10 @@ export default function AIChatWidgetEnhanced() {
   const [loaded, setLoaded] = useState(false);
   const [placeholder, setPlaceholder] = useState(0);
   const [failed, setFailed] = useState(false);
+  const [canDelete, setCanDelete] = useState(false);
+  const [confirmClear, setConfirmClear] = useState(false);
+  const [clearing, setClearing] = useState(false);
+  const [clearError, setClearError] = useState("");
   const reduced = useReducedMotion();
   const endRef = useRef<HTMLDivElement>(null);
 
@@ -41,6 +46,7 @@ export default function AIChatWidgetEnhanced() {
     fetch("/api/ai/chat", { cache: "no-store" }).then((r) => r.json().catch(() => ({}))).then((data) => {
       if (!alive) return;
       setEnabled(data.enabled === true);
+      setCanDelete(data.canDelete === true);
       if (Array.isArray(data.messages) && data.messages.length) setMessages(data.messages.map((m: { sender: string; text: string }, i: number) => ({ id: `h-${i}`, sender: m.sender === "user" ? "user" : "ai", text: m.text })));
       setLoaded(true);
     }).catch(() => alive && setLoaded(true));
@@ -55,6 +61,7 @@ export default function AIChatWidgetEnhanced() {
     const response = await fetch("/api/ai/chat", { cache: "no-store" }).catch(() => null);
     const data = await response?.json().catch(() => ({}));
     setEnabled(data?.enabled === true);
+    setCanDelete(data?.canDelete === true);
     if (Array.isArray(data?.messages) && data.messages.length) setMessages(data.messages.map((m: { sender: string; text: string }, i: number) => ({ id: `h-${i}`, sender: m.sender === "user" ? "user" : "ai", text: m.text })));
   }
   function toggle() { setOpen((value) => { const next = !value; if (next) void loadHistory(); return next; }); }
@@ -69,6 +76,24 @@ export default function AIChatWidgetEnhanced() {
     } catch { setFailed(true); setMessages((prev) => [...prev, { id: `n-${Date.now()}`, sender: "ai", text: "Maaf, koneksi bermasalah. Periksa jaringan lalu coba lagi." }]); }
     finally { setLoading(false); }
   }
+  async function clearHistory() {
+    if (clearing) return;
+    setClearing(true);
+    setClearError("");
+    try {
+      const response = await api("/api/ai/chat", { method: "DELETE" });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(data.error || `Gagal menghapus (${response.status})`);
+      setMessages([GREETING]);
+      setInput("");
+      setLoaded(true);
+      setConfirmClear(false);
+    } catch (cause) {
+      setClearError(cause instanceof Error ? cause.message : "Riwayat chat gagal dihapus.");
+    } finally {
+      setClearing(false);
+    }
+  }
   function submit(event: FormEvent) { event.preventDefault(); void send(input); }
   if (!enabled) return null;
   const mood: Mood = loading ? "thinking" : failed ? "concerned" : messages.length > 1 ? "happy" : "idle";
@@ -77,8 +102,9 @@ export default function AIChatWidgetEnhanced() {
     {!open && <button className="ai-enhanced-launcher" type="button" onClick={toggle} aria-label="Buka chat AI"><GrokAvatar size={35} /><span>Tanya AI</span><i aria-hidden="true" /></button>}
     {open && <BorderBeam size="md" colorVariant="colorful" strength={0.7} theme="light" borderRadius={24} active={loading && !reduced}>
       <section className="ai-enhanced-panel" aria-label="Chat Asisten AI Sekolah">
-        <header className="ai-enhanced-header"><div className="ai-enhanced-identity"><GrokAvatar size={48} mood={mood} /><div><h2>Asisten AI Sekolah</h2><p>{loading ? "Sedang berpikir…" : "Siap membantu dengan aman"}</p></div></div><button type="button" onClick={toggle} aria-label="Tutup chat">×</button></header>
+        <header className="ai-enhanced-header"><div className="ai-enhanced-identity"><GrokAvatar size={48} mood={mood} /><div><h2>Asisten AI Sekolah</h2><p>{loading ? "Sedang berpikir…" : "Siap membantu dengan aman"}</p></div></div><div className="ai-enhanced-header-actions">{canDelete && <button className="ai-enhanced-clear" type="button" disabled={loading || clearing} onClick={() => setConfirmClear(true)}>Hapus chat</button>}<button type="button" onClick={toggle} aria-label="Tutup chat">×</button></div></header>
         <div className="ai-enhanced-trust"><span /> Akses mengikuti akun dan pengaturan sekolah <b>·</b> Jangan kirim data sensitif</div>
+        {clearError && <p role="alert" className="ai-enhanced-clear-error">{clearError}</p>}
         <div className="ai-enhanced-messages" aria-live="polite">
           {messages.map((message) => <div className={`ai-enhanced-row ${message.sender}`} key={message.id}>{message.sender === "ai" && <GrokAvatar size={26} mood={message.id[0] === "e" || message.id[0] === "n" ? "concerned" : "idle"} interactive={false} />}<div className={`ai-enhanced-bubble ${message.sender}`}>{message.sender === "ai" ? <ReactMarkdown remarkPlugins={[remarkGfm]} components={{ a: ({ node: _node, ...props }) => <a {...props} target="_blank" rel="noopener noreferrer" /> }}>{message.text}</ReactMarkdown> : message.text}</div></div>)}
           {loading && <div className="ai-enhanced-row ai" aria-label="Asisten sedang mencari jawaban"><GrokAvatar size={26} mood="thinking" interactive={false} /><div className="ai-enhanced-bubble ai typing" aria-hidden="true"><span /><span /><span /></div></div>}
@@ -88,7 +114,15 @@ export default function AIChatWidgetEnhanced() {
       </section>
     </BorderBeam>}
     <style jsx global>{`
-      .ai-enhanced-root{position:fixed;right:20px;bottom:20px;z-index:9999;font-family:inherit}.ai-enhanced-launcher{display:flex;align-items:center;gap:9px;padding:9px 17px 9px 9px;border:1px solid rgba(23,23,22,.45);border-radius:999px;background:#171716;color:#fffdf8;font:700 14px inherit;cursor:pointer;box-shadow:0 10px 28px rgba(23,23,22,.26);transition:transform .2s ease}.ai-enhanced-launcher:hover{transform:translateY(-2px)}.ai-enhanced-launcher i{width:7px;height:7px;border-radius:50%;background:#55d6b4;box-shadow:0 0 0 4px rgba(85,214,180,.15);animation:ai-enhanced-ping 2s ease-in-out infinite}.ai-enhanced-panel{width:min(410px,92vw);height:min(640px,calc(100vh - 36px));display:flex;flex-direction:column;overflow:hidden;border-radius:24px;background:#fffdf8;color:#171716;box-shadow:0 20px 60px rgba(23,23,22,.24)}.ai-enhanced-header{display:flex;justify-content:space-between;align-items:center;padding:13px 16px 11px;border-bottom:1px solid rgba(23,23,22,.1)}.ai-enhanced-identity{display:flex;align-items:center;gap:10px}.ai-enhanced-identity h2{margin:0;font-size:14px;font-weight:850;line-height:1.2}.ai-enhanced-identity p{margin:3px 0 0;font-size:11px;color:#6f7477}.ai-enhanced-header>button{border:0;background:transparent;color:#767a7c;font-size:26px;line-height:1;cursor:pointer}.ai-enhanced-trust{padding:7px 15px;font-size:10px;color:#4c7771;background:#edf8f4;border-bottom:1px solid #d8eee8}.ai-enhanced-trust span{display:inline-block;width:6px;height:6px;border-radius:50%;background:#1ca88f;margin-right:4px}.ai-enhanced-trust b{margin:0 4px}.ai-enhanced-messages{flex:1;min-height:0;display:flex;flex-direction:column;gap:11px;overflow-y:auto;padding:16px 14px;background:linear-gradient(180deg,#fbfaf6,#f6f7f2)}.ai-enhanced-row{display:flex;align-items:flex-start;gap:7px;max-width:93%}.ai-enhanced-row.user{align-self:flex-end}.ai-enhanced-bubble{padding:10px 13px;font-size:13px;line-height:1.55;word-break:break-word}.ai-enhanced-bubble.ai{border:1px solid rgba(23,23,22,.1);border-radius:5px 16px 16px 16px;background:#fff}.ai-enhanced-bubble.ai p{margin:.15rem 0 .65rem}.ai-enhanced-bubble.ai p:last-child{margin-bottom:0}.ai-enhanced-bubble.ai h1,.ai-enhanced-bubble.ai h2,.ai-enhanced-bubble.ai h3{margin:.15rem 0 .5rem;font-size:1.05em}.ai-enhanced-bubble.ai ul,.ai-enhanced-bubble.ai ol{margin:.25rem 0 .65rem;padding-left:1.25rem}.ai-enhanced-bubble.ai li{margin:.18rem 0}.ai-enhanced-bubble.ai code{padding:.1em .3em;border-radius:4px;background:#eef2ef;font-size:.9em}.ai-enhanced-bubble.ai pre{overflow-x:auto;padding:9px;border-radius:8px;background:#17201f;color:#e7fff8}.ai-enhanced-bubble.ai pre code{padding:0;background:transparent}.ai-enhanced-bubble.ai a{color:#147c70;text-decoration:underline}.ai-enhanced-bubble.user{border-radius:16px 16px 5px 16px;background:#171716;color:#fff}.ai-enhanced-bubble.typing{display:flex;align-items:center;gap:4px;color:#7b8182;font-size:11px}.typing span{width:5px;height:5px;border-radius:50%;background:#299e91;animation:ai-enhanced-dot 1s ease-in-out infinite}.typing span:nth-child(2){animation-delay:.15s}.typing span:nth-child(3){animation-delay:.3s}.ai-enhanced-compose{display:grid;gap:8px;padding:11px 12px;border-top:1px solid rgba(23,23,22,.1);background:#fffdf8}.ai-enhanced-quick{display:flex;gap:6px}.ai-enhanced-quick button{padding:5px 11px;border:1px solid rgba(23,23,22,.16);border-radius:999px;background:#fff;color:#555;font-size:11px;font-weight:700;cursor:pointer}.ai-enhanced-input{display:flex;gap:8px;align-items:center;padding:7px 7px 7px 12px;border:1px solid rgba(23,23,22,.2);border-radius:15px;background:#fff}.ai-enhanced-input:focus-within{border-color:#2b9b8e;box-shadow:0 0 0 3px rgba(43,155,142,.1)}.ai-enhanced-input input{flex:1;min-width:0;border:0;outline:0;background:transparent;color:#171716;font:13px inherit}.ai-enhanced-input button{width:31px;height:31px;border:0;border-radius:50%;background:#171716;color:#fff;font-size:19px;cursor:pointer}.ai-enhanced-input button:disabled{background:#e4e5df;color:#8b8b8b;cursor:not-allowed}@keyframes ai-enhanced-ping{0%,100%{opacity:.65;transform:scale(1)}50%{opacity:1;transform:scale(1.25)}}@keyframes ai-enhanced-dot{0%,80%,100%{opacity:.3;transform:translateY(0)}40%{opacity:1;transform:translateY(-3px)}}@media (prefers-reduced-motion:reduce){.ai-enhanced-launcher i,.typing span{animation:none!important}}@media(max-width:480px){.ai-enhanced-root{right:10px;bottom:10px}}
+      .ai-enhanced-root{position:fixed;right:20px;bottom:20px;z-index:9999;font-family:inherit}.ai-enhanced-launcher{display:flex;align-items:center;gap:9px;padding:9px 17px 9px 9px;border:1px solid rgba(23,23,22,.45);border-radius:999px;background:#171716;color:#fffdf8;font:700 14px inherit;cursor:pointer;box-shadow:0 10px 28px rgba(23,23,22,.26);transition:transform .2s ease}.ai-enhanced-launcher:hover{transform:translateY(-2px)}.ai-enhanced-launcher i{width:7px;height:7px;border-radius:50%;background:#55d6b4;box-shadow:0 0 0 4px rgba(85,214,180,.15);animation:ai-enhanced-ping 2s ease-in-out infinite}.ai-enhanced-panel{width:min(410px,92vw);height:min(640px,calc(100vh - 36px));display:flex;flex-direction:column;overflow:hidden;border-radius:24px;background:#fffdf8;color:#171716;box-shadow:0 20px 60px rgba(23,23,22,.24)}.ai-enhanced-header{display:flex;justify-content:space-between;align-items:center;padding:13px 16px 11px;border-bottom:1px solid rgba(23,23,22,.1)}.ai-enhanced-identity{display:flex;align-items:center;gap:10px}.ai-enhanced-identity h2{margin:0;font-size:14px;font-weight:850;line-height:1.2}.ai-enhanced-identity p{margin:3px 0 0;font-size:11px;color:#6f7477}.ai-enhanced-header-actions{display:flex;align-items:center;gap:8px}.ai-enhanced-header-actions>button{border:0;background:transparent;color:#767a7c;font-size:26px;line-height:1;cursor:pointer}.ai-enhanced-header-actions .ai-enhanced-clear{padding:6px 9px;border:1px solid rgba(23,23,22,.15);border-radius:999px;font-size:11px;font-weight:700}.ai-enhanced-header-actions .ai-enhanced-clear:disabled{opacity:.45;cursor:not-allowed}.ai-enhanced-clear-error{margin:0;padding:7px 14px;background:#fff0ee;color:#9e3029;font-size:11px}.ai-enhanced-trust{padding:7px 15px;font-size:10px;color:#4c7771;background:#edf8f4;border-bottom:1px solid #d8eee8}.ai-enhanced-trust span{display:inline-block;width:6px;height:6px;border-radius:50%;background:#1ca88f;margin-right:4px}.ai-enhanced-trust b{margin:0 4px}.ai-enhanced-messages{flex:1;min-height:0;display:flex;flex-direction:column;gap:11px;overflow-y:auto;padding:16px 14px;background:linear-gradient(180deg,#fbfaf6,#f6f7f2)}.ai-enhanced-row{display:flex;align-items:flex-start;gap:7px;max-width:93%}.ai-enhanced-row.user{align-self:flex-end}.ai-enhanced-bubble{padding:10px 13px;font-size:13px;line-height:1.55;word-break:break-word}.ai-enhanced-bubble.ai{border:1px solid rgba(23,23,22,.1);border-radius:5px 16px 16px 16px;background:#fff}.ai-enhanced-bubble.ai p{margin:.15rem 0 .65rem}.ai-enhanced-bubble.ai p:last-child{margin-bottom:0}.ai-enhanced-bubble.ai h1,.ai-enhanced-bubble.ai h2,.ai-enhanced-bubble.ai h3{margin:.15rem 0 .5rem;font-size:1.05em}.ai-enhanced-bubble.ai ul,.ai-enhanced-bubble.ai ol{margin:.25rem 0 .65rem;padding-left:1.25rem}.ai-enhanced-bubble.ai li{margin:.18rem 0}.ai-enhanced-bubble.ai code{padding:.1em .3em;border-radius:4px;background:#eef2ef;font-size:.9em}.ai-enhanced-bubble.ai pre{overflow-x:auto;padding:9px;border-radius:8px;background:#17201f;color:#e7fff8}.ai-enhanced-bubble.ai pre code{padding:0;background:transparent}.ai-enhanced-bubble.ai a{color:#147c70;text-decoration:underline}.ai-enhanced-bubble.user{border-radius:16px 16px 5px 16px;background:#171716;color:#fff}.ai-enhanced-bubble.typing{display:flex;align-items:center;gap:4px;color:#7b8182;font-size:11px}.typing span{width:5px;height:5px;border-radius:50%;background:#299e91;animation:ai-enhanced-dot 1s ease-in-out infinite}.typing span:nth-child(2){animation-delay:.15s}.typing span:nth-child(3){animation-delay:.3s}.ai-enhanced-compose{display:grid;gap:8px;padding:11px 12px;border-top:1px solid rgba(23,23,22,.1);background:#fffdf8}.ai-enhanced-quick{display:flex;gap:6px}.ai-enhanced-quick button{padding:5px 11px;border:1px solid rgba(23,23,22,.16);border-radius:999px;background:#fff;color:#555;font-size:11px;font-weight:700;cursor:pointer}.ai-enhanced-input{display:flex;gap:8px;align-items:center;padding:7px 7px 7px 12px;border:1px solid rgba(23,23,22,.2);border-radius:15px;background:#fff}.ai-enhanced-input:focus-within{border-color:#2b9b8e;box-shadow:0 0 0 3px rgba(43,155,142,.1)}.ai-enhanced-input input{flex:1;min-width:0;border:0;outline:0;background:transparent;color:#171716;font:13px inherit}.ai-enhanced-input button{width:31px;height:31px;border:0;border-radius:50%;background:#171716;color:#fff;font-size:19px;cursor:pointer}.ai-enhanced-input button:disabled{background:#e4e5df;color:#8b8b8b;cursor:not-allowed}@keyframes ai-enhanced-ping{0%,100%{opacity:.65;transform:scale(1)}50%{opacity:1;transform:scale(1.25)}}@keyframes ai-enhanced-dot{0%,80%,100%{opacity:.3;transform:translateY(0)}40%{opacity:1;transform:translateY(-3px)}}@media (prefers-reduced-motion:reduce){.ai-enhanced-launcher i,.typing span{animation:none!important}}@media(max-width:480px){.ai-enhanced-root{right:10px;bottom:10px}}
     `}</style>
+      <ConfirmDialog
+        open={confirmClear}
+        title="Hapus riwayat chat?"
+        message="Riwayat percakapanmu akan dihapus permanen. Setelah dihapus, AI tidak akan memakai chat lama sebagai konteks dan percakapan berikutnya dimulai dari awal."
+        confirmLabel={clearing ? "Menghapus…" : "Hapus riwayat"}
+        onConfirm={clearHistory}
+        onCancel={() => { if (!clearing) setConfirmClear(false); }}
+      />
   </div>;
 }

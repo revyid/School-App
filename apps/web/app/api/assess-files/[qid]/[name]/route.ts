@@ -5,6 +5,7 @@ import { requireRole } from "@/server/auth-gate";
 import { db } from "@sms/db/client";
 import { runAsSchool } from "@sms/db/tenant";
 import { assessImgPath } from "@/server/assess-files";
+import { stemReferencesAssessmentImage } from "@/server/assessment-markdown";
 
 // GET /api/assess-files/[qid]/[name] — gambar soal.
 // SISWA: hanya bila soal bagian dari asesmen yang visible untuknya (publishAt lewat + kelasnya).
@@ -26,6 +27,7 @@ export async function GET(
   const { qid, name } = await params;
   const id = qid.slice(0, 64);
 
+  let imageIsReferenced = false;
   if (a.role === "SISWA") {
     const prof = await runAsSchool(db, a.school.id, (tx) =>
       tx.studentProfile.findUnique({ where: { userId: a.userId }, select: { classId: true } }));
@@ -37,19 +39,31 @@ export async function GET(
           id,
           assessment: { classId: sClassId, publishAt: { lte: new Date() } },
         },
-        select: { id: true },
+        select: { id: true, stem: true, imageName: true },
       }));
     if (!ok) return NextResponse.json({ error: "forbidden" }, { status: 403 });
+    imageIsReferenced = ok.imageName === name || stemReferencesAssessmentImage(ok.stem, id, name);
   } else if (a.role === "GURU") {
     const snap = await runAsSchool(db, a.school.id, (tx) =>
       tx.assessQuestion.findFirst({
         where: { id, assessment: { authorId: a.userId } },
-        select: { id: true },
+        select: { id: true, stem: true, imageName: true },
       }));
     const bank = snap ? null : await runAsSchool(db, a.school.id, (tx) =>
-      tx.question.findFirst({ where: { id, authorId: a.userId }, select: { id: true } }));
+      tx.question.findFirst({ where: { id, authorId: a.userId }, select: { id: true, stem: true, imageName: true } }));
     if (!snap && !bank) return NextResponse.json({ error: "forbidden" }, { status: 403 });
+    const question = snap ?? bank!;
+    imageIsReferenced = question.imageName === name || stemReferencesAssessmentImage(question.stem, id, name);
+  } else {
+    const snap = await runAsSchool(db, a.school.id, (tx) =>
+      tx.assessQuestion.findFirst({ where: { id }, select: { id: true, stem: true, imageName: true } }));
+    const bank = snap ? null : await runAsSchool(db, a.school.id, (tx) =>
+      tx.question.findFirst({ where: { id }, select: { id: true, stem: true, imageName: true } }));
+    const question = snap ?? bank;
+    if (!question) return NextResponse.json({ error: "forbidden" }, { status: 403 });
+    imageIsReferenced = question.imageName === name || stemReferencesAssessmentImage(question.stem, id, name);
   }
+  if (!imageIsReferenced) return NextResponse.json({ error: "forbidden" }, { status: 403 });
 
   let abs: string;
   try {
