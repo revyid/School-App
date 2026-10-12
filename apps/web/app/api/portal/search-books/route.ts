@@ -4,7 +4,7 @@ import { db } from "@sms/db/client";
 import { hit } from "@/server/rate-limit";
 
 // GET /api/portal/search-books?q= — publik (tanpa login): pencarian katalog
-// e-book sejarah & nusantara via Internet Archive API
+// e-book & materi pelajaran via Internet Archive API
 const cache = new Map<string, { at: number; rows: unknown }>();
 const COLORS = ["#e85e43", "#97c4db", "#f5c94a", "#aec6a4"];
 
@@ -26,7 +26,7 @@ export async function GET(req: NextRequest) {
   if (c && Date.now() - c.at < 10 * 60_000) return NextResponse.json({ rows: c.rows, cached: true });
 
   try {
-    const query = encodeURIComponent(`(title:(${q}) OR description:(${q})) AND (indonesia OR sejarah) AND mediatype:texts`);
+    const query = encodeURIComponent(`(title:(${q}) OR description:(${q})) AND mediatype:texts`);
     const qUrl = `https://archive.org/advancedsearch.php?q=${query}&fl[]=identifier,title,creator,description,year&rows=16&output=json`;
     const res = await fetch(qUrl, { headers: { "User-Agent": "SMS-LMS/1.0" } });
     if (!res.ok) throw new Error("Gagal cari buku");
@@ -48,7 +48,7 @@ export async function GET(req: NextRequest) {
         year: d.year ? Number(d.year) : undefined,
         infoUrl: `https://archive.org/details/${ident}`,
         coverUrl: `https://archive.org/services/img/${ident}`,
-        subject: "Sejarah RI",
+        subject: "Umum",
         color: COLORS[i % COLORS.length],
       };
     });

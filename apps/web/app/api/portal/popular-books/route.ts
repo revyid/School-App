@@ -2,8 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { db } from "@sms/db/client";
 import { schoolSlugFromHost } from "@sms/shared/school";
 
-// GET /api/portal/popular-books — daftar buku gratis sejarah & kebudayaan Indonesia
-// Sumber resmi: Arsip Kemendikbud & Open Access Sejarah Indonesia (Internet Archive Public API)
+// GET /api/portal/popular-books — daftar buku pelajaran gratis semua mapel
+// Sumber: katalog buku terbuka (Internet Archive Public API)
 const COLORS = ["#e85e43", "#97c4db", "#f5c94a", "#aec6a4"];
 
 type Row = {
@@ -32,18 +32,18 @@ export async function GET(req: NextRequest) {
 
   try {
     const qUrl =
-      "https://archive.org/advancedsearch.php?q=title:(sejarah+indonesia)+AND+mediatype:texts&fl[]=identifier,title,creator,description,year&rows=20&output=json";
+      "https://archive.org/advancedsearch.php?q=mediatype:texts+AND+language:(ind+OR+eng)&fl[]=identifier,title,creator,description,year&rows=20&output=json";
     const res = await fetch(qUrl, { next: { revalidate: 21600 } });
     if (!res.ok) throw new Error("Gagal mengambil data katalog");
 
     const data = await res.json();
     const docs = data?.response?.docs ?? [];
 
-    const subjects = ["Sejarah", "Nusantara", "Budaya", "Perjuangan", "Nasional"];
+    const subjects = ["Matematika", "IPA", "Bahasa", "IPS", "Umum"];
 
     const rows: Row[] = docs.map((d: any, i: number) => {
       const ident = d.identifier;
-      const rawTitle = d.title || "Buku Sejarah Indonesia";
+      const rawTitle = d.title || "Buku Pelajaran";
       const cleanTitle = rawTitle.replace(/^KEMENDIKBUD-RI\s*-\s*/i, "").trim();
 
       const creator = d.creator;
