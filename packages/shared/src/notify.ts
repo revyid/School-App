@@ -39,4 +39,23 @@ export const DEFAULT_TEMPLATES = {
   reminder:
     "Ananda {{nama}}, tugas {{judul}} tenggat {{deadline}}. Segera kumpulkan sebelum terlambat.",
   thanks: "Terima kasih ananda {{nama}} sudah mengumpulkan tugas {{judul}} tepat waktu.",
+  // T7: 3 tahap pengingat WA ortu (D7) — sopan, sebut nama anak, judul, tenggat WIB, tautan masuk.
+  stageD1:
+    "Yth. Bapak/Ibu, mohon bantuan mengingatkan ananda {{nama}}: tugas \"{{judul}}\" berbatas {{deadline}} WIB (kurang dari 24 jam). Ananda dapat masuk melalui aplikasi sekolah untuk mengumpulkan. Terima kasih.",
+  stageH3:
+    "Yth. Bapak/Ibu, pengingat terakhir: tugas \"{{judul}}\" ananda {{nama}} berbatas {{deadline}} WIB (kurang dari 3 jam). Mohon dampingi agar segera dikumpulkan. Terima kasih.",
+  stageOver:
+    "Yth. Bapak/Ibu, tenggat tugas \"{{judul}}\" ananda {{nama}} telah lewat ({{deadline}} WIB). Bila ada kendala, mohon hubungi guru pengampu. Terima kasih.",
+  groupNudge:
+    "Yth. Bapak/Ibu, tugas \"{{judul}}\" ananda {{nama}} adalah tugas kelompok yang berbatas {{deadline}} WIB, namun kelompoknya belum terbentuk. Mohon bantuan agar ananda segera membentuk kelompok di aplikasi. Terima kasih.",
 };
+
+// Format tanggal-tenggat ramah WIB: "Senin, 12 Okt 2026 pukul 23.59".
+export function formatDeadlineId(deadline: Date, timezone = "Asia/Jakarta"): string {
+  const s = new Intl.DateTimeFormat("id-ID", {
+    weekday: "long", day: "numeric", month: "short", year: "numeric",
+    hour: "2-digit", minute: "2-digit", timeZone: timezone,
+  }).format(deadline);
+  // id-ID memakai titik pemisah menit (23.59) → rapikan ke 23:59.
+  return s.replace(/(\d{2})\.(\d{2})$/, "$1:$2") + " WIB";
+}

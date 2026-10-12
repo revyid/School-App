@@ -76,6 +76,7 @@ export function kindsAllowed(purpose: "image" | "pdf" | "doc" | "video-material"
 
 export interface SavedFile {
   fileName: string;
+  originalName: string;
   mime: string;
   size: number;
 }
@@ -137,7 +138,7 @@ export async function saveFileStream(
   } else if (rest.length) {
     await writeFile(target, rest);
   }
-  return { fileName, mime: MIME[kind], size: total };
+  return { fileName, originalName: safe, mime: MIME[kind], size: total };
 }
 
 /** Simpan dari Buffer (untuk file kecil / kode lama). */
@@ -157,7 +158,7 @@ export async function saveFileBuffer(
   const safe = (originalName || "file").replace(/[^a-zA-Z0-9._-]/g, "_").slice(0, 80);
   const fileName = `${randomBytes(8).toString("hex")}-${safe}`;
   await writeFile(path.join(dir, fileName), buf);
-  return { fileName, mime: MIME[kind], size: buf.length };
+  return { fileName, originalName: safe, mime: MIME[kind], size: buf.length };
 }
 
 /** Path absolut aman (anti path-traversal) untuk file dalam relDir. */
