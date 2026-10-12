@@ -1,13 +1,16 @@
 "use client";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { AvatarEngine, BODY_RADIUS, DEFAULT_PAPER, type AnimationState, type AvatarFrame, type HeadGaze } from "@/lib/grok-engine";
-type AvatarMood = "idle" | "thinking" | "happy" | "concerned";
+type AvatarMood = "idle" | "thinking" | "happy" | "concerned" | "angry" | "wary" | "confused";
 interface Props { mood?: AvatarMood; size?: number; interactive?: boolean; label?: string }
 const MOOD: Record<AvatarMood, { state: AnimationState; expression: string; label: string }> = {
   idle: { state: "Idle", expression: "attentive", label: "Asisten siap membantu" },
   thinking: { state: "Thinking", expression: "curious", label: "Asisten sedang berpikir" },
-  happy: { state: "Idle", expression: "happy", label: "Asisten senang membantu" },
+  happy: { state: "Idle", expression: "excited", label: "Asisten senang membantu" },
   concerned: { state: "Alert", expression: "wary", label: "Asisten menemukan kendala" },
+  angry: { state: "Alert", expression: "angry", label: "Asisten mendeteksi ketidaksopanan" },
+  wary: { state: "Alert", expression: "wary", label: "Asisten waspada soal keamanan" },
+  confused: { state: "Idle", expression: "confused", label: "Asisten belum yakin dengan jawaban" },
 };
 export default function GrokAvatar({ mood = "idle", size = 58, interactive = true, label }: Props) {
   const config = MOOD[mood];
