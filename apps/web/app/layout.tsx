@@ -3,7 +3,7 @@
 // ter-prerender statis tanpa nonce.
 import { connection } from "next/server";
 import SwRegister from "@/components/SwRegister";
-import AIChatWidget from "@/components/AIChatWidget";
+import AIChatWidget from "@/components/AIChatWidgetEnhanced";
 import "./globals.css";
 
 export const dynamic = "force-dynamic";
