@@ -2,8 +2,7 @@
 
 import React, { useEffect, useRef, useState } from 'react';
 import { animate, motion, useMotionValue, useReducedMotion, useTransform } from 'motion/react';
-import { HugeiconsIcon } from '@hugeicons/react';
-import { Cancel01Icon } from '@hugeicons/core-free-icons';
+import { BellIcon, XIcon } from 'lucide-react';
 import './SwipeToast.css';
 
 const EASE_OUT: [number, number, number, number] = [0.23, 1, 0.32, 1];
@@ -372,13 +371,66 @@ export default function SwipeToast({
                 aria-label="Close notification"
                 onClick={() => close('close')}
               >
-                <HugeiconsIcon icon={Cancel01Icon} size={14} strokeWidth={2} />
+                <XIcon size={14} strokeWidth={2} />
               </button>
             ) : null}
             <div ref={fuseRef} className="swipe-toast__fuse" />
           </motion.div>
         </div>
       </div>
+    </div>
+  );
+}
+
+// ---- N3: Antrean toast notifikasi (dipakai Bell) ----
+// Beberapa notifikasi berdekatan: tampil bertumpuk, sisanya "+N lainnya".
+export type ToastNotif = {
+  id: string;
+  title: string;
+  body: string;
+  href?: string | null;
+};
+
+export function NotifToast({
+  queue,
+  onClose,
+  onOpen,
+}: {
+  queue: ToastNotif[];
+  onClose: (id: string) => void;
+  onOpen: (n: ToastNotif) => void;
+}) {
+  const visible = queue.slice(0, 3);
+  const hidden = queue.length - visible.length;
+  return (
+    <div className="pointer-events-none fixed inset-x-0 top-3 z-[100] flex flex-col items-center gap-2 px-3" role="region" aria-label="Pemberitahuan baru">
+      {visible.map((n, i) => (
+        <SwipeToast
+          key={n.id}
+          open
+          inline={i > 0}
+          onClose={() => onClose(n.id)}
+          title={n.title}
+          description={n.body}
+          icon={<BellIcon size={18} strokeWidth={2} className="text-terracotta" aria-hidden="true" />}
+          actionLabel="Buka"
+          onAction={() => onOpen(n)}
+          background="#fffdf8"
+          color="#171716"
+          fuseColor="#e85e43"
+          width={360}
+          radius={18}
+          duration={6000}
+          fuse="bottom"
+          pauseOnHover
+          closeButton={false}
+        />
+      ))}
+      {hidden > 0 && (
+        <p className="pointer-events-none rounded-full bg-ink/80 px-3 py-1 text-xs font-semibold text-cream">
+          +{hidden} lainnya
+        </p>
+      )}
     </div>
   );
 }

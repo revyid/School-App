@@ -54,6 +54,8 @@ export function proxy(req: NextRequest) {
     `script-src 'self' 'nonce-${nonce}'${isDev ? " 'unsafe-eval'" : ""}`,
     "style-src 'self' 'unsafe-inline'",
     "img-src 'self' data: blob: https://covers.openlibrary.org https://tile.openstreetmap.org",
+    // B4/F6: media-src eksplisit agar pratinjau video lokal (blob:) tidak diblokir.
+    "media-src 'self' blob:",
     // Dev (next dev): HMR pakai ws:// + port; prod: hanya wss:// apex.
     isDev
       ? `connect-src 'self' ws: wss: http: https:`

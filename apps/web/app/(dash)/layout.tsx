@@ -1,71 +1,63 @@
-import { cookies, headers } from "next/headers";
 import { redirect } from "next/navigation";
-import { SESSION_COOKIE } from "@sms/shared/auth";
-import { requirePage } from "@/app/lib/require-page";
+import { getPageAuth } from "@/app/lib/require-page";
 import DashShell, { type MenuItem } from "@/components/DashShell";
+import {
+  LayoutGrid, ClipboardList, FileText, Megaphone, MessageSquare, ShieldCheck,
+  Trophy, QrCode, User, School, BarChart3, Check, Users,
+} from "lucide-react";
 
+// U1: menu per peran — maks 7 item utama, ikon EKSPLISIT (bukan substring).
 const MENUS: Record<string, { utama: MenuItem[]; lainnya: MenuItem[] }> = {
   SISWA: {
     utama: [
-      { href: "/siswa", label: "Dasbor" },
-      { href: "/siswa/tugas", label: "Tugas saya" },
-      { href: "/siswa/asesmen", label: "Asesmen" },
-      { href: "/siswa/izin", label: "Izin" },
-      { href: "/siswa/inbox", label: "Pesan" },
+      { href: "/siswa", label: "Dasbor", icon: LayoutGrid },
+      { href: "/siswa/tugas", label: "Tugas", icon: ClipboardList },
+      { href: "/siswa/asesmen", label: "Asesmen", icon: FileText },
+      { href: "/siswa/pengumuman", label: "Pengumuman", icon: Megaphone },
+      { href: "/siswa/inbox", label: "Pesan", icon: MessageSquare },
+      { href: "/siswa/izin", label: "Izin", icon: ShieldCheck },
     ],
     lainnya: [
-      { href: "/siswa/leaderboard", label: "Papan peringkat" },
-      { href: "/siswa/kartu", label: "Kartu saya" },
-      { href: "/siswa/profil", label: "Profil" },
+      { href: "/siswa/leaderboard", label: "Papan peringkat", icon: Trophy },
+      { href: "/siswa/kartu", label: "Kartu saya", icon: QrCode },
+      { href: "/siswa/profil", label: "Profil", icon: User },
     ],
   },
   GURU: {
     utama: [
-      { href: "/guru", label: "Dasbor" },
-      { href: "/guru/kelas-saya", label: "Kelas saya" },
-      { href: "/guru/tugas", label: "Tugas" },
-      { href: "/guru/asesmen", label: "Asesmen" },
-      { href: "/guru/kehadiran", label: "Kehadiran" },
-      { href: "/guru/inbox", label: "Pesan" },
+      { href: "/guru", label: "Dasbor", icon: LayoutGrid },
+      { href: "/guru/kelas-saya", label: "Kelas saya", icon: School },
+      { href: "/guru/tugas", label: "Tugas", icon: ClipboardList },
+      { href: "/guru/asesmen", label: "Asesmen", icon: FileText },
+      { href: "/guru/kehadiran", label: "Kehadiran", icon: Check },
+      { href: "/guru/inbox", label: "Pesan", icon: MessageSquare },
+      { href: "/guru/rapor", label: "Rapor", icon: BarChart3 },
     ],
     lainnya: [
-      { href: "/guru/scanner", label: "Pindai QR" },
-      { href: "/guru/izin", label: "Izin siswa" },
-      { href: "/guru/rapor", label: "Rapor" },
+      { href: "/guru/izin", label: "Izin siswa", icon: ShieldCheck },
     ],
   },
   ADMIN: {
     utama: [
-      { href: "/admin", label: "Dasbor" },
-      { href: "/admin/kelas", label: "Kelas" },
-      { href: "/admin/siswa", label: "Siswa" },
-      { href: "/admin/guru", label: "Guru" },
-      { href: "/admin/jadwal", label: "Jadwal" },
-      { href: "/admin/notifikasi", label: "Notifikasi" },
-      { href: "/admin/inbox", label: "Pesan" },
+      { href: "/admin", label: "Dasbor", icon: LayoutGrid },
+      { href: "/admin/siswa", label: "Siswa", icon: Users },
+      { href: "/admin/guru", label: "Guru", icon: User },
+      { href: "/admin/kelas", label: "Kelas", icon: School },
+      { href: "/admin/kehadiran", label: "Kehadiran", icon: Check },
+      { href: "/admin/pengumuman", label: "Pengumuman", icon: Megaphone },
+      { href: "/admin/inbox", label: "Pesan", icon: MessageSquare },
     ],
     lainnya: [
-      { href: "/admin/kehadiran", label: "Kehadiran" },
-      { href: "/admin/kalender", label: "Kalender" },
-      { href: "/admin/penugasan", label: "Penugasan" },
-      { href: "/admin/pengumuman", label: "Pengumuman" },
-      { href: "/admin/pengaturan", label: "Pengaturan" },
-      { href: "/admin/privasi", label: "Privasi" },
-      { href: "/admin/audit", label: "Audit" },
-      { href: "/admin/wa", label: "WhatsApp" },
-      { href: "/admin/import", label: "Impor" },
+      { href: "/admin/pengaturan", label: "Pengaturan", icon: LayoutGrid },
+      { href: "/admin/audit", label: "Audit", icon: FileText },
+      { href: "/admin/wa", label: "WhatsApp", icon: MessageSquare },
     ],
   },
 };
 
 export default async function DashLayout({ children }: { children: React.ReactNode }) {
-  const h = await headers();
-  const c = await cookies();
-  const a = await requirePage({
-    host: h.get("host") ?? "",
-    token: c.get(SESSION_COOKIE)?.value,
-    pathname: h.get("x-pathname") ?? "/",
-  });
+  // F4: satu authorize + satu query user/settings per navigasi (React.cache).
+  const a = await getPageAuth();
   if (!a.ok) redirect(a.redirectTo);
   const me = a.me;
   const menus = MENUS[me.role] ?? MENUS.SISWA;

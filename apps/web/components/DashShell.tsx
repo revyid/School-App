@@ -1,63 +1,61 @@
 "use client";
 
-// Shell dasbor ala edukids: sidebar SVG icon (bukan emoji), promo card orb+spark SVG,
-// topbar search pill, avatar aksen per peran, icon rotate on hover.
+// Shell dasbor — F1 (satu pustaka ikon: lucide, eksplisit per menu),
+// U2 (tanpa search pill palsu, tanpa kartu promo, nama sekolah 1×),
+// drawer mobile pakai shadcn Sheet (focus trap + Esc + scroll lock).
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import SchoolLogo from "./SchoolLogo";
 import Bell from "./Bell";
 import { LogoutButton } from "./LogoutButton";
+import { cn } from "@/lib/utils";
 import {
-  IconGrid, IconUsers, IconUser, IconSchool, IconCalendar, IconClipboard,
-  IconCheck, IconBarChart, IconBook, IconMessage, IconSettings, IconLock,
-  IconSearch, IconWhatsapp, IconUpload, IconCamera, IconStar, IconActivity,
-  IconBell,
-} from "./Icons";
+  LayoutGrid, Users, User, School, Calendar, ClipboardList, Check,
+  BarChart3, BookOpen, MessageSquare, Bell as BellIcon, Settings, Lock,
+  MessageCircle, Upload, Camera, Star, MapPin, Activity, FileText,
+  ShieldCheck, Megaphone, type LucideIcon,
+} from "lucide-react";
+import {
+  Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription,
+} from "@/components/ui/sheet";
 
-import { Glyph } from "./Glyph";
-export type MenuItem = { href: string; label: string; badge?: number; icon?: React.ReactNode };
+export type MenuItem = {
+  href: string;
+  label: string;
+  badge?: number;
+  icon?: LucideIcon;
+};
 
-type IconFC = (p: { size?: number; color?: string }) => React.ReactElement;
-
-const ICON_MAP: [string, IconFC][] = [
-  ["dasbor",     IconGrid],
-  ["dashboard",  IconGrid],
-  ["kelas",      IconSchool],
-  ["siswa",      IconUsers],
-  ["guru",       IconUser],
-  ["jadwal",     IconCalendar],
-  ["tugas",      IconClipboard],
-  ["penugasan",  IconClipboard],
-  ["kehadiran",  IconCheck],
-  ["absensi",    IconCheck],
-  ["nilai",      IconStar],
-  ["rapor",      IconBarChart],
-  ["gradebook",  IconBarChart],
-  ["materi",     IconBook],
-  ["buku",       IconBook],
-  ["pesan",      IconMessage],
-  ["inbox",      IconMessage],
-  ["notifikasi", IconBell],
-  ["pengumuman", IconMessage],
-  ["kalender",   IconCalendar],
-  ["pengaturan", IconSettings],
-  ["privasi",    IconLock],
-  ["audit",      IconSearch],
-  ["whatsapp",   IconWhatsapp],
-  ["impor",      IconUpload],
-  ["scanner",    IconCamera],
-  ["profil",     IconUser],
-  ["pantau",     IconActivity],
-];
-
-function resolveIcon(label: string): IconFC {
-  const lc = label.toLowerCase();
-  for (const [key, Icon] of ICON_MAP) {
-    if (lc.includes(key)) return Icon;
-  }
-  return IconGrid;
-}
+export const MENU_ICONS = {
+  dasbor: LayoutGrid,
+  kelas: School,
+  siswa: Users,
+  guru: User,
+  jadwal: Calendar,
+  tugas: ClipboardList,
+  penugasan: ClipboardList,
+  kehadiran: Check,
+  nilai: Star,
+  rapor: BarChart3,
+  materi: BookOpen,
+  pesan: MessageSquare,
+  inbox: MessageSquare,
+  notifikasi: BellIcon,
+  pengumuman: Megaphone,
+  kalender: Calendar,
+  pengaturan: Settings,
+  privasi: Lock,
+  audit: FileText,
+  whatsapp: MessageCircle,
+  impor: Upload,
+  scanner: Camera,
+  profil: User,
+  pantau: Activity,
+  peta: MapPin,
+  asesmen: FileText,
+  izin: ShieldCheck,
+} as const;
 
 export default function DashShell({
   role,
@@ -81,66 +79,32 @@ export default function DashShell({
     setProfileOpen(false);
   }, [path]);
 
-  useEffect(() => {
-    if (!open && !profileOpen) return;
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") {
-        setOpen(false);
-        setProfileOpen(false);
-      }
-    };
-    document.addEventListener("keydown", onKeyDown);
-    const previous = document.body.style.overflow;
-    if (open) document.body.style.overflow = "hidden";
-    return () => {
-      document.removeEventListener("keydown", onKeyDown);
-      document.body.style.overflow = previous;
-    };
-  }, [open, profileOpen]);
-
-  const roleAccent: Record<string, string> = { ADMIN: "#e85e43", GURU: "#50643e", SISWA: "#4a8fa8" };
-  const accent = roleAccent[role] ?? "#e85e43";
-
-  const promoText: Record<string, string> = {
-    SISWA: "Satu langkah kecil hari ini, satu dunia baru besok.",
-    GURU:  "Belajar boleh serius. Serunya jangan hilang.",
-    ADMIN: "Sekolah hebat butuh admin yang lebih hebat lagi.",
-  };
+  const roleAccent: Record<string, string> = { ADMIN: "#c94b35", GURU: "#50643e", SISWA: "#4a8fa8" };
+  const accent = roleAccent[role] ?? "#c94b35";
 
   const nav = (items: MenuItem[]) =>
     items.map((m) => {
       const active = path === m.href || (m.href.length > 1 && path.startsWith(m.href + "/"));
-      const Icon = resolveIcon(m.label);
-      const iconColor = active ? accent : "#8a8a82";
+      const Icon = m.icon ?? LayoutGrid;
       return (
         <Link
           key={m.href}
           href={m.href}
           onClick={() => setOpen(false)}
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: 10,
-            padding: "8px 11px",
-            borderRadius: 14,
-            fontWeight: active ? 800 : 500,
-            fontSize: 13,
-            color: active ? "#171716" : "#74746d",
-            background: active ? "#f0ede3" : "transparent",
-            borderLeft: active ? `3px solid ${accent}` : "3px solid transparent",
-            textDecoration: "none",
-            transition: "background .18s, color .18s",
-          }}
-          className="side-link"
+          className={cn(
+            "side-link flex items-center gap-2.5 rounded-2xl border-l-[3px] py-2 pr-3 pl-2.5 text-[13px] font-medium no-underline transition-colors",
+            active
+              ? "border-l-[3px] bg-paper font-extrabold text-ink"
+              : "border-l-[3px] border-transparent text-muted-strong hover:bg-paper hover:text-ink",
+          )}
+          style={active ? { borderLeftColor: accent } : undefined}
           aria-current={active ? "page" : undefined}
         >
-          <span className="side-icon" style={{ flexShrink: 0, display: "grid", placeItems: "center", width: 22, height: 22, transition: "transform .3s" }}>
-            <Icon size={16} color={iconColor} />
-          </span>
-          <span style={{ flex: 1 }}>{m.label}</span>
+          <Icon size={16} className="shrink-0" color={active ? accent : "#5f5f58"} aria-hidden="true" />
+          <span className="flex-1">{m.label}</span>
           {typeof m.badge === "number" && m.badge > 0 && (
-            <span style={{ background: accent, color: "#fffdf8", borderRadius: 999, fontSize: 10, fontWeight: 800, padding: "1px 7px", minWidth: 18, textAlign: "center" }}>
-              {m.badge}
+            <span className="grid min-w-[18px] place-items-center rounded-full px-1.5 text-center text-[10px] font-extrabold text-cream" style={{ background: accent }}>
+              {m.badge > 99 ? "99+" : m.badge}
             </span>
           )}
         </Link>
@@ -149,219 +113,118 @@ export default function DashShell({
 
   const sidebar = (
     <>
-      <div style={{ padding: "2px 8px 18px" }}>
+      <div className="px-2 pb-4 pt-0.5">
         <SchoolLogo name={schoolName} />
       </div>
-
-      <p className="kicker" style={{ padding: "0 8px 4px" }}>Menu utama</p>
+      <p className="kicker px-2 pb-1">Menu utama</p>
       {nav(menus.utama)}
-
-      <p className="kicker" style={{ padding: "12px 8px 4px" }}>Lainnya</p>
+      <p className="kicker mt-3 px-2 pb-1">Lainnya</p>
       {nav(menus.lainnya)}
-
-      {/* Promo card ala edukids: orb concentric + spark SVG */}
-      <div style={{ marginTop: "auto", position: "relative", background: "#50643e", color: "#fffdf8", borderRadius: 20, padding: "18px 16px 16px", overflow: "hidden" }}>
-        <span aria-hidden="true" style={{ position: "absolute", right: -35, top: -35, width: 120, height: 120, border: "1px solid rgba(255,255,255,.22)", borderRadius: "50%", boxShadow: "0 0 0 18px rgba(255,255,255,.05), 0 0 0 36px rgba(255,255,255,.025)", pointerEvents: "none" }} />
-        <span aria-hidden="true" className="anim-drift" style={{ position: "absolute", right: 16, bottom: 14, opacity: 0.45, display: "grid", placeItems: "center" }}>
-          <IconStar size={18} color="#f5c94a" />
-        </span>
-        <span style={{ display: "block", fontFamily: "var(--font-meta)", fontSize: 9, letterSpacing: "0.1em", textTransform: "uppercase", color: "#f5c94a", marginBottom: 10, position: "relative" }}>
-          {role === "SISWA" ? "semangat belajar" : role === "GURU" ? "ruang guru" : "ruang admin"}
-        </span>
-        <p style={{ fontWeight: 800, margin: "0 0 6px", fontSize: 14, lineHeight: 1.15, position: "relative" }}>{schoolName}</p>
-        <p style={{ margin: 0, opacity: 0.82, fontSize: 11, lineHeight: 1.55, position: "relative" }}>{promoText[role]}</p>
-      </div>
     </>
   );
 
+  const roleLabel = role === "ADMIN" ? "Admin" : role === "GURU" ? "Guru" : "Siswa";
+  const profileHref = role === "SISWA" ? "/siswa/profil" : null;
+
   return (
-    <div style={{ display: "flex", minHeight: "100vh" }}>
-      {/* Sidebar Desktop (stasioner) */}
-      <aside
-        className="dash-sidebar-desktop"
-        style={{
-          width: 232,
-          flexShrink: 0,
-          background: "#fffdf8",
-          borderRight: "1px solid rgba(23,23,22,.14)",
-          padding: "20px 14px",
-          display: "flex",
-          flexDirection: "column",
-          gap: 4,
-          position: "sticky",
-          top: 0,
-          height: "100vh",
-          overflowY: "auto",
-        }}
-      >
+    <div className="flex min-h-screen">
+      {/* Sidebar desktop */}
+      <aside className="dash-sidebar-desktop sticky top-0 flex h-screen flex-col gap-1 overflow-y-auto border-r border-line bg-cream px-3.5 py-5" style={{ width: 232, flexShrink: 0 }}>
         {sidebar}
       </aside>
 
-      {/* Drawer Mobile (Slide-over saat tombol burger diklik) */}
-      {open && (
-        <div
-          className="dash-drawer-backdrop"
-          onClick={() => setOpen(false)}
-          style={{
-            position: "fixed",
-            inset: 0,
-            background: "rgba(23,23,22,.5)",
-            backdropFilter: "blur(2px)",
-            zIndex: 50,
-          }}
-        >
-          <aside
-            role="dialog"
-            aria-label="Menu navigasi"
-            aria-modal="true"
-            onClick={(e) => e.stopPropagation()}
-            style={{
-              width: "min(84vw, 280px)",
-              height: "100%",
-              background: "#fffdf8",
-              padding: "20px 14px",
-              display: "flex",
-              flexDirection: "column",
-              gap: 4,
-              overflowY: "auto",
-              boxShadow: "4px 0 24px rgba(0,0,0,.15)",
-            }}
-          >
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", paddingBottom: 8, marginBottom: 8, borderBottom: "1px solid rgba(23,23,22,.1)" }}>
-              <span style={{ fontSize: 12, fontWeight: 700, color: "#8a8a82", textTransform: "uppercase", letterSpacing: "0.05em" }}>Menu Navigasi</span>
-              <button
-                type="button"
-                onClick={() => setOpen(false)}
-                style={{
-                  background: "transparent",
-                  border: "none",
-                  fontSize: 18,
-                  fontWeight: 700,
-                  cursor: "pointer",
-                  color: "#171716",
-                  padding: "4px 8px",
-                  borderRadius: 6,
-                }}
-                aria-label="Tutup menu"
-              >
-                <Glyph name="close" size={16} />
-              </button>
-            </div>
-            {sidebar}
-          </aside>
-        </div>
-      )}
+      {/* Drawer mobile — shadcn Sheet */}
+      <Sheet open={open} onOpenChange={setOpen}>
+        <SheetContent side="left" className="gap-1 overflow-y-auto p-0">
+          <SheetHeader className="border-b border-line">
+            <SheetTitle className="sr-only">Menu navigasi</SheetTitle>
+            <SheetDescription className="sr-only">Pilih halaman yang ingin dibuka.</SheetDescription>
+          </SheetHeader>
+          {sidebar}
+        </SheetContent>
+      </Sheet>
 
-      <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column" }}>
-        {/* Topbar */}
+      <div className="flex min-w-0 flex-1 flex-col">
+        {/* Topbar — U2: tanpa search pill; nama sekolah hanya di logo sidebar. */}
         <header
           aria-label="Navigasi utama"
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: 12,
-            padding: "12px clamp(16px, 4vw, 40px)",
-            borderBottom: "1px solid rgba(23,23,22,.14)",
-            background: "#f7f4ec",
-            position: "sticky",
-            top: 0,
-            zIndex: 20,
-          }}
+          className="sticky top-0 z-20 flex items-center gap-3 border-b border-line bg-paper px-[clamp(16px,4vw,40px)] py-3"
         >
+          {/* Burger mobile */}
           <button
-            className="dash-burger btn-ghost btn-sticker"
+            type="button"
+            className="dash-burger btn-ghost btn-sticker cursor-pointer"
             onClick={() => setOpen(true)}
             aria-label="Buka menu"
-            style={{ padding: "8px 12px", display: "none", alignItems: "center", gap: 6 }}
           >
-            <Glyph name="menu" size={16} />
-            <span style={{ fontSize: 12, fontWeight: 700 }}>Menu</span>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" aria-hidden="true">
+              <path d="M4 7h16" /><path d="M4 12h16" /><path d="M4 17h16" />
+            </svg>
+            <span className="text-xs font-bold">Menu</span>
           </button>
 
-          {/* Search pill */}
-          <span
-            role="status"
-            aria-label={`Sekolah aktif: ${schoolName}`}
-            className="dash-search-pill"
-            style={{
-              flex: 1,
-              background: "#fffdf8",
-              border: "1px solid rgba(23,23,22,.14)",
-              borderRadius: 999,
-              padding: "7px 16px",
-              color: "#74746d",
-              fontSize: 12,
-              maxWidth: 380,
-              display: "flex",
-              alignItems: "center",
-              gap: 8,
-            }}
-          >
-            <IconSchool size={14} color="#8a8a82" />
-            {schoolName}
-          </span>
+          <a href="#main-content" className="sr-only focus:not-sr-only focus:absolute focus:left-2 focus:top-2 focus:z-30 focus:rounded-lg focus:bg-ink focus:px-3 focus:py-1.5 focus:text-xs focus:text-cream">
+            Lewati ke konten
+          </a>
 
-          {/* Kanan: bell + avatar dropdown */}
-          <div style={{ display: "flex", alignItems: "center", gap: 10, marginLeft: "auto", position: "relative" }}>
+          <div className="ml-auto flex items-center gap-2.5">
             <Bell />
 
-            {/* Avatar chip: klik untuk buka dropdown profil + keluar */}
-            <button
-              type="button"
-              onClick={() => setProfileOpen((v) => !v)}
-              aria-label="Menu profil"
-              aria-expanded={profileOpen}
-              style={{ display: "flex", alignItems: "center", gap: 9, fontSize: 13, padding: "4px 4px 4px 4px", paddingLeft: 12, borderLeft: "1px solid rgba(23,23,22,.12)", background: "transparent", borderTop: "none", borderRight: "none", borderBottom: "none", cursor: "pointer", color: "inherit" }}
-            >
-              <span style={{ width: 34, height: 34, borderRadius: "50%", background: accent, color: "#fffdf8", display: "inline-flex", alignItems: "center", justifyContent: "center", fontWeight: 800, border: "2px solid #fffdf8", boxShadow: `0 0 0 2px ${accent}`, flexShrink: 0 }}>
-                {(userName || "?").slice(0, 1).toUpperCase()}
-              </span>
-              <span style={{ fontWeight: 700, maxWidth: 140, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }} className="dash-username">{userName}</span>
-              <span aria-hidden="true" style={{ fontSize: 10, color: "#8a8a82" }}>▾</span>
-            </button>
-            {profileOpen && (
-              <>
-                <div onClick={() => setProfileOpen(false)} style={{ position: "fixed", inset: 0, zIndex: 60 }} aria-hidden="true" />
-                <div style={{ position: "absolute", right: 0, top: "calc(100% + 8px)", minWidth: 240, background: "#fffdf8", border: "1px solid rgba(23,23,22,.16)", borderRadius: 16, boxShadow: "0 12px 32px rgba(23,23,22,.18)", padding: 14, zIndex: 61, display: "grid", gap: 8 }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                    <span style={{ width: 40, height: 40, borderRadius: "50%", background: accent, color: "#fffdf8", display: "inline-flex", alignItems: "center", justifyContent: "center", fontWeight: 800, fontSize: 18, flexShrink: 0 }}>
-                      {(userName || "?").slice(0, 1).toUpperCase()}
-                    </span>
-                    <div style={{ minWidth: 0 }}>
-                      <div style={{ fontWeight: 800, fontSize: 14, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{userName}</div>
-                      <div style={{ fontSize: 11, color: "#8a8a82", fontWeight: 700, textTransform: "uppercase", letterSpacing: ".06em" }}>{role}</div>
+            {/* Avatar chip + dropdown profil (Profil · Ganti sandi · Keluar) */}
+            <div className="relative">
+              <button
+                type="button"
+                onClick={() => setProfileOpen((v) => !v)}
+                aria-label="Menu profil"
+                aria-expanded={profileOpen}
+                className="flex cursor-pointer items-center gap-2 border-l border-line bg-transparent py-1 pl-3 text-[13px] text-ink outline-none"
+              >
+                <span
+                  className="grid size-[34px] shrink-0 place-items-center rounded-full border-2 border-cream font-extrabold text-cream"
+                  style={{ background: accent, boxShadow: `0 0 0 2px ${accent}` }}
+                >
+                  {(userName || "?").slice(0, 1).toUpperCase()}
+                </span>
+                <span className="dash-username max-w-[140px] overflow-hidden text-ellipsis whitespace-nowrap font-bold">{userName}</span>
+                <svg width="10" height="10" viewBox="0 0 12 12" fill="none" aria-hidden="true"><path d="M2 4l4 4 4-4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" /></svg>
+              </button>
+              {profileOpen && (
+                <>
+                  <div onClick={() => setProfileOpen(false)} className="fixed inset-0 z-[60]" aria-hidden="true" />
+                  <div className="absolute right-0 top-[calc(100%+8px)] z-[61] grid min-w-[240px] gap-2 rounded-3xl border border-line bg-cream p-3.5 shadow-2xl">
+                    <div className="flex items-center gap-2.5">
+                      <span className="grid size-10 shrink-0 place-items-center rounded-full font-extrabold text-cream" style={{ background: accent }}>
+                        {(userName || "?").slice(0, 1).toUpperCase()}
+                      </span>
+                      <div className="min-w-0">
+                        <div className="truncate text-sm font-extrabold">{userName}</div>
+                        <div className="text-[11px] font-bold tracking-wider text-muted-strong uppercase">{roleLabel}</div>
+                      </div>
+                    </div>
+                    <div className="grid border-t border-line pt-2">
+                      {profileHref && (
+                        <Link href={profileHref} onClick={() => setProfileOpen(false)} className="rounded-xl px-2 py-2 text-[13px] font-medium text-ink hover:bg-paper">
+                          Profil
+                        </Link>
+                      )}
+                      <Link href="/change-password" onClick={() => setProfileOpen(false)} className="rounded-xl px-2 py-2 text-[13px] font-medium text-ink hover:bg-paper">
+                        Ganti kata sandi
+                      </Link>
+                    </div>
+                    <div className="border-t border-line pt-2">
+                      <LogoutButton />
                     </div>
                   </div>
-                  <div style={{ fontSize: 12, color: "#74746d", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{schoolName}</div>
-                  <div style={{ borderTop: "1px solid rgba(23,23,22,.12)", paddingTop: 8 }}>
-                    <LogoutButton />
-                  </div>
-                </div>
-              </>
-            )}
+                </>
+              )}
+            </div>
           </div>
         </header>
 
-        <main id="main-content" style={{ padding: "clamp(16px, 3vw, 36px) clamp(16px, 4vw, 40px) clamp(40px, 6vh, 60px)", maxWidth: 1200 }}>
+        <main id="main-content" className="max-w-[1200px] px-[clamp(16px,4vw,40px)] pt-[clamp(16px,3vw,36px)] pb-[clamp(40px,6vh,60px)]">
           {children}
         </main>
       </div>
-
-      <style>{`
-        @media (max-width: 900px) {
-          .dash-sidebar-desktop { display: none !important; }
-          .dash-burger { display: inline-flex !important; }
-          .dash-username { display: none; }
-          .dash-search-pill { max-width: 200px !important; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-        }
-        @media (max-width: 480px) {
-          .dash-search-pill { display: none !important; }
-          .dash-burger span:last-child { display: none; }
-          .dash-burger { padding: 8px 10px !important; }
-        }
-        .side-link:hover { background: #f0ede3 !important; color: #171716 !important; }
-        .side-link:hover .side-icon { transform: rotate(12deg) scale(1.15); }
-      `}</style>
     </div>
   );
 }

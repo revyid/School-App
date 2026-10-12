@@ -9,6 +9,7 @@ export default defineConfig({
     alias: { "@": dirname },
   },
   test: {
-    include: ["server/__tests__/**/*.test.ts"],
+    include: ["server/__tests__/**/*.test.ts", "lib/__tests__/**/*.test.ts", "lib/__tests__/**/*.test.tsx"],
+    environment: "node",
   },
 });

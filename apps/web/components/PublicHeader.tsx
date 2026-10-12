@@ -14,7 +14,8 @@ import { useEffect, useRef, useState } from "react";
 import PublicLogo from "./PublicLogo";
 import AuthCta from "@/app/(portal)/AuthCta";
 
-import { Glyph } from "./Glyph";
+import { MenuIcon, XIcon } from "lucide-react";
+
 type NavItem = { href: string; label: string; accent?: boolean };
 
 const NAV: NavItem[] = [
@@ -125,7 +126,7 @@ export default function PublicHeader({ schoolName }: { schoolName: string }) {
             fontSize: 16,
           }}
         >
-          {open ? <Glyph name="close" size={18} /> : <Glyph name="menu" size={18} />}
+          {open ? <XIcon size={18} aria-hidden="true" /> : <MenuIcon size={18} aria-hidden="true" />}
         </button>
         {open && (
           <nav

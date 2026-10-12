@@ -10,6 +10,7 @@
   --color-cream: #fffdf8;
   --color-ink: #171716;
   --color-muted: #74746d;
+  --color-muted-strong: #5f5f58;
   --color-terracotta: #e85e43;
   --color-terracotta-dark: #c94b35;
   --color-olive: #71845a;
@@ -18,9 +19,65 @@
   --color-sky: #97c4db;
   --color-mint: #aec6a4;
   --color-line: rgba(23, 23, 22, 0.14);
+  --color-danger: #b3261e;
 
   --font-display: "Plus Jakarta Sans", system-ui, sans-serif;
   --font-meta: "DM Mono", ui-monospace, monospace;
+}
+
+/*
+ * Token semantik shadcn/ui — dipetakan ke palet edukids yang sudah ada.
+ * Kontras teks sekunder di atas cream: #5f5f58 ≈ 5.9:1 (lulus AA 4,5:1),
+ * menggantikan #8a8a82 (3,42:1) dan #a0a096 (2,59:1) yang gagal.
+ * Teks di atas terracotta memakai terracotta-dark #c94b35 + teks ink bila kecil.
+ */
+:root {
+  --background: #fffdf8;
+  --foreground: #171716;
+  --card: #fffdf8;
+  --card-foreground: #171716;
+  --popover: #fffdf8;
+  --popover-foreground: #171716;
+  --primary: #c94b35;
+  --primary-foreground: #fffdf8;
+  --secondary: #eeeadd;
+  --secondary-foreground: #171716;
+  --muted: #f0ede3;
+  --muted-foreground: #5f5f58;
+  --accent: #f0ede3;
+  --accent-foreground: #171716;
+  --destructive: #b3261e;
+  --destructive-foreground: #fffdf8;
+  --border: rgba(23, 23, 22, 0.16);
+  --input: rgba(23, 23, 22, 0.2);
+  --ring: #50643e;
+  --radius: 0.875rem;
+}
+
+/* Ekspos token semantik sebagai utility Tailwind v4 (bg-background, text-muted-foreground, …). */
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --radius-lg: var(--radius);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-sm: calc(var(--radius) - 4px);
 }
 
 /* Font self-host (hemat Wi-Fi sekolah, tanpa Google Fonts CDN). */

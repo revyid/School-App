@@ -1,57 +1,84 @@
 "use client";
 
-// Bell: lonceng notifikasi in-app + push notification + toast banner + suara audio chime.
-import { useEffect, useRef, useState } from "react";
+// Bell: lonceng notifikasi in-app + push + toast + suara.
+// FASE 4: N1 (rata kiri, clamp), N2 (Dialog portal vs Popover inbox),
+// N4 (AudioContext singleton), N5 (href tujuan), N9 (Switch push), N10 (state tunggal).
+import { useCallback, useEffect, useRef, useState } from "react";
 import type { Socket } from "socket.io-client";
+import Link from "next/link";
 import { api, useFetch } from "@/app/lib/api";
-import BellToggle from "./BellToggle";
-import SwipeToast from "./SwipeToast";
-import { IconBell } from "./Icons";
+import { cn } from "@/lib/utils";
+import { BellIcon, Volume2Icon, VolumeXIcon } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Switch } from "@/components/ui/switch";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
+import { NotifToast, type ToastNotif } from "./SwipeToast";
 
-type Notif = {
+export type Notif = {
   id: string;
   title: string;
   body: string;
+  href?: string | null;
+  kind?: string | null;
   readAt: string | null;
   createdAt: string;
 };
 
-// Suara notifikasi (synthesized via Web Audio API — 100% offline, ringan, merdu)
+type NotifData = { rows: Notif[]; unread: number };
+
+// ---- N4: SATU AudioContext untuk semua notifikasi (sebelumnya baru per notifikasi,
+// Safari/iOS berhenti setelah ±6 notif). resume() saat gestur pertama. ----
+let audioCtx: AudioContext | null = null;
+function getAudioCtx(): AudioContext | null {
+  try {
+    const AC = window.AudioContext || (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
+    if (!AC) return null;
+    if (!audioCtx) audioCtx = new AC();
+    return audioCtx;
+  } catch {
+    return null;
+  }
+}
 function playNotificationSound() {
   try {
-    const AudioCtx = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
-    if (!AudioCtx) return;
-    const ctx = new AudioCtx();
+    const ctx = getAudioCtx();
+    if (!ctx || ctx.state === "suspended") return;
     const now = ctx.currentTime;
-
-    // Nada 1: D5 (587.33 Hz)
     const osc1 = ctx.createOscillator();
     const gain1 = ctx.createGain();
     osc1.type = "sine";
     osc1.frequency.setValueAtTime(587.33, now);
     gain1.gain.setValueAtTime(0.12, now);
     gain1.gain.exponentialRampToValueAtTime(0.001, now + 0.35);
-    osc1.connect(gain1);
-    gain1.connect(ctx.destination);
+    osc1.connect(gain1).connect(ctx.destination);
     osc1.start(now);
     osc1.stop(now + 0.35);
 
-    // Nada 2: A5 (880 Hz)
     const osc2 = ctx.createOscillator();
     const gain2 = ctx.createGain();
     osc2.type = "sine";
     osc2.frequency.setValueAtTime(880, now + 0.1);
     gain2.gain.setValueAtTime(0.15, now + 0.1);
     gain2.gain.exponentialRampToValueAtTime(0.001, now + 0.55);
-    osc2.connect(gain2);
-    gain2.connect(ctx.destination);
+    osc2.connect(gain2).connect(ctx.destination);
     osc2.start(now + 0.1);
     osc2.stop(now + 0.55);
-  } catch {}
+  } catch { /* sunyi */ }
+}
+// Gestur pertama: resume konteks yang suspended (kebijakan autoplay browser).
+if (typeof window !== "undefined") {
+  const resume = () => { getAudioCtx()?.resume().catch(() => {}); };
+  window.addEventListener("pointerdown", resume, { once: true, passive: true });
+  window.addEventListener("keydown", resume, { once: true, passive: true });
 }
 
-// Subscribe SW push — kembalikan {ok} atau {ok:false, reason} agar UI bisa
-// menampilkan langkah perbaikan yang tepat, bukan pesan generik.
+// ---- Push helpers (tidak berubah dari versi lama) ----
 async function subscribePush(): Promise<{ ok: true } | { ok: false; reason: string }> {
   if (!("serviceWorker" in navigator) || !("PushManager" in window))
     return { ok: false, reason: "Browser ini tidak mendukung Web Push." };
@@ -65,8 +92,6 @@ async function subscribePush(): Promise<{ ok: true } | { ok: false; reason: stri
     const { publicKey } = await r.json().catch(() => ({}));
     if (!r.ok || !publicKey) return { ok: false, reason: "VAPID server belum tersedia (hubungi admin)." };
 
-    // WAJIB satu worker: /sw.js (cache + push). Jangan /sw-push.js scope "/" —
-    // itu menggantikan worker utama, subscription mati, Android tidak bunyi.
     const reg = await navigator.serviceWorker.register("/sw.js", { scope: "/" });
     await reg.update().catch(() => {});
     await navigator.serviceWorker.ready;
@@ -132,44 +157,48 @@ function timeAgo(iso: string) {
 }
 
 export default function Bell() {
-  const { data, reload } = useFetch<{ rows: Notif[]; unread: number }>("/api/notifications");
-  const [localRows, setLocalRows] = useState<Notif[]>([]);
-  const [localUnread, setLocalUnread] = useState(0);
+  // N10: satu sumber state — turunkan dari useFetch + mutate (tanpa localRows duplikat).
+  const { data, loading, refreshing, reload, mutate } = useFetch<NotifData>("/api/notifications");
+  const rows = data?.rows ?? [];
+  const unread = data?.unread ?? 0;
 
   const [open, setOpen] = useState(false);
   const [activeNotif, setActiveNotif] = useState<Notif | null>(null);
-  const [toastNotif, setToastNotif] = useState<Notif | null>(null);
+  const [toastQueue, setToastQueue] = useState<ToastNotif[]>([]);
+  const [soundOn, setSoundOn] = useState(true);
 
   const [pushState, setPushState] = useState<"unknown" | "on" | "off">("unknown");
   const [pushLoading, setPushLoading] = useState(false);
   const [pushError, setPushError] = useState<string | null>(null);
 
-  const ref = useRef<HTMLDivElement>(null);
   const lastUnreadRef = useRef<number | null>(null);
   const initialLoadRef = useRef(true);
 
-  // Sinkronkan data saat fetch selesai
+  // N4: sakelar suara tersimpan di localStorage.
   useEffect(() => {
-    if (data) {
-      setLocalRows(data.rows);
-      setLocalUnread(data.unread);
+    setSoundOn(localStorage.getItem("bell.sound") !== "off");
+  }, []);
+  const toggleSound = () => {
+    setSoundOn((v) => {
+      localStorage.setItem("bell.sound", v ? "off" : "on");
+      return !v;
+    });
+  };
 
-      // Jika unread bertambah setelah initial load, bunyikan chime + tampilkan toast
-      if (!initialLoadRef.current && lastUnreadRef.current !== null && data.unread > lastUnreadRef.current) {
-        playNotificationSound();
-        const newest = data.rows[0];
-        if (newest && !newest.readAt) {
-          setToastNotif(newest);
-        }
-      }
-      lastUnreadRef.current = data.unread;
-      initialLoadRef.current = false;
+  // Chime + antre toast hanya saat unread benar-benar naik (bukan reload).
+  useEffect(() => {
+    if (!data) return;
+    if (!initialLoadRef.current && lastUnreadRef.current !== null && data.unread > lastUnreadRef.current) {
+      if (soundOn) playNotificationSound();
+      const fresh = data.rows.filter((r) => !r.readAt).slice(0, 3 - Math.min(toastQueue.length, 3));
+      if (fresh.length) setToastQueue((q) => [...q, ...fresh].slice(0, 6));
     }
+    lastUnreadRef.current = data.unread;
+    initialLoadRef.current = false;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [data]);
 
-  // Realtime WS (dibroadcast worker): notifikasi baru langsung reload seketika
-  // + chime + toast via efek sinkron di atas — tanpa tunggu polling.
-  // Filter user otomatis: chime hanya bunyi bila unread benar-benar bertambah.
+  // Realtime WS: notif baru → reload seketika.
   const reloadRef = useRef(reload);
   useEffect(() => { reloadRef.current = reload; }, [reload]);
   useEffect(() => {
@@ -185,22 +214,21 @@ export default function Bell() {
     return () => { active = false; sock?.disconnect(); };
   }, []);
 
-  // Polling cadangan tiap 60 detik (bila WS terputus)
+  // N10: polling 60 dtk dijeda saat tab tersembunyi; refresh saat kembali aktif.
   useEffect(() => {
-    const timer = setInterval(() => {
-      reload();
-    }, 60_000);
-    return () => clearInterval(timer);
-  }, [reload]);
+    const tick = () => {
+      if (document.hidden) return;
+      reloadRef.current();
+    };
+    const onVisible = () => { if (!document.hidden) reloadRef.current(); };
+    const timer = setInterval(tick, 60_000);
+    document.addEventListener("visibilitychange", onVisible);
+    return () => {
+      clearInterval(timer);
+      document.removeEventListener("visibilitychange", onVisible);
+    };
+  }, []);
 
-  // Auto-dismiss toast setelah 6 detik
-  useEffect(() => {
-    if (!toastNotif) return;
-    const t = setTimeout(() => setToastNotif(null), 6000);
-    return () => clearTimeout(t);
-  }, [toastNotif]);
-
-  // Deteksi status push saat mount
   useEffect(() => {
     if (!("serviceWorker" in navigator) || !("PushManager" in window)) {
       setPushState("off");
@@ -213,58 +241,40 @@ export default function Bell() {
     });
   }, []);
 
-  useEffect(() => {
-    if (!activeNotif) return;
-    const onKey = (event: KeyboardEvent) => { if (event.key === "Escape") setActiveNotif(null); };
-    document.addEventListener("keydown", onKey);
-    return () => document.removeEventListener("keydown", onKey);
-  }, [activeNotif]);
+  // Buka detail (Dialog portal) + tandai dibaca via mutate.
+  const openDetail = useCallback(
+    (n: Notif) => {
+      setActiveNotif(n);
+      if (!n.readAt) {
+        const nowIso = new Date().toISOString();
+        mutate((prev) =>
+          prev
+            ? {
+                ...prev,
+                rows: prev.rows.map((r) => (r.id === n.id ? { ...r, readAt: nowIso } : r)),
+                unread: Math.max(0, prev.unread - 1),
+              }
+            : prev,
+        );
+        void api("/api/notifications/read", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ ids: [n.id] }),
+        }).catch(() => {});
+      }
+    },
+    [mutate],
+  );
 
-  // Tutup dropdown klik luar
-  useEffect(() => {
-    if (!open) return;
-    const handler = (e: MouseEvent) => {
-      const t = e.target as HTMLElement;
-      // Klik di popup detail / toast bukan klik-luar: inbox tetap terbuka.
-      if (t.closest?.('[role="dialog"]') || t.closest?.(".swipe-toast")) return;
-      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
-    };
-    document.addEventListener("mousedown", handler);
-    return () => document.removeEventListener("mousedown", handler);
-  }, [open]);
-
-  // Buka detail popup notifikasi dan tandai telah dibaca
-  async function openDetail(n: Notif) {
-    setActiveNotif(n);
-    if (!n.readAt) {
-      // Tandai di lokal seketika agar titik merah langsung hilang
-      const nowIso = new Date().toISOString();
-      setLocalRows((prev) =>
-        prev.map((item) => (item.id === n.id ? { ...item, readAt: nowIso } : item))
-      );
-      setLocalUnread((prev) => Math.max(0, prev - 1));
-
-      // Kirim ke server
-      await api("/api/notifications/read", {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({ ids: [n.id] }),
-      }).catch(() => {});
-    }
-  }
-
-  // Tandai SEMUA dibaca: hilangkan semua titik merah & set counter ke 0
-  async function readAll() {
+  const readAll = useCallback(async () => {
     const nowIso = new Date().toISOString();
-    setLocalRows((prev) => prev.map((item) => ({ ...item, readAt: nowIso })));
-    setLocalUnread(0);
-
+    mutate((prev) => (prev ? { ...prev, rows: prev.rows.map((r) => ({ ...r, readAt: nowIso })), unread: 0 } : prev));
     await api("/api/notifications/read", {
       method: "POST",
       headers: { "content-type": "application/json" },
       body: JSON.stringify({}),
     }).catch(() => {});
-  }
+  }, [mutate]);
 
   async function togglePush() {
     setPushLoading(true);
@@ -280,384 +290,220 @@ export default function Bell() {
     setPushLoading(false);
   }
 
-  const unread = localUnread;
-
   return (
     <>
-      <div ref={ref} style={{ position: "relative" }}>
-        {/* Tombol lonceng React Bits BellToggle (icon indikator tanpa label teks) */}
-        <BellToggle
-          count={unread}
-          badge
-          badgeColor="#e85e43"
-          color="#171716"
-          background="#fffdf8"
-          onColor="#fffdf8"
-          onBackground="#171716"
-          size="sm"
-          offLabel="Buka notifikasi"
-          onLabel="Tutup notifikasi"
-          label={`Notifikasi${unread > 0 ? `, ${unread} belum dibaca` : ""}`}
-          pressed={open}
-          onChange={() => {
+      <div className="relative">
+        {/* N9: lonceng = tombol ikon biasa + badge (bukan BellToggle). */}
+        <button
+          type="button"
+          onClick={() => {
             setOpen((o) => !o);
-            if (!open) reload();
+            if (!open) void reload();
           }}
-        />
+          aria-label={`Notifikasi${unread > 0 ? `, ${unread} belum dibaca` : ""}`}
+          aria-expanded={open}
+          className={cn(
+            "relative grid size-10 cursor-pointer place-items-center rounded-full border border-line bg-cream text-ink outline-none transition-colors hover:bg-paper focus-visible:ring-[3px] focus-visible:ring-ring/30",
+            open && "bg-ink text-cream",
+          )}
+        >
+          <BellIcon className="size-[18px]" />
+          {unread > 0 && (
+            <span className="absolute -top-1 -right-1 grid min-w-[18px] place-items-center rounded-full bg-terracotta px-1 text-[10px] font-extrabold text-cream" aria-hidden="true">
+              {unread > 99 ? "99+" : unread}
+            </span>
+          )}
+        </button>
 
-        {/* Dropdown panel */}
+        {/* N2: inbox = panel non-modal (bukan <Popover modal>) agar popup detail
+            yang dibuka darinya tidak menutup inbox. */}
         {open && (
-          <>
-            <div
-              className="bell-panel"
-              style={{
-                position: "absolute",
-                top: "calc(100% + 10px)",
-                right: 0,
-                width: "min(380px, calc(100vw - 24px))",
-                maxWidth: "calc(100vw - 24px)",
-                background: "#fffdf8",
-                border: "1px solid rgba(23,23,22,.14)",
-                borderRadius: 20,
-                boxShadow: "0 12px 40px rgba(23,23,22,.12)",
-                zIndex: 50,
-                overflow: "hidden",
-              }}
-            >
-              <style>{`
-                @media (max-width: 640px) {
-                  .bell-panel {
-                    position: fixed !important;
-                    top: 60px !important;
-                    left: 12px !important;
-                    right: 12px !important;
-                    width: auto !important;
-                    max-width: calc(100vw - 24px) !important;
-                    margin: 0 auto !important;
-                    box-shadow: 0 16px 48px rgba(23,23,22,.25) !important;
-                    z-index: 9999 !important;
-                  }
-                }
-              `}</style>
-            {/* Header panel */}
-            <div
-              style={{
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "space-between",
-                padding: "14px 18px 10px",
-                borderBottom: "1px solid rgba(23,23,22,.1)",
-              }}
-            >
-              <span style={{ fontWeight: 800, fontSize: 14 }}>
-                Notifikasi{" "}
-                {unread > 0 && (
-                  <span
-                    style={{
-                      marginLeft: 6,
-                      background: "#e85e43",
-                      color: "#fffdf8",
-                      borderRadius: 999,
-                      fontSize: 10,
-                      fontWeight: 800,
-                      padding: "2px 8px",
-                    }}
-                  >
-                    {unread} belum dibaca
-                  </span>
-                )}
-              </span>
-              <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-                {unread > 0 && (
-                  <button
-                    type="button"
-                    onClick={readAll}
-                    style={{
-                      fontSize: 11,
-                      color: "#e85e43",
-                      fontWeight: 700,
-                      background: "none",
-                      border: "none",
-                      cursor: "pointer",
-                      padding: 0,
-                    }}
-                  >
-                    Tandai semua dibaca
-                  </button>
-                )}
-              </div>
-            </div>
-
-            {/* List notifikasi */}
-            <ul style={{ margin: 0, padding: 0, listStyle: "none", maxHeight: 340, overflowY: "auto" }}>
-              {!data && (
-                <li style={{ padding: "20px 18px", color: "#74746d", fontSize: 13, textAlign: "left" }}>
-                  Memuat notifikasi…
-                </li>
-              )}
-              {data && localRows.length === 0 && (
-                <li style={{ padding: "24px 18px", color: "#74746d", fontSize: 13, textAlign: "left" }}>
-                  Belum ada notifikasi.
-                </li>
-              )}
-              {localRows.map((n) => {
-                const isUnread = !n.readAt;
-                return (
-                  <li key={n.id} style={{ listStyle: "none" }}>
-                    <button
-                    type="button"
-                    onClick={() => openDetail(n)}
-                    style={{
-                      padding: "12px 18px",
-                      borderBottom: "1px solid rgba(23,23,22,.07)",
-                      display: "grid",
-                      gridTemplateColumns: "10px minmax(0, 1fr) auto",
-                      gap: "0 10px",
-                      alignItems: "start",
-                      background: isUnread ? "rgba(232,94,67,.05)" : "transparent",
-                      cursor: "pointer",
-                      transition: "background .15s",
-                    }}
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.background = isUnread ? "rgba(232,94,67,.09)" : "#f7f4ec";
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.background = isUnread ? "rgba(232,94,67,.05)" : "transparent";
-                    }}
-                  >
-                    {/* Titik indikator unread (hanya muncul bila belum dibaca) */}
-                    <span
-                      style={{
-                        width: 8,
-                        height: 8,
-                        borderRadius: "50%",
-                        background: isUnread ? "#e85e43" : "transparent",
-                        marginTop: 6,
-                        flexShrink: 0,
-                      }}
-                    />
-                    <div>
-                      <p
-                        style={{
-                          margin: "0 0 2px",
-                          fontWeight: isUnread ? 700 : 500,
-                          fontSize: 13,
-                          lineHeight: 1.4,
-                          color: "#171716",
-                          textAlign: "left",
-                          overflowWrap: "anywhere",
-                          wordBreak: "break-word",
-                        }}
-                      >
-                        {n.title}
-                      </p>
-                      <p
-                        style={{
-                          margin: 0,
-                          color: "#74746d",
-                          fontSize: 12,
-                          lineHeight: 1.5,
-                          display: "-webkit-box",
-                          WebkitLineClamp: 2,
-                          WebkitBoxOrient: "vertical",
-                          overflow: "hidden",
-                          overflowWrap: "anywhere",
-                          wordBreak: "break-word",
-                        }}
-                      >
-                        {n.body}
-                      </p>
-                    </div>
-                    <span style={{ color: "#a0a096", fontSize: 10, whiteSpace: "nowrap", marginTop: 3 }}>
-                      {timeAgo(n.createdAt)}
-                    </span>
-                    </button>
-                  </li>
-                );
-              })}
-            </ul>
-
-            {/* Footer: push toggle via React Bits BellToggle (realtime state & label) */}
-            <div
-              style={{
-                padding: "12px 18px",
-                borderTop: "1px solid rgba(23,23,22,.1)",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "space-between",
-                gap: 10,
-                background: "#faf8f2",
-              }}
-            >
-              <span style={{ fontSize: 12, color: "#74746d" }}>
-                Push notifikasi HP/Browser
-              </span>
-              <BellToggle
-                offLabel="Aktifkan"
-                onLabel="Nonaktifkan"
-                size="sm"
-                color="#fffdf8"
-                background="#e85e43"
-                onColor="#171716"
-                onBackground="#eeeadd"
-                pressed={pushState === "on"}
-                disabled={pushLoading}
-                badge={false}
-                onChange={() => togglePush()}
-              />
-            </div>
-            {pushError && <p style={{ margin: "0", padding: "0 18px 12px", color: "#c94b35", fontSize: 11, overflowWrap: "anywhere" }}>{pushError}</p>}
-            </div>
-          </>
+          <BellInbox
+            rows={rows}
+            loading={loading}
+            refreshing={refreshing}
+            unread={unread}
+            soundOn={soundOn}
+            pushState={pushState}
+            pushLoading={pushLoading}
+            pushError={pushError}
+            onClose={() => setOpen(false)}
+            onOpenItem={openDetail}
+            onReadAll={readAll}
+            onToggleSound={toggleSound}
+            onTogglePush={togglePush}
+          />
         )}
       </div>
 
-      {/* POPUP MODAL DETAIL NOTIFIKASI */}
-      {activeNotif && (
-        <div
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="notification-detail-title"
-          style={{
-            position: "fixed",
-            inset: 0,
-            background: "rgba(23,23,22,.45)",
-            display: "grid",
-            placeItems: "center",
-            padding: "clamp(12px, 3vw, 20px)",
-            // Di atas dropdown bell (z 9999 di mobile) + header sticky.
-            zIndex: 10000,
-          }}
-          onClick={() => setActiveNotif(null)}
-        >
-          <div
-            style={{
-              background: "#fffdf8",
-              borderRadius: 24,
-              padding: "clamp(16px, 4vw, 28px)",
-              maxWidth: "min(480px, 94vw)",
-              width: "100%",
-              boxShadow: "0 20px 60px rgba(23,23,22,.2)",
-              border: "2px solid #171716",
-              display: "grid",
-              gap: 14,
-              maxHeight: "90vh",
-              overflowY: "auto",
-            }}
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 10 }}>
-              <div>
-                <span
-                  style={{
-                    background: "#f5c94a",
-                    border: "1px solid #171716",
-                    borderRadius: 99,
-                    padding: "2px 8px",
-                    fontSize: 10,
-                    fontWeight: 700,
-                    textTransform: "uppercase",
-                  }}
-                >
-                  Pemberitahuan
-                </span>
-                <h3 id="notification-detail-title" className="display" style={{ margin: "8px 0 2px", fontSize: 20, lineHeight: 1.25, overflowWrap: "anywhere", wordBreak: "break-word" }}>
-                  {activeNotif.title}
-                </h3>
-                <span style={{ fontSize: 11, color: "#74746d" }}>
-                  {new Date(activeNotif.createdAt).toLocaleDateString("id-ID", {
-                    day: "numeric",
-                    month: "long",
-                    year: "numeric",
-                    hour: "2-digit",
-                    minute: "2-digit",
-                  })}{" "}
-                  WIB
-                </span>
-              </div>
-              <button
-                type="button"
-                onClick={() => setActiveNotif(null)}
-                style={{
-                  background: "#eeeadd",
-                  border: "1px solid #171716",
-                  borderRadius: "50%",
-                  width: 32,
-                  height: 32,
-                  cursor: "pointer",
-                  fontWeight: 800,
-                }}
-                aria-label="Tutup detail notifikasi"
-              >
-                ×
-              </button>
-            </div>
-
-            <div
-              style={{
-                background: "#f7f4ec",
-                padding: "16px 18px",
-                borderRadius: 16,
-                fontSize: 14,
-                lineHeight: 1.65,
-                color: "#171716",
-                  whiteSpace: "pre-wrap",
-                  overflowWrap: "anywhere",
-                  wordBreak: "break-word",
-                border: "1px solid rgba(23,23,22,.1)",
-                maxHeight: "38vh",
-                overflowY: "auto",
-              }}
-            >
-              {activeNotif.body}
-            </div>
-
-            <div style={{ display: "flex", justifyContent: "flex-end", gap: 10 }}>
-              <button
-                type="button"
-                onClick={() => setActiveNotif(null)}
-                style={{
-                  background: "#171716",
-                  color: "#fffdf8",
-                  padding: "9px 20px",
-                  borderRadius: 99,
-                  fontWeight: 700,
-                  fontSize: 13,
-                  border: "none",
-                  cursor: "pointer",
-                }}
-              >
-                Tutup
-              </button>
-            </div>
+      {/* N2: popup detail = Dialog portal. Menutup dialog TIDAK menutup inbox;
+          klik di dalam dialog tidak dianggap klik-luar (portal). Fokus kembali
+          otomatis ke tombol pemicu. */}
+      <Dialog open={!!activeNotif} onOpenChange={(o) => { if (!o) setActiveNotif(null); }}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-left">{activeNotif?.title}</DialogTitle>
+            <DialogDescription className="text-left">
+              {activeNotif
+                ? new Date(activeNotif.createdAt).toLocaleDateString("id-ID", {
+                    day: "numeric", month: "long", year: "numeric", hour: "2-digit", minute: "2-digit",
+                  }) + " WIB"
+                : ""}
+            </DialogDescription>
+          </DialogHeader>
+          {/* Teks penuh membungkus (bukan terpotong). */}
+          <div className="max-h-[40vh] overflow-y-auto rounded-2xl border border-line bg-paper p-4 text-sm leading-relaxed text-ink" style={{ overflowWrap: "anywhere" }}>
+            {activeNotif?.body}
           </div>
-        </div>
-      )}
+          <div className="flex justify-end gap-2">
+            {activeNotif?.href && (
+              <Button render={<Link href={activeNotif.href} />}>Buka</Button>
+            )}
+            <Button variant="outline" onClick={() => setActiveNotif(null)}>Tutup</Button>
+          </div>
+        </DialogContent>
+      </Dialog>
 
-      {/* TOAST POPUP SAAT NOTIFIKASI BARU MASUK (React Bits SwipeToast, tema terang) */}
-      <SwipeToast
-        open={!!toastNotif}
-        onClose={() => setToastNotif(null)}
-        title={toastNotif?.title ?? ''}
-        description={toastNotif?.body ?? ''}
-        icon={<IconBell size={18} color="#e85e43" />}
-        actionLabel="Buka"
-        onAction={() => {
-          if (toastNotif) {
-            openDetail(toastNotif);
-            setToastNotif(null);
-          }
+      {/* N3: toast antre (judul maks 2 baris, isi 3 baris). */}
+      <NotifToast
+        queue={toastQueue}
+        onClose={(id) => setToastQueue((q) => q.filter((t) => t.id !== id))}
+        onOpen={(n) => {
+          const full = (data?.rows ?? []).find((r) => r.id === n.id);
+          if (full) openDetail(full);
+          setToastQueue([]);
         }}
-        background="#fffdf8"
-        color="#171716"
-        fuseColor="#e85e43"
-        width={360}
-        radius={18}
-        duration={6000}
-        fuse="bottom"
-        pauseOnHover
-        closeButton={false}
       />
     </>
+  );
+}
+
+// ---- Inbox panel (N1: daftar rata kiri, judul 2 baris, isi 2 baris) ----
+function BellInbox({
+  rows, loading, refreshing, unread, soundOn, pushState, pushLoading, pushError,
+  onClose, onOpenItem, onReadAll, onToggleSound, onTogglePush,
+}: {
+  rows: Notif[];
+  loading: boolean;
+  refreshing: boolean;
+  unread: number;
+  soundOn: boolean;
+  pushState: "unknown" | "on" | "off";
+  pushLoading: boolean;
+  pushError: string | null;
+  onClose: () => void;
+  onOpenItem: (n: Notif) => void;
+  onReadAll: () => void;
+  onToggleSound: () => void;
+  onTogglePush: () => void;
+}) {
+  const ref = useRef<HTMLDivElement>(null);
+  const [escOn, setEscOn] = useState(false);
+
+  useEffect(() => {
+    const t = setTimeout(() => setEscOn(true), 150); // hindari Esc yang membuka panel
+    if (!escOn) return () => clearTimeout(t);
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [escOn, onClose]);
+
+  // Klik/touch luar menutup inbox (pointerdown mencakup sentuhan HP).
+  useEffect(() => {
+    const handler = (e: PointerEvent) => {
+      const t = e.target as HTMLElement;
+      // Klik di dalam portal (Dialog detail) bukan klik-luar.
+      if (t.closest?.('[data-slot="dialog-content"]')) return;
+      if (ref.current && !ref.current.contains(t)) onClose();
+    };
+    document.addEventListener("pointerdown", handler);
+    return () => document.removeEventListener("pointerdown", handler);
+  }, [onClose]);
+
+  return (
+    <div
+      ref={ref}
+      role="dialog"
+      aria-label="Notifikasi"
+      className="bell-panel absolute top-[calc(100%+10px)] right-0 z-50 w-[min(380px,calc(100vw-24px))] overflow-hidden rounded-3xl border border-line bg-cream shadow-2xl"
+    >
+      {/* Header */}
+      <div className="flex items-center justify-between gap-2 border-b border-line px-4 py-3">
+        <span className="text-sm font-extrabold">
+          Notifikasi
+          {unread > 0 && (
+            <span className="ml-2 rounded-full bg-terracotta px-2 py-0.5 text-[10px] font-extrabold text-cream">
+              {unread} belum dibaca
+            </span>
+          )}
+          {refreshing && <span className="sr-only">Memuat ulang…</span>}
+        </span>
+        <div className="flex items-center gap-2">
+          {unread > 0 && (
+            <button type="button" onClick={onReadAll} className="cursor-pointer border-0 bg-none p-0 text-[11px] font-bold text-terracotta hover:underline">
+              Tandai semua dibaca
+            </button>
+          )}
+          <button
+            type="button"
+            onClick={onToggleSound}
+            className="grid size-7 cursor-pointer place-items-center rounded-full text-muted-strong transition-colors hover:bg-paper-deep"
+            aria-label={soundOn ? "Matikan suara notifikasi" : "Nyalakan suara notifikasi"}
+            aria-pressed={soundOn}
+          >
+            {soundOn ? <Volume2Icon className="size-4" /> : <VolumeXIcon className="size-4" />}
+          </button>
+        </div>
+      </div>
+
+      {/* Daftar notifikasi — N1: butir rata kiri (width penuh, text-align left). */}
+      <ul className="m-0 max-h-[340px] list-none overflow-y-auto p-0">
+        {loading && !rows.length && (
+          <li className="px-4 py-6">
+            <div className="space-y-2">
+              {[0, 1, 2].map((i) => (
+                <div key={i} className="h-12 animate-pulse rounded-xl bg-paper-deep" />
+              ))}
+            </div>
+          </li>
+        )}
+        {rows.length === 0 && !loading && (
+          <li className="px-4 py-8 text-center text-sm text-muted-foreground">Belum ada notifikasi.</li>
+        )}
+        {rows.map((n) => {
+          const isUnread = !n.readAt;
+          return (
+            <li key={n.id} className="list-none">
+              <button
+                type="button"
+                onClick={() => onOpenItem(n)}
+                className={cn(
+                  "grid w-full cursor-pointer grid-cols-[10px_minmax(0,1fr)_auto] items-start gap-x-2.5 border-b border-line/50 px-4 py-3 text-left outline-none transition-colors focus-visible:bg-paper",
+                  isUnread ? "bg-terracotta/5 hover:bg-terracotta/10" : "bg-transparent hover:bg-paper",
+                )}
+              >
+                <span className={cn("mt-1.5 size-2 shrink-0 rounded-full", isUnread ? "bg-terracotta" : "bg-transparent")} />
+                <span className="min-w-0">
+                  <span className={cn("mb-0.5 line-clamp-2 block text-[13px] leading-snug", isUnread ? "font-bold" : "font-medium", "text-ink")} style={{ overflowWrap: "anywhere" }}>
+                    {n.title}
+                  </span>
+                  <span className="line-clamp-2 block text-xs leading-snug text-muted-foreground" style={{ overflowWrap: "anywhere" }}>
+                    {n.body}
+                  </span>
+                </span>
+                <span className="mt-0.5 shrink-0 whitespace-nowrap text-[10px] text-muted-strong">{timeAgo(n.createdAt)}</span>
+              </button>
+            </li>
+          );
+        })}
+      </ul>
+
+      {/* N9: push = Switch berlabel, bukan BellToggle. */}
+      <div className="flex items-center justify-between gap-3 border-t border-line bg-paper/60 px-4 py-3">
+        <span className="text-xs text-muted-foreground">Notifikasi push di perangkat ini</span>
+        <Switch checked={pushState === "on"} onCheckedChange={() => onTogglePush()} disabled={pushLoading || pushState === "unknown"} aria-label="Aktifkan notifikasi push" />
+      </div>
+      {pushError && <p className="m-0 px-4 pb-3 text-[11px] text-terracotta-dark" style={{ overflowWrap: "anywhere" }}>{pushError}</p>}
+    </div>
   );
 }

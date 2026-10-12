@@ -1,11 +1,10 @@
-import { stat, readFile } from "node:fs/promises";
 import { NextRequest, NextResponse } from "next/server";
 import { SESSION_COOKIE } from "@sms/shared/auth";
 import { requireRole } from "@/server/auth-gate";
 import { db } from "@sms/db/client";
 import { runAsSchool } from "@sms/db/tenant";
 import { logAuth } from "@/server/audit";
-import { taskFilePath } from "@/server/task-files";
+import { serveFile } from "@/server/files";
 import { guruClassIds } from "@/server/lms-scope";
 
 async function gate(req: NextRequest, roles: ("ADMIN" | "GURU" | "SISWA")[]) {
@@ -32,15 +31,16 @@ function checkOrigin(req: NextRequest): boolean {
   }
 }
 
-// GET /api/task-files/[taskId]/[name] — unduh file materi atau submission.
+// GET /api/task-files/[taskId]/[name]?inline=1 — saji file materi/submission.
+// F6: streaming + HTTP Range (video bisa di-seek di Chrome & Safari).
 // - Materi: siswa sekelas (publish), guru kelasnya, admin.
-// - Submission milik siswa lain: DITOLAK kecuali guru kelasnya / admin (untuk menilai).
+// - Submission milik siswa lain: DITOLAK kecuali guru kelasnya / admin.
 export async function GET(req: NextRequest, { params }: { params: Promise<{ taskId: string; name: string }> }) {
   const a = await gate(req, ["ADMIN", "GURU", "SISWA"]);
   if (!a.ok) return NextResponse.json({ error: a.error }, { status: a.status });
   if (!checkOrigin(req)) return NextResponse.json({ error: "origin tidak valid" }, { status: 403 });
   const { taskId, name } = await params;
-  const fileName = name.slice(0, 120);
+  const fileName = name.slice(0, 160);
   if (fileName.includes("/") || fileName.includes("..")) {
     return NextResponse.json({ error: "nama file tidak valid" }, { status: 400 });
   }
@@ -70,29 +70,11 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ task
     if (!mine.has(t.classId)) return NextResponse.json({ error: "bukan tugas kelas Anda" }, { status: 403 });
   }
 
-  let abs: string;
-  try {
-    abs = taskFilePath(a.school.id, t.id, fileName);
-  } catch {
-    return NextResponse.json({ error: "nama file tidak valid" }, { status: 400 });
-  }
-  let st;
-  try {
-    st = await stat(abs);
-  } catch {
-    return NextResponse.json({ error: "file tidak ditemukan" }, { status: 404 });
-  }
-  const mime = (mat?.mime ?? sub?.mime ?? "application/octet-stream") as string;
-  const buf = await readFile(abs);
   await logAuth(a.school.id, "TASK.FILE_ACCESS", { actorId: a.userId, meta: { taskId: t.id, fileName } });
-  const body = new Uint8Array(buf);
-  return new NextResponse(body, {
-    headers: {
-      "content-type": mime,
-      "content-length": String(st.size),
-      "content-disposition": `attachment; filename="${fileName.replace(/"/g, "")}"`,
-      "x-content-type-options": "nosniff",
-      "cache-control": "private, max-age=3600",
-    },
-  });
+  return serveFile(
+    [a.school.id, "tasks", t.id],
+    fileName,
+    req.headers.get("range"),
+    { inline: new URL(req.url).searchParams.get("inline") === "1" },
+  );
 }

@@ -137,6 +137,11 @@
   line-height: 1.5;
   overflow-wrap: anywhere;
   word-break: break-word;
+  /* N3: judul maks 2 baris */
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
 .swipe-toast__desc {
   color: color-mix(in srgb, var(--st-ink) 66%, transparent);
@@ -144,6 +149,11 @@
   line-height: 1.4;
   overflow-wrap: anywhere;
   word-break: break-word;
+  /* N3: isi maks 3 baris */
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
 .swipe-toast__action,
 .swipe-toast__close {
