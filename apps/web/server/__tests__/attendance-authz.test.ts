@@ -44,8 +44,8 @@ beforeAll(async () => {
   siswaA = sa.u.id; siswaSid = sa.sid;
   const sb = await mkuser("SISWA", classB);
   siswaB = sb.u.id;
-  // Guru hanya mengajar classA.
-  await dbSystem.teacherClass.create({ data: { schoolId: S, teacherId: guru, classId: classA } });
+  // Guru hanya mengajar classA (via slot jadwal — shared data).
+  await dbSystem.timetableSlot.create({ data: { schoolId: S, teacherId: guru, classId: classA, dayOfWeek: 1, startTime: "07:00", endTime: "08:00" } });
 });
 
 afterAll(async () => {
@@ -60,10 +60,10 @@ describe("otorisasi absensi guru-hanya-kelasnya", () => {
     expect(s.ok).toBe(false);
   });
 
-  it("scope kelas guru = classA saja (TeacherClass)", async () => {
-    const mine = await runAsSchool(db, S, (tx) =>
-      tx.teacherClass.findMany({ where: { teacherId: guru }, select: { classId: true } }));
-    expect(mine.map((m) => m.classId)).toEqual([classA]);
+  it("scope kelas guru = classA saja (dari slot jadwal)", async () => {
+    const { guruClassIds } = await import("../lms-scope.js");
+    const mine = await guruClassIds(S, guru);
+    expect([...mine]).toEqual([classA]);
     // siswaA sekelas dengan guru; siswaB beda kelas.
     const pa = await runAsSchool(db, S, (tx) => tx.studentProfile.findUnique({ where: { userId: siswaA } }));
     const pb = await runAsSchool(db, S, (tx) => tx.studentProfile.findUnique({ where: { userId: siswaB } }));

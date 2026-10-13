@@ -3,7 +3,7 @@ import { db } from "../client.js";
 import { runAsSchool } from "../tenant.js";
 import { dbSystemTest } from "../test-utils.js"; // TEST-ONLY
 
-const RLS_TABLES = ["User", "Class", "TeacherClass", "StudentProfile", "AuditLog", "School", "Subject", "SchoolSettings", "TimetableSlot", "ImportBatch", "AttendanceRecord", "AcademicCalendar", "StudentQr", "Task", "TaskMaterial", "Submission", "Notification", "MessageOutbox", "LeaveRequest", "CaptureSession", "ParentalConsent", "PrivacyPolicy", "Assessment", "Question", "AssessQuestion", "AssessAttempt", "AssessAnswer", "StudyGroup", "StudyGroupMember", "ExpLog", "ExpBadge", "Announcement", "CollabThread", "CollabMessage", "PushSubscription", "AiChatSession", "AiChatMessage"];
+const RLS_TABLES = ["User", "Class", "StudentProfile", "AuditLog", "School", "Subject", "SchoolSettings", "TimetableSlot", "ImportBatch", "AttendanceRecord", "AcademicCalendar", "StudentQr", "Task", "TaskMaterial", "Submission", "Notification", "MessageOutbox", "LeaveRequest", "CaptureSession", "ParentalConsent", "PrivacyPolicy", "Assessment", "Question", "AssessQuestion", "AssessAttempt", "AssessAnswer", "StudyGroup", "StudyGroupMember", "ExpLog", "ExpBadge", "Announcement", "CollabThread", "CollabMessage", "PushSubscription", "AiChatSession", "AiChatMessage"];
 // Aturan: setiap tabel tenant BARU wajib ditambah di RLS_TABLES + satu blok it di bawah.
 
 let A = "", B = "";
@@ -33,7 +33,6 @@ beforeAll(async () => {
   BIDS.class = (await dbSystemTest.class.create({ data: { schoolId: B, name: uniq("K") } })).id;
   BIDS.user = (await dbSystemTest.user.create({ data: { schoolId: B, role: "SISWA", nisn: uniq("9"), name: "SB", passwordHash: "x" } })).id;
   BIDS.profile = (await dbSystemTest.studentProfile.create({ data: { schoolId: B, userId: BIDS.user, classId: BIDS.class } })).id;
-  BIDS.ta = (await dbSystemTest.teacherClass.create({ data: { schoolId: B, teacherId: BIDS.guru, classId: BIDS.class, subject: "MTK" } })).id;
   BIDS.log = (await dbSystemTest.auditLog.create({ data: { schoolId: B, action: "TEST.SEED" } })).id;
   BIDS.subject = (await dbSystemTest.subject.create({ data: { schoolId: B, name: uniq("S") } })).id;
   BIDS.settings = (await dbSystemTest.schoolSettings.create({ data: { schoolId: B, portalName: "PB" } })).id;
@@ -82,18 +81,6 @@ describe("tenant isolation", () => {
     await expect(runAsSchool(db, A, (tx: Tx) => tx.class.deleteMany({ where: { id: BIDS.class } }))).resolves.toMatchObject({ count: 0 });
     await expect(runAsSchool(db, A, (tx: Tx) =>
       tx.class.create({ data: { schoolId: B, name: uniq("J") } })
-    )).rejects.toThrow();
-  });
-
-  it("TeacherClass: INSERT lintas sekolah pakai baris baru (gagal karena RLS)", async () => {
-    const rows = await runAsSchool(db, A, (tx: Tx) => tx.teacherClass.findMany({ select: { id: true } }));
-    expect(rows.map((r) => r.id)).not.toContain(BIDS.ta);
-    await expect(runAsSchool(db, A, (tx: Tx) => tx.teacherClass.updateMany({ where: { id: BIDS.ta }, data: { subject: "j" } }))).resolves.toMatchObject({ count: 0 });
-    await expect(runAsSchool(db, A, (tx: Tx) => tx.teacherClass.deleteMany({ where: { id: BIDS.ta } }))).resolves.toMatchObject({ count: 0 });
-    const g = await dbSystemTest.user.create({ data: { schoolId: B, role: "GURU", email: `${uniq("h")}@t.id`, name: "H", passwordHash: "x" } });
-    const c = await dbSystemTest.class.create({ data: { schoolId: B, name: uniq("K") } });
-    await expect(runAsSchool(db, A, (tx: Tx) =>
-      tx.teacherClass.create({ data: { schoolId: B, teacherId: g.id, classId: c.id, subject: "j" } })
     )).rejects.toThrow();
   });
 

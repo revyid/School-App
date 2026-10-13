@@ -4,6 +4,7 @@ import { SESSION_COOKIE } from "@sms/shared/auth";
 import { requireRole } from "@/server/auth-gate";
 import { db } from "@sms/db/client";
 import { runAsSchool } from "@sms/db/tenant";
+import { guruClassIds } from "@/server/lms-scope";
 
 const root = () => process.env.UPLOADS_ROOT ?? "/data/uploads";
 const SAFE = /^[a-f0-9]{32}\.(png|jpg|webp)$/;
@@ -32,13 +33,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ name
   if (!owner) return NextResponse.json({ error: "not found" }, { status: 404 });
   let allowed = a.role === "ADMIN" || owner.userId === a.userId;
   if (!allowed && a.role === "GURU" && owner.classId) {
-    const mine = await runAsSchool(db, a.school.id, (tx) =>
-      tx.teacherClass.findFirst({ where: { teacherId: a.userId, classId: owner.classId! } }),
-    );
-    const homeroom = await runAsSchool(db, a.school.id, (tx) =>
-      tx.class.findFirst({ where: { id: owner.classId!, homeroomTeacherId: a.userId } }),
-    );
-    allowed = !!(mine || homeroom);
+    allowed = (await guruClassIds(a.school.id, a.userId)).has(owner.classId);
   }
   if (!allowed) return NextResponse.json({ error: "forbidden" }, { status: 403 });
   const path = `${root()}/${a.school.id}/avatars/${name}`;

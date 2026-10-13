@@ -64,15 +64,14 @@ describe("master-data authz", () => {
     expect((await gate(adminSid, ["ADMIN"])).ok).toBe(true);
   });
 
-  it("GURU hanya melihat siswa kelasnya (scope TeacherClass)", async () => {
-    // siswa di classId, guru belum ditugaskan -> belum terlihat
-    const mine0 = await runAsSchool(db, S, (tx) =>
-      tx.teacherClass.findMany({ where: { teacherId: guru }, select: { classId: true } }));
-    expect(mine0.map((m) => m.classId)).not.toContain(classId);
-    await dbSystem.teacherClass.create({ data: { schoolId: S, teacherId: guru, classId } });
-    const mine1 = await runAsSchool(db, S, (tx) =>
-      tx.teacherClass.findMany({ where: { teacherId: guru }, select: { classId: true } }));
-    expect(mine1.map((m) => m.classId)).toContain(classId);
+  it("GURU hanya melihat siswa kelasnya (scope dari slot jadwal)", async () => {
+    // siswa di classId, guru belum ditugaskan (belum ada slot) -> belum terlihat
+    const { guruClassIds } = await import("../lms-scope.js");
+    const mine0 = await guruClassIds(S, guru);
+    expect([...mine0]).not.toContain(classId);
+    await dbSystem.timetableSlot.create({ data: { schoolId: S, teacherId: guru, classId, dayOfWeek: 1, startTime: "07:00", endTime: "08:00" } });
+    const mine1 = await guruClassIds(S, guru);
+    expect([...mine1]).toContain(classId);
   });
 
   it("settings upsert per sekolah; guru/siswa baca tapi tak bisa tulis (di level route)", async () => {

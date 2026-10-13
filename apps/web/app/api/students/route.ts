@@ -10,6 +10,7 @@ import { logAuth } from "@/server/audit";
 import { resolveDefaultPassword } from "@/server/password";
 import { saveImportFile } from "@/server/uploads";
 import { enqueueImport } from "@/server/queue";
+import { guruClassIds } from "@/server/lms-scope";
 import { paginationSchema, studentCreateSchema, normalizePhone } from "@sms/shared/master";
 
 const ip = (r: NextRequest) => r.headers.get("x-real-ip")?.split(",")[0].trim() || "unknown";
@@ -43,13 +44,7 @@ export async function GET(req: NextRequest) {
   let classIds: string[] | undefined;
   if (a.role === "GURU") {
     // GURU hanya melihat siswa di kelas yang diajar/diampu.
-    const mine = await runAsSchool(db, a.school.id, (tx) =>
-      tx.teacherClass.findMany({ where: { teacherId: a.userId }, select: { classId: true } }),
-    );
-    const homeroom = await runAsSchool(db, a.school.id, (tx) =>
-      tx.class.findMany({ where: { homeroomTeacherId: a.userId }, select: { id: true } }),
-    );
-    classIds = [...new Set([...mine.map((m) => m.classId), ...homeroom.map((h) => h.id)])];
+    classIds = [...(await guruClassIds(a.school.id, a.userId))];
     if (classId && !classIds.includes(classId)) return NextResponse.json({ error: "forbidden" }, { status: 403 });
   }
   const whereClass = classId || (classIds ? { in: classIds } : undefined);
