@@ -8,6 +8,7 @@ const MENUS: Record<string, { utama: MenuItem[]; lainnya: MenuItem[] }> = {
     utama: [
       { href: "/siswa", label: "Dasbor", icon: "dasbor" },
       { href: "/siswa/kelasku", label: "Kelasku", icon: "kelas" },
+      { href: "/siswa/jadwal", label: "Jadwal", icon: "jadwal" },
       { href: "/siswa/pengumuman", label: "Pengumuman", icon: "pengumuman" },
       { href: "/siswa/inbox", label: "Pesan", icon: "inbox" },
       { href: "/siswa/izin", label: "Izin", icon: "izin" },
@@ -34,14 +35,14 @@ const MENUS: Record<string, { utama: MenuItem[]; lainnya: MenuItem[] }> = {
   ADMIN: {
     utama: [
       { href: "/admin", label: "Dasbor", icon: "dasbor" },
-      { href: "/admin/siswa", label: "Siswa", icon: "siswa" },
-      { href: "/admin/guru", label: "Guru", icon: "guru" },
-      { href: "/admin/kelas", label: "Kelas", icon: "kelas" },
+      { href: "/admin/pengguna", label: "Pengguna", icon: "siswa" },
       { href: "/admin/jadwal", label: "Jadwal", icon: "jadwal" },
       { href: "/admin/kehadiran", label: "Kehadiran", icon: "kehadiran" },
       { href: "/admin/pengumuman", label: "Pengumuman", icon: "pengumuman" },
     ],
     lainnya: [
+      { href: "/admin/notifikasi", label: "Notifikasi", icon: "notifikasi" },
+      { href: "/admin/kelas", label: "Kelas", icon: "kelas" },
       { href: "/admin/inbox", label: "Pesan", icon: "inbox" },
       { href: "/admin/pengaturan", label: "Pengaturan", icon: "pengaturan" },
       { href: "/admin/audit", label: "Audit", icon: "audit" },
