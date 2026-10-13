@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import QRCode from "qrcode";
 import JSZip from "jszip";
+import { type ColumnDef } from "@tanstack/react-table";
 import { api, useFetch } from "@/app/lib/api";
 import {
   Panel,
@@ -11,13 +12,12 @@ import {
   TextSelect,
   Btn,
   Badge,
-  WarmTable,
-  warmCell,
   Note,
   Err,
   LinkBtn,
 } from "@/components/DashUI";
 import ConfirmDialog from "@/components/ConfirmDialog";
+import { DataTable, selectColumn, actionsColumn } from "@/components/ui/data-table";
 
 interface StudentRow {
   userId: string;
@@ -166,6 +166,48 @@ export default function SiswaManager() {
 
   const totalPages = data ? Math.max(1, Math.ceil(data.total / data.perPage)) : 1;
 
+  const columns: ColumnDef<StudentRow, unknown>[] = useMemo(() => [
+    selectColumn<StudentRow>(),
+    {
+      accessorKey: "user.name",
+      header: "Nama Siswa",
+      cell: ({ row }) => {
+        const r = row.original;
+        return (
+          <span style={{ fontWeight: 700 }}>
+            {r.user.name}
+            <div style={{ fontWeight: 400, fontSize: 12, color: "#74746d" }}>NISN: {r.user.nisn ?? "-"}</div>
+          </span>
+        );
+      },
+    },
+    {
+      id: "kelas",
+      header: "Kelas",
+      cell: ({ row }) => row.original.class?.name ?? "-",
+    },
+    {
+      accessorKey: "parentPhone",
+      header: "No Ortu",
+      cell: ({ row }) => row.original.parentPhone ?? "-",
+    },
+    {
+      id: "status",
+      header: "Status",
+      cell: ({ row }) => (
+        <Badge status={row.original.user.isActive ? "AKTIF" : "NONAKTIF"}>
+          {row.original.user.isActive ? "Aktif" : "Nonaktif"}
+        </Badge>
+      ),
+    },
+    actionsColumn<StudentRow>((r) => [
+      { label: "Unduh QR (PNG)", onClick: () => downloadSingleCard(r) },
+      { label: "Edit", onClick: () => startEdit(r) },
+      { label: "Reset password", onClick: () => resetPw(r) },
+      { label: r.user.isActive ? "Nonaktifkan" : "Aktifkan", onClick: () => toggleActive(r) },
+    ]),
+  ], [downloadSingleCard, startEdit, resetPw, toggleActive]);
+
   // Form Tambah Siswa Baru (1 per 1)
   const [showAddForm, setShowAddForm] = useState(false);
   const [newName, setNewName] = useState("");
@@ -286,6 +328,22 @@ export default function SiswaManager() {
         return;
       }
       setCreatedPw({ name: r.user.name, pw: d.tempPassword });
+    });
+  }
+
+  async function setAktifBulk(ids: string[], aktif: boolean) {
+    if (ids.length === 0) return;
+    const label = aktif ? "Aktifkan" : "Nonaktifkan";
+    askConfirm(`${label} Siswa`, `${label} ${ids.length} siswa terpilih?`, async () => {
+      for (const id of ids) {
+        await api(`/api/students/${id}`, {
+          method: "PATCH",
+          csrf: true,
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ isActive: aktif }),
+        });
+      }
+      reload();
     });
   }
 
@@ -475,69 +533,34 @@ export default function SiswaManager() {
 
       {/* Tabel Siswa */}
       <Panel style={{ marginTop: 16 }}>
-        <Toolbar>
-          <TextInput
-            placeholder="Cari nama / NISN…"
-            value={q}
-            onChange={(e) => setQ(e.target.value)}
-            style={{ maxWidth: 260 }}
-          />
-          <TextSelect
-            value={classId}
-            onChange={(e) => {
-              setClassId(e.target.value);
-              setPage(1);
-            }}
-          >
-            <option value="">Semua kelas</option>
-            {classes?.rows.map((c) => (
-              <option key={c.id} value={c.id}>
-                Kelas {c.name}
-              </option>
-            ))}
-          </TextSelect>
-        </Toolbar>
-
-        {loading && <Note>Memuat data siswa…</Note>}
-        {error && <Err>Error: {error}</Err>}
-        {data && data.rows.length === 0 && <Note>Tidak ada siswa yang cocok.</Note>}
-        {data && data.rows.length > 0 && (
-          <>
-            <WarmTable head={["Nama Siswa", "NISN", "Kelas", "No Ortu", "Status", "Aksi Kartu & Akun"]}>
-              {data.rows.map((r) => (
-                <tr key={r.userId}>
-                  <td style={warmCell({ fontWeight: 700 })}>{r.user.name}</td>
-                  <td style={warmCell()}>{r.user.nisn ?? "-"}</td>
-                  <td style={warmCell()}>{r.class?.name ?? "-"}</td>
-                  <td style={warmCell()}>{r.parentPhone ?? "-"}</td>
-                  <td style={warmCell()}>
-                    <Badge status={r.user.isActive ? "AKTIF" : "NONAKTIF"}>
-                      {r.user.isActive ? "Aktif" : "Nonaktif"}
-                    </Badge>
-                  </td>
-                  <td style={warmCell()}>
-                    <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-                      <Btn
-                        kind="ghost"
-                        onClick={() => downloadSingleCard(r)}
-                        title="Unduh PNG Kartu QR dengan Nama, Kelas, NISN"
-                      >
-                        Unduh QR (PNG)
-                      </Btn>
-                      <Btn kind="ghost" onClick={() => startEdit(r)}>
-                        Edit
-                      </Btn>
-                      <Btn kind="ghost" onClick={() => resetPw(r)}>
-                        Reset PW
-                      </Btn>
-                      <Btn kind="ghost" onClick={() => toggleActive(r)}>
-                        {r.user.isActive ? "Nonaktifkan" : "Aktifkan"}
-                      </Btn>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </WarmTable>
+        <DataTable<StudentRow>
+          columns={columns}
+          rows={data?.rows ?? []}
+          getRowId={(r) => r.userId}
+          searchValue={q}
+          onSearchChange={(v) => { setQ(v); setPage(1); }}
+          searchPlaceholder="Cari nama / NISN…"
+          filters={(
+            <label style={{ display: "grid", gap: 6, fontSize: 13, color: "#74746d" }}>
+              Kelas:
+              <TextSelect
+                value={classId}
+                onChange={(e) => { setClassId(e.target.value); setPage(1); }}
+                style={{ minHeight: 44 }}
+              >
+                <option value="">Semua kelas</option>
+                {classes?.rows.map((c) => (
+                  <option key={c.id} value={c.id}>Kelas {c.name}</option>
+                ))}
+              </TextSelect>
+            </label>
+          )}
+          bulkActions={[
+            { label: "Aktifkan terpilih", onClick: (ids) => setAktifBulk(ids, true) },
+            { label: "Nonaktifkan terpilih", onClick: (ids) => setAktifBulk(ids, false) },
+          ]}
+          emptyText="Tidak ada siswa yang cocok."
+        />
 
             <Toolbar>
               <Btn kind="ghost" disabled={page <= 1} onClick={() => setPage((p) => p - 1)}>
@@ -550,8 +573,6 @@ export default function SiswaManager() {
                 Berikutnya ›
               </Btn>
             </Toolbar>
-          </>
-        )}
       </Panel>
 
       {/* Modal Edit Siswa */}

@@ -31,7 +31,8 @@ export async function GET(req: NextRequest) {
   const perPage = p.success ? p.data.perPage : 50;
   const rows = await runAsSchool(db, a.school.id, (tx) =>
     tx.class.findMany({
-      include: {
+      select: {
+        id: true, name: true, gradeLevel: true,
         homeroomTeacher: { select: { id: true, name: true } },
         _count: { select: { students: true } },
       },
