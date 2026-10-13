@@ -31,7 +31,9 @@ interface Detail {
   task: {
     id: string; title: string; type: string; instruction: string; deadline: string | null; publishAt: string;
     allowLate: boolean; isGroup: boolean; groupMin: number; groupMax: number; status: string;
-    class: { id: string; name: string }; subject: { id: string; name: string } | null;
+    class: { id: string; name: string };
+    targets?: { id: string; classId: string; class: { id: string; name: string }; deadline: string | null }[];
+    subject: { id: string; name: string } | null;
     materials: { id: string; kind: string; text: string | null; fileName: string | null; mime: string | null; isMain: boolean; isExample: boolean; categoryId: string | null }[];
     categories: { id: string; name: string; instruction: string | null; required: boolean; accept: string[]; examples: unknown[] }[];
   };
@@ -71,10 +73,31 @@ export default function GuruTugasDetail({ params }: { params: Promise<{ id: stri
   const [nudgeWa, setNudgeWa] = useState(false);
   const [nudgeResult, setNudgeResult] = useState<{ summary?: { total: number; waQueued: number; noPhone: string[] } } | null>(null);
   const [nudgeBusy, setNudgeBusy] = useState(false);
-  const [edit, setEdit] = useState({ title: "", instruction: "", deadline: "", allowLate: false });
+  const [edit, setEdit] = useState<{
+    title?: string; instruction?: string; deadline?: string; allowLate?: boolean;
+    subjectId?: string | null; type?: string; publishAt?: string;
+    isGroup?: boolean; groupMin?: number; groupMax?: number;
+  }>({});
   const [editMsg, setEditMsg] = useState<string | null>(null);
+  const [newCatName, setNewCatName] = useState("");
+  const [newCatAccept, setNewCatAccept] = useState<string[]>([]);
+  const [newCatRequired, setNewCatRequired] = useState(false);
+  const [catBusy, setCatBusy] = useState(false);
+  const subjects = useFetch<{ rows: { id: string; name: string }[] }>("/api/subjects");
+  const tClsId = detail.data?.task.class.id ?? "";
+  // Mapel kelas tugas ini dari jadwal (auto-mapping); fallback global.
+  const mapelKelas = useFetch<{ subjects: { id: string | null; name: string }[] }>(
+    tClsId ? `/api/timetable/subjects?classId=${tClsId}` : null,
+  );
+  const mapelOpts = (mapelKelas.data && mapelKelas.data.subjects.length > 0)
+    ? mapelKelas.data.subjects.filter((s) => s.id).map((s) => ({ id: s.id as string, name: s.name }))
+    : (subjects.data?.rows ?? []);
   const [savedScore, setSavedScore] = useState<Record<string, string>>({});
   const waReady = useFetch<{ connected: boolean }>(`/api/wa/ready`);
+  const myClasses = useFetch<{ rows: { id: string; class: { id: string; name: string } }[] }>("/api/assignments");
+  const kelasUnik = (myClasses.data?.rows ?? []).filter((r, i, a) => a.findIndex((x) => x.class.id === r.class.id) === i);
+  const [selectedAddClass, setSelectedAddClass] = useState("");
+  const [addClassBusy, setAddClassBusy] = useState(false);
 
   const t = detail.data?.task;
   const cats = t?.categories ?? [];
@@ -119,19 +142,44 @@ export default function GuruTugasDetail({ params }: { params: Promise<{ id: stri
 
   async function simpanPengaturan() {
     if (!t) return;
+    const body: Record<string, unknown> = {
+      title: edit.title ?? t.title,
+      instruction: edit.instruction ?? t.instruction,
+      deadline: edit.deadline !== undefined ? (edit.deadline ? new Date(edit.deadline).toISOString() : null) : (t.deadline ? new Date(t.deadline).toISOString() : null),
+      allowLate: edit.allowLate !== undefined ? edit.allowLate : t.allowLate,
+    };
+    if (edit.subjectId !== undefined) body.subjectId = edit.subjectId;
+    if (edit.type !== undefined) body.type = edit.type;
+    if (edit.publishAt !== undefined) body.publishAt = edit.publishAt ? new Date(edit.publishAt).toISOString() : null;
+    if (edit.isGroup !== undefined) body.isGroup = edit.isGroup;
+    if (edit.groupMin !== undefined) body.groupMin = edit.groupMin;
+    if (edit.groupMax !== undefined) body.groupMax = edit.groupMax;
     const res = await api(`/api/tasks/${t.id}`, {
       method: "PATCH",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({
-        title: edit.title || t.title,
-        instruction: edit.instruction || t.instruction,
-        deadline: edit.deadline ? new Date(edit.deadline).toISOString() : null,
-        allowLate: edit.allowLate,
-      }),
+      body: JSON.stringify(body),
     });
     const d = await res.json().catch(() => ({}));
     if (!res.ok) setEditMsg(d.error || "Gagal menyimpan");
     else { setEditMsg("Tersimpan"); detail.reload(); }
+  }
+
+  async function tambahKategori() {
+    if (!t || !newCatName.trim()) return;
+    setCatBusy(true);
+    const res = await api(`/api/tasks/${t.id}/categories`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ name: newCatName.trim(), accept: newCatAccept, required: newCatRequired }),
+    });
+    setCatBusy(false);
+    if (res.ok) { setNewCatName(""); setNewCatAccept([]); setNewCatRequired(false); detail.reload(); }
+  }
+
+  async function hapusKategori(catId: string) {
+    if (!t) return;
+    await api(`/api/tasks/${t.id}/categories/${catId}`, { method: "DELETE" });
+    detail.reload();
   }
 
   async function terbitkan(publish: boolean) {
@@ -404,61 +452,274 @@ export default function GuruTugasDetail({ params }: { params: Promise<{ id: stri
         {/* ---- Pengaturan ---- */}
         <TabsContent value="pengaturan">
           <div className="grid gap-3 lg:grid-cols-2">
+            {/* Kartu kiri: edit semua field tugas */}
             <div className="card space-y-3 p-5">
               <h2 className="font-extrabold">Edit tugas</h2>
+
+              {/* FASE 3: Kelola target kelas (multi-kelas) */}
+              <div className="space-y-2 rounded-xl border border-line bg-paper/40 p-3">
+                <span className="block text-[12px] font-bold text-muted-strong uppercase tracking-wide">
+                  Kelas yang ditugaskan
+                </span>
+                <div className="flex flex-wrap gap-2">
+                  <span className="inline-flex items-center gap-1 rounded-full border border-line bg-paper px-2.5 py-0.5 text-xs font-bold text-ink">
+                    {t.class.name} <span className="text-[10px] text-muted-strong">(utama)</span>
+                  </span>
+                  {t.targets?.filter((tg) => tg.classId !== t.class.id).map((tg) => (
+                    <span key={tg.classId} className="inline-flex items-center gap-1.5 rounded-full border border-line bg-paper px-2.5 py-0.5 text-xs font-bold text-ink">
+                      {tg.class.name}
+                      <button
+                        type="button"
+                        onClick={async () => {
+                          if (!confirm(`Hapus penugasan dari kelas ${tg.class.name}?`)) return;
+                          await api(`/api/tasks/${t.id}?scope=kelas&classId=${tg.classId}`, { method: "DELETE" });
+                          detail.reload();
+                        }}
+                        className="text-terracotta hover:opacity-70"
+                        title="Hapus dari kelas ini"
+                      >
+                        ×
+                      </button>
+                    </span>
+                  ))}
+                </div>
+                {kelasUnik.filter((k) => k.class.id !== t.class.id && !t.targets?.some((tg) => tg.classId === k.class.id)).length > 0 && (
+                  <div className="flex items-center gap-2 pt-1">
+                    <select
+                      value={selectedAddClass}
+                      onChange={(e) => setSelectedAddClass(e.target.value)}
+                      className="h-8 rounded-lg border border-input bg-background px-2 text-xs"
+                    >
+                      <option value="">— Tambah ke kelas lain —</option>
+                      {kelasUnik
+                        .filter((k) => k.class.id !== t.class.id && !t.targets?.some((tg) => tg.classId === k.class.id))
+                        .map((k) => (
+                          <option key={k.class.id} value={k.class.id}>{k.class.name}</option>
+                        ))}
+                    </select>
+                    <button
+                      type="button"
+                      disabled={!selectedAddClass || addClassBusy}
+                      onClick={async () => {
+                        if (!selectedAddClass) return;
+                        setAddClassBusy(true);
+                        await api(`/api/tasks/${t.id}`, {
+                          method: "PATCH",
+                          headers: { "content-type": "application/json" },
+                          body: JSON.stringify({ target: { classId: selectedAddClass } }),
+                        });
+                        setAddClassBusy(false);
+                        setSelectedAddClass("");
+                        detail.reload();
+                      }}
+                      className="btn-sticker rounded-lg border border-line bg-paper px-2.5 py-1 text-xs font-bold"
+                    >
+                      + Tambah
+                    </button>
+                  </div>
+                )}
+              </div>
+
               <div className="grid gap-1.5">
                 <Label htmlFor="ed-title">Judul</Label>
-                <Input id="ed-title" value={edit.title || t.title} onChange={(e) => setEdit((p) => ({ ...p, title: e.target.value }))} maxLength={200} />
+                <Input id="ed-title" value={edit.title ?? t.title} onChange={(e) => setEdit((p) => ({ ...p, title: e.target.value }))} maxLength={200} />
               </div>
+
+              <div className="grid gap-1.5">
+                <Label htmlFor="ed-subject">Mata pelajaran</Label>
+                <select
+                  id="ed-subject"
+                  className="h-9 w-full rounded-lg border border-input bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                  value={edit.subjectId !== undefined ? (edit.subjectId ?? "") : (t.subject?.id ?? "")}
+                  onChange={(e) => setEdit((p) => ({ ...p, subjectId: e.target.value || null }))}
+                >
+                  <option value="">— Tidak ada —</option>
+                  {mapelOpts.map((s) => (
+                    <option key={s.id} value={s.id}>{s.name}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="grid gap-1.5">
+                <Label htmlFor="ed-type">Tipe tugas</Label>
+                <select
+                  id="ed-type"
+                  className="h-9 w-full rounded-lg border border-input bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                  value={edit.type ?? t.type}
+                  onChange={(e) => setEdit((p) => ({ ...p, type: e.target.value }))}
+                >
+                  {Object.entries(TASK_TYPE_LABEL).map(([val, label]) => (
+                    <option key={val} value={val}>{label}</option>
+                  ))}
+                </select>
+              </div>
+
               <div className="grid gap-1.5">
                 <Label htmlFor="ed-instr">Instruksi (markdown)</Label>
-                <Textarea id="ed-instr" rows={6} value={edit.instruction || t.instruction} onChange={(e) => setEdit((p) => ({ ...p, instruction: e.target.value }))} />
+                <Textarea id="ed-instr" rows={5} value={edit.instruction ?? t.instruction} onChange={(e) => setEdit((p) => ({ ...p, instruction: e.target.value }))} />
               </div>
+
               <div className="grid gap-1.5">
                 <Label htmlFor="ed-deadline">Tenggat</Label>
-                <Input id="ed-deadline" type="datetime-local" value={edit.deadline || (t.deadline ? new Date(t.deadline).toISOString().slice(0, 16) : "")} onChange={(e) => setEdit((p) => ({ ...p, deadline: e.target.value }))} />
+                <Input
+                  id="ed-deadline"
+                  type="datetime-local"
+                  value={edit.deadline !== undefined ? edit.deadline : (t.deadline ? new Date(t.deadline).toISOString().slice(0, 16) : "")}
+                  onChange={(e) => setEdit((p) => ({ ...p, deadline: e.target.value }))}
+                />
               </div>
+
+              <div className="grid gap-1.5">
+                <Label htmlFor="ed-publishat">Jadwal terbit (publishAt)</Label>
+                <Input
+                  id="ed-publishat"
+                  type="datetime-local"
+                  value={edit.publishAt !== undefined ? edit.publishAt : (t.publishAt ? new Date(t.publishAt).toISOString().slice(0, 16) : "")}
+                  onChange={(e) => setEdit((p) => ({ ...p, publishAt: e.target.value }))}
+                />
+              </div>
+
               <label className="flex items-center gap-2 text-sm font-medium">
-                <Checkbox checked={edit.allowLate || t.allowLate} onCheckedChange={(v) => setEdit((p) => ({ ...p, allowLate: v === true }))} />
+                <Checkbox checked={edit.allowLate !== undefined ? edit.allowLate : t.allowLate} onCheckedChange={(v) => setEdit((p) => ({ ...p, allowLate: v === true }))} />
                 Boleh terlambat
               </label>
+
+              <div className="space-y-2 rounded-lg border border-line p-3">
+                <div className="flex items-center gap-3">
+                  <Label htmlFor="ed-isgroup" className="flex-1">Tugas kelompok</Label>
+                  <Switch
+                    id="ed-isgroup"
+                    checked={edit.isGroup !== undefined ? edit.isGroup : t.isGroup}
+                    onCheckedChange={(v) => setEdit((p) => ({ ...p, isGroup: v }))}
+                  />
+                </div>
+                {(edit.isGroup !== undefined ? edit.isGroup : t.isGroup) && (
+                  <div className="grid grid-cols-2 gap-2">
+                    <div className="grid gap-1">
+                      <Label htmlFor="ed-gmin" className="text-xs">Min anggota</Label>
+                      <Input
+                        id="ed-gmin"
+                        type="number"
+                        min={1}
+                        max={99}
+                        className="h-8"
+                        value={edit.groupMin !== undefined ? edit.groupMin : t.groupMin}
+                        onChange={(e) => setEdit((p) => ({ ...p, groupMin: Number(e.target.value) }))}
+                      />
+                    </div>
+                    <div className="grid gap-1">
+                      <Label htmlFor="ed-gmax" className="text-xs">Maks anggota</Label>
+                      <Input
+                        id="ed-gmax"
+                        type="number"
+                        min={1}
+                        max={99}
+                        className="h-8"
+                        value={edit.groupMax !== undefined ? edit.groupMax : t.groupMax}
+                        onChange={(e) => setEdit((p) => ({ ...p, groupMax: Number(e.target.value) }))}
+                      />
+                    </div>
+                  </div>
+                )}
+              </div>
+
               <Button variant="sticker" onClick={() => void simpanPengaturan()}>Simpan</Button>
               {editMsg && <p className="text-sm font-bold text-olive-deep">{editMsg}</p>}
             </div>
-            <div className="card space-y-3 p-5">
-              <h2 className="font-extrabold">Materi & kategori</h2>
-              <ul className="space-y-1 text-sm">
-                {(t.materials ?? []).map((m) => (
-                  <li key={m.id} className="flex items-center justify-between gap-2">
-                    <span className="truncate">{m.kind === "TEXT" ? m.text?.slice(0, 60) : m.fileName}</span>
-                    <Button variant="ghost" size="icon-xs" aria-label="Hapus materi"
-                      onClick={async () => { await api(`/api/tasks/${t.id}/materials/${m.id}`, { method: "DELETE" }); detail.reload(); }}>
-                      <Trash2Icon className="size-3.5" />
-                    </Button>
-                  </li>
-                ))}
-              </ul>
-              <p className="text-xs text-muted-foreground">Tambah materi/kategori dari wizard "Tugas baru" atau tombol edit di daftar tugas.</p>
-              <h3 className="pt-2 font-extrabold">Status</h3>
-              <div className="flex gap-2">
-                {t.status === "DRAFT" ? (
-                  <Button variant="sticker" onClick={() => void terbitkan(true)}>Terbitkan</Button>
-                ) : (
-                  <Button variant="outline" onClick={() => void terbitkan(false)}>Batalkan terbit</Button>
-                )}
-                <AlertDialog>
-                  <AlertDialogTrigger render={<Button variant="destructive" />}>Hapus tugas</AlertDialogTrigger>
-                  <AlertDialogContent>
-                    <AlertDialogHeader>
-                      <AlertDialogTitle>Hapus tugas ini?</AlertDialogTitle>
-                      <AlertDialogDescription>Tugas dan semua materi akan dihapus permanen. Hanya bisa bila belum ada pengumpulan.</AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                      <AlertDialogCancel>Batal</AlertDialogCancel>
-                      <AlertDialogAction onClick={() => void hapusTugas()}>Hapus</AlertDialogAction>
-                    </AlertDialogFooter>
-                  </AlertDialogContent>
-                </AlertDialog>
+
+            {/* Kartu kanan: materi, kategori, status */}
+            <div className="card space-y-4 p-5">
+              <div>
+                <h2 className="font-extrabold">Materi</h2>
+                <ul className="mt-2 space-y-1 text-sm">
+                  {(t.materials ?? []).map((m) => (
+                    <li key={m.id} className="flex items-center justify-between gap-2">
+                      <span className="truncate">{m.kind === "TEXT" ? m.text?.slice(0, 60) : m.fileName}</span>
+                      <Button variant="ghost" size="icon-xs" aria-label="Hapus materi"
+                        onClick={async () => { await api(`/api/tasks/${t.id}/materials/${m.id}`, { method: "DELETE" }); detail.reload(); }}>
+                        <Trash2Icon className="size-3.5" />
+                      </Button>
+                    </li>
+                  ))}
+                  {(t.materials ?? []).length === 0 && <li className="text-xs text-muted-foreground">Belum ada materi.</li>}
+                </ul>
+              </div>
+
+              <div>
+                <h3 className="font-extrabold">Kategori unggahan</h3>
+                <ul className="mt-2 space-y-1 text-sm">
+                  {cats.map((c) => (
+                    <li key={c.id} className="flex items-center justify-between gap-2">
+                      <span className="truncate">
+                        <strong>{c.name}</strong>
+                        {" "}{c.required ? "(wajib)" : "(opsional)"}{" · "}{c.accept.join(", ")}
+                      </span>
+                      <Button variant="ghost" size="icon-xs" aria-label={`Hapus kategori ${c.name}`}
+                        onClick={() => void hapusKategori(c.id)}>
+                        <Trash2Icon className="size-3.5" />
+                      </Button>
+                    </li>
+                  ))}
+                  {cats.length === 0 && <li className="text-xs text-muted-foreground">Belum ada kategori.</li>}
+                </ul>
+
+                {/* Form tambah kategori */}
+                <div className="mt-3 space-y-2 rounded-lg border border-line p-3">
+                  <p className="text-xs font-extrabold uppercase tracking-wide text-muted-strong">Tambah kategori</p>
+                  <div className="grid gap-1">
+                    <Label htmlFor="cat-name" className="text-xs">Nama kategori</Label>
+                    <Input id="cat-name" className="h-8" placeholder="mis. Laporan PDF" value={newCatName} onChange={(e) => setNewCatName(e.target.value)} maxLength={80} />
+                  </div>
+                  <div className="grid gap-1">
+                    <p className="text-xs font-medium">Tipe file diterima</p>
+                    <div className="flex flex-wrap gap-3">
+                      {(["PDF", "IMAGE", "VIDEO", "DOC"] as const).map((ft) => (
+                        <label key={ft} className="flex items-center gap-1.5 text-xs font-medium">
+                          <Checkbox
+                            checked={newCatAccept.includes(ft)}
+                            onCheckedChange={(v) =>
+                              setNewCatAccept((prev) =>
+                                v === true ? [...prev, ft] : prev.filter((x) => x !== ft)
+                              )
+                            }
+                          />
+                          {ft}
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+                  <label className="flex items-center gap-2 text-xs font-medium">
+                    <Checkbox checked={newCatRequired} onCheckedChange={(v) => setNewCatRequired(v === true)} />
+                    Wajib dikumpulkan
+                  </label>
+                  <Button variant="sticker-ghost" size="sm" disabled={catBusy || !newCatName.trim()} onClick={() => void tambahKategori()}>
+                    <PlusIcon className="size-3.5" /> Tambah kategori
+                  </Button>
+                </div>
+              </div>
+
+              <div>
+                <h3 className="font-extrabold">Status</h3>
+                <div className="mt-2 flex gap-2">
+                  {t.status === "DRAFT" ? (
+                    <Button variant="sticker" onClick={() => void terbitkan(true)}>Terbitkan</Button>
+                  ) : (
+                    <Button variant="outline" onClick={() => void terbitkan(false)}>Batalkan terbit</Button>
+                  )}
+                  <AlertDialog>
+                    <AlertDialogTrigger render={<Button variant="destructive" />}>Hapus tugas</AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>Hapus tugas ini?</AlertDialogTitle>
+                        <AlertDialogDescription>Tugas dan semua materi akan dihapus permanen. Hanya bisa bila belum ada pengumpulan.</AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>Batal</AlertDialogCancel>
+                        <AlertDialogAction onClick={() => void hapusTugas()}>Hapus</AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
+                </div>
               </div>
             </div>
           </div>

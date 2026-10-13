@@ -39,18 +39,34 @@ export async function GET(req: NextRequest) {
     const rows = await runAsSchool(db, a.school.id, (tx) =>
       tx.assessment.findMany({
         where: { classId, publishAt: { lte: now } },
-        select: { id: true, title: true, deadline: true, durationMin: true, createdAt: true, showChart: true },
+        select: {
+          id: true, title: true, deadline: true, durationMin: true, createdAt: true, showChart: true,
+          subjectId: true, subject: { select: { name: true } },
+          attempts: { where: { studentId: a.userId }, select: { submittedAt: true, score: true } },
+        },
         orderBy: { createdAt: "desc" },
         take: 100,
       }));
-    return NextResponse.json({ rows });
+    return NextResponse.json({
+      rows: rows.map((r) => ({
+        id: r.id, title: r.title, deadline: r.deadline, durationMin: r.durationMin,
+        createdAt: r.createdAt, showChart: r.showChart,
+        subjectId: r.subjectId, subjectName: r.subject?.name ?? null,
+        submitted: !!r.attempts[0]?.submittedAt, score: r.attempts[0]?.score ?? null,
+      })),
+    });
   }
   const where: { authorId?: string } = {};
   if (a.role === "GURU") where.authorId = a.userId;
   const rows = await runAsSchool(db, a.school.id, (tx) =>
     tx.assessment.findMany({
       where,
-      include: { _count: { select: { questions: true, attempts: true } } },
+      include: {
+        class: { select: { id: true, name: true } },
+        subject: { select: { id: true, name: true } },
+        targets: { include: { class: { select: { id: true, name: true } } }, orderBy: { createdAt: "asc" } },
+        _count: { select: { questions: true, attempts: true } },
+      },
       orderBy: { createdAt: "desc" },
       take: 200,
     }));
@@ -68,14 +84,23 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "input tidak valid", detail: body.error.issues[0]?.message }, { status: 400 });
   }
   const v = body.data;
+  // FASE 3 shared: classTargets (multi-kelas) atau fallback classId tunggal.
+  const assessTargets: { classId: string; deadline?: string | null; publishAt?: string | null }[] =
+    (v.classTargets?.length ? v.classTargets : [{
+      classId: v.classId,
+      deadline: v.deadline ?? null,
+      publishAt: v.publishAt ?? null,
+    }]);
+  const assessClassIds = [...new Set(assessTargets.map((t) => t.classId))];
   if (a.role === "GURU") {
     const mine = await guruClassIds(a.school.id, a.userId);
-    if (!mine.has(v.classId)) {
+    const outside = assessClassIds.filter((c) => !mine.has(c));
+    if (outside.length > 0) {
       return NextResponse.json({ error: "bukan kelas Anda" }, { status: 403 });
     }
   } else {
     const cls = await runAsSchool(db, a.school.id, (tx) =>
-      tx.class.findFirst({ where: { id: v.classId }, select: { id: true } }));
+      tx.class.findFirst({ where: { id: { in: assessClassIds } }, select: { id: true } }));
     if (!cls) return NextResponse.json({ error: "kelas tidak ditemukan" }, { status: 404 });
   }
   // Ambil bank milik guru ini (ADMIN boleh ambil bank siapa pun di sekolahnya).
@@ -92,22 +117,31 @@ export async function POST(req: NextRequest) {
   if (bank.length !== v.questionIds.length) {
     return NextResponse.json({ error: "sebagian soal bank bukan milik Anda / tidak ditemukan" }, { status: 403 });
   }
-  const row = await runAsSchool(db, a.school.id, (tx) =>
-    tx.assessment.create({
+  const primary = assessTargets[0];
+  const row = await runAsSchool(db, a.school.id, async (tx) => {
+    const created = await tx.assessment.create({
       data: {
         schoolId: a.school.id,
-        classId: v.classId,
+        classId: primary.classId,
         subjectId: v.subjectId || null,
         authorId: a.userId,
         kind: "REGULAR",
         title: v.title,
         instruction: v.instruction || null,
         durationMin: v.durationMin ?? null,
-        publishAt: v.publishAt ? new Date(v.publishAt) : new Date(),
-        deadline: v.deadline ? new Date(v.deadline) : null,
+        publishAt: primary.publishAt ? new Date(primary.publishAt) : new Date(),
+        deadline: primary.deadline ? new Date(primary.deadline) : null,
         shuffleQ: v.shuffleQ,
         shuffleOpt: v.shuffleOpt,
         showChart: v.showChart,
+        targets: {
+          create: assessTargets.map((tg) => ({
+            schoolId: a.school.id,
+            classId: tg.classId,
+            deadline: tg.deadline ? new Date(tg.deadline) : null,
+            publishAt: tg.publishAt ? new Date(tg.publishAt) : new Date(),
+          })),
+        },
         questions: {
           create: [
             ...bank.map((q, i) => ({
@@ -128,7 +162,9 @@ export async function POST(req: NextRequest) {
         },
       },
       include: { _count: { select: { questions: true } } },
-    }));
+    });
+    return created;
+  });
   await logAuth(a.school.id, "ASSESS.CREATE", { actorId: a.userId, meta: { id: row.id } });
   return NextResponse.json({ assessment: row }, { status: 201 });
 }

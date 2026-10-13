@@ -1,56 +1,51 @@
 import { redirect } from "next/navigation";
 import { getPageAuth } from "@/app/lib/require-page";
 import DashShell, { type MenuItem } from "@/components/DashShell";
-import {
-  LayoutGrid, ClipboardList, FileText, Megaphone, MessageSquare, ShieldCheck,
-  Trophy, QrCode, User, School, BarChart3, Check, Users,
-} from "lucide-react";
 
-// U1: menu per peran — maks 7 item utama, ikon EKSPLISIT (bukan substring).
+// U1: menu per peran — maks 7 item utama, ikon via string key MENU_ICONS (bukan komponen langsung).
 const MENUS: Record<string, { utama: MenuItem[]; lainnya: MenuItem[] }> = {
   SISWA: {
     utama: [
-      { href: "/siswa", label: "Dasbor", icon: LayoutGrid },
-      { href: "/siswa/tugas", label: "Tugas", icon: ClipboardList },
-      { href: "/siswa/asesmen", label: "Asesmen", icon: FileText },
-      { href: "/siswa/pengumuman", label: "Pengumuman", icon: Megaphone },
-      { href: "/siswa/inbox", label: "Pesan", icon: MessageSquare },
-      { href: "/siswa/izin", label: "Izin", icon: ShieldCheck },
+      { href: "/siswa", label: "Dasbor", icon: "dasbor" },
+      { href: "/siswa/kelasku", label: "Kelasku", icon: "kelas" },
+      { href: "/siswa/pengumuman", label: "Pengumuman", icon: "pengumuman" },
+      { href: "/siswa/inbox", label: "Pesan", icon: "inbox" },
+      { href: "/siswa/izin", label: "Izin", icon: "izin" },
     ],
     lainnya: [
-      { href: "/siswa/leaderboard", label: "Papan peringkat", icon: Trophy },
-      { href: "/siswa/kartu", label: "Kartu saya", icon: QrCode },
-      { href: "/siswa/profil", label: "Profil", icon: User },
+      { href: "/siswa/leaderboard", label: "Papan peringkat", icon: "nilai" },
+      { href: "/siswa/profil", label: "Profil", icon: "profil" },
     ],
   },
   GURU: {
     utama: [
-      { href: "/guru", label: "Dasbor", icon: LayoutGrid },
-      { href: "/guru/kelas-saya", label: "Kelas saya", icon: School },
-      { href: "/guru/tugas", label: "Tugas", icon: ClipboardList },
-      { href: "/guru/asesmen", label: "Asesmen", icon: FileText },
-      { href: "/guru/kehadiran", label: "Kehadiran", icon: Check },
-      { href: "/guru/inbox", label: "Pesan", icon: MessageSquare },
-      { href: "/guru/rapor", label: "Rapor", icon: BarChart3 },
+      { href: "/guru", label: "Dasbor", icon: "dasbor" },
+      { href: "/guru/kelas-saya", label: "Kelas saya", icon: "kelas" },
+      { href: "/guru/tugas", label: "Tugas", icon: "tugas" },
+      { href: "/guru/jadwal", label: "Jadwal", icon: "jadwal" },
+      { href: "/guru/kehadiran", label: "Kehadiran", icon: "kehadiran" },
+      { href: "/guru/inbox", label: "Pesan", icon: "inbox" },
+      { href: "/guru/rapor", label: "Rapor", icon: "rapor" },
     ],
     lainnya: [
-      { href: "/guru/izin", label: "Izin siswa", icon: ShieldCheck },
+      { href: "/guru/izin", label: "Izin siswa", icon: "izin" },
     ],
   },
   ADMIN: {
     utama: [
-      { href: "/admin", label: "Dasbor", icon: LayoutGrid },
-      { href: "/admin/siswa", label: "Siswa", icon: Users },
-      { href: "/admin/guru", label: "Guru", icon: User },
-      { href: "/admin/kelas", label: "Kelas", icon: School },
-      { href: "/admin/kehadiran", label: "Kehadiran", icon: Check },
-      { href: "/admin/pengumuman", label: "Pengumuman", icon: Megaphone },
-      { href: "/admin/inbox", label: "Pesan", icon: MessageSquare },
+      { href: "/admin", label: "Dasbor", icon: "dasbor" },
+      { href: "/admin/siswa", label: "Siswa", icon: "siswa" },
+      { href: "/admin/guru", label: "Guru", icon: "guru" },
+      { href: "/admin/kelas", label: "Kelas", icon: "kelas" },
+      { href: "/admin/jadwal", label: "Jadwal", icon: "jadwal" },
+      { href: "/admin/kehadiran", label: "Kehadiran", icon: "kehadiran" },
+      { href: "/admin/pengumuman", label: "Pengumuman", icon: "pengumuman" },
     ],
     lainnya: [
-      { href: "/admin/pengaturan", label: "Pengaturan", icon: LayoutGrid },
-      { href: "/admin/audit", label: "Audit", icon: FileText },
-      { href: "/admin/wa", label: "WhatsApp", icon: MessageSquare },
+      { href: "/admin/inbox", label: "Pesan", icon: "inbox" },
+      { href: "/admin/pengaturan", label: "Pengaturan", icon: "pengaturan" },
+      { href: "/admin/audit", label: "Audit", icon: "audit" },
+      { href: "/admin/wa", label: "WhatsApp", icon: "whatsapp" },
     ],
   },
 };

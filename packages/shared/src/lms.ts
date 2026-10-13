@@ -9,6 +9,14 @@ export const categoryInputSchema = z.object({
   position: z.number().int().min(0).max(50).default(0),
 });
 
+export const classTargetInputSchema = z.object({
+  classId: z.string().min(1).max(64),
+  status: z.enum(["DRAFT", "PUBLISHED"]).default("PUBLISHED"),
+  deadline: z.string().datetime({ offset: true }).optional().nullable(),
+  publishAt: z.string().datetime({ offset: true }).optional().nullable(),
+  allowLate: z.boolean().default(false),
+});
+
 export const taskInputSchema = z
   .object({
     classId: z.string().min(1).max(64),
@@ -24,8 +32,18 @@ export const taskInputSchema = z
     groupMin: z.number().int().min(2).max(10).default(2),
     groupMax: z.number().int().min(2).max(10).default(5),
     categories: z.array(categoryInputSchema).max(10).optional(),
+    // FASE 3 shared: tugaskan ke N kelas sekaligus (kompat: classId tunggal bila kosong).
+    classTargets: z.array(classTargetInputSchema).max(20).optional(),
   })
   .refine((d) => d.groupMin <= d.groupMax, { message: "groupMin harus ≤ groupMax" });
+
+export const taskTargetPatchSchema = z.object({
+  classId: z.string().min(1).max(64),
+  status: z.enum(["DRAFT", "PUBLISHED"]).optional(),
+  deadline: z.string().datetime({ offset: true }).nullable().optional(),
+  publishAt: z.string().datetime({ offset: true }).nullable().optional(),
+  allowLate: z.boolean().optional(),
+});
 
 export const taskPatchSchema = z
   .object({

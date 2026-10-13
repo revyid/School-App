@@ -19,7 +19,7 @@ export async function GET(req: NextRequest) {
   const token = process.env.INTERNAL_TOKEN ?? "";
   const port = process.env.WORKER_PORT ?? "3001";
   try {
-    const r = await fetch(`http://127.0.0.1:${port}/wa-status`, {
+    const r = await fetch(`http://127.0.0.1:${port}/wa-status?schoolId=${a.school.id}`, {
       headers: { "x-internal-token": token },
       cache: "no-store",
       signal: AbortSignal.timeout(3000),

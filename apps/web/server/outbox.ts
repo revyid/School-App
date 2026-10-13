@@ -8,7 +8,7 @@ let _q: Queue | null = null;
 function q(): Queue {
   if (!_q) {
     _q = new Queue("wa", {
-      connection: new Redis(process.env.REDIS_URL ?? "redis://127.0.0.1:6379", {
+      connection: new Redis(process.env.REDIS_URL ?? "redis://127.0.0.1:6380", {
         maxRetriesPerRequest: null,
         enableReadyCheck: false,
       }),

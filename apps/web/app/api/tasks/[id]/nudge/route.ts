@@ -6,7 +6,7 @@ import { db } from "@sms/db/client";
 import { runAsSchool } from "@sms/db/tenant";
 import { logAuth } from "@/server/audit";
 import { nudgeSchema } from "@sms/shared/lms";
-import { DEFAULT_TEMPLATES, renderTemplate, formatDeadlineId } from "@sms/shared/notify";
+import { DEFAULT_TEMPLATES, renderTemplate, formatDeadlineId, normalizePhone } from "@sms/shared/notify";
 import { notifyUser } from "@/server/notify";
 import { enqueueOutbox } from "@/server/outbox";
 import { canManageTask } from "@/server/task-helpers";
@@ -60,9 +60,10 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
         classId: t.classId,
         ...(studentIds?.length ? { user: { id: { in: studentIds } } } : {}),
       },
-      include: { user: { select: { id: true, name: true } } },
+      select: { user: { select: { id: true, name: true } }, parentPhone: true },
       take: 500,
     }));
+  const candidateCount = roster.length;
 
   let targets = roster;
   if (stage !== "thanks") {
@@ -110,16 +111,23 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     }
 
     let waState = "skipped";
+    let waReason: string | null = null;
     if (wantWa) {
-      if (!r.parentPhone) waState = "no_phone";
+      // Akar "WA masuk antrean: 0": parentPhone tidak di-select dari roster
+      // (selalu no_phone) + nomor mentah tidak dinormalisasi ke 62...
+      const norm = r.parentPhone ? normalizePhone(r.parentPhone) : null;
+      if (!r.parentPhone) { waState = "no_phone"; waReason = "tanpa nomor ortu"; }
+      else if (!norm) { waState = "invalid_phone"; waReason = "nomor ortu tidak valid"; }
       else {
         // Dedupe per tahap + jam: maks 1 pesan per siswa per jam untuk tahap ini.
         const key = `nudge-${stage}-${t.id}-${r.user.id}-${yyyymmddHH}`;
-        const res = await enqueueOutbox(a.school.id, r.parentPhone, msg, key).catch(() => null);
-        waState = res && !res.duplicate ? "queued" : res ? "duplicate" : "wa_offline";
+        const res = await enqueueOutbox(a.school.id, norm, msg, key).catch(() => null);
+        if (!res) { waState = "wa_offline"; waReason = "antrean WA tidak terjangkau (Redis mati?)"; }
+        else if (res.duplicate) { waState = "duplicate"; waReason = "sudah diingatkan tahap ini dalam jam berjalan"; }
+        else waState = "queued";
       }
     }
-    results.push({ studentId: r.user.id, name: r.user.name, inapp: inappState, wa: waState });
+    results.push({ studentId: r.user.id, name: r.user.name, inapp: inappState, wa: waState, ...(waReason ? { waReason } : {}) });
   }
   await logAuth(a.school.id, "TASK.NUDGE", {
     actorId: a.userId,
@@ -128,11 +136,23 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   return NextResponse.json({
     ok: true,
     results,
+    candidateCount,
     summary: {
       total: results.length,
       inappSent: results.filter((x) => x.inapp === "sent").length,
       waQueued: results.filter((x) => x.wa === "queued").length,
       noPhone: results.filter((x) => x.wa === "no_phone").map((x) => x.name),
+      skipped: results
+        .filter((x) => x.wa !== "queued" && x.wa !== "skipped")
+        .map((x) => ({ name: x.name, status: x.wa, alasan: (x as { waReason?: string }).waReason ?? "" })),
+      penjelasan:
+        candidateCount === 0
+          ? "Tidak ada siswa di kelas tugas ini."
+          : results.length === 0
+            ? stage === "thanks"
+              ? "Belum ada yang mengumpulkan — tahap terima kasih butuh minimal 1 pengumpulan."
+              : "Semua siswa sudah mengumpulkan — tidak ada target pengingat."
+            : undefined,
     },
   });
 }

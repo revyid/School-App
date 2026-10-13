@@ -70,7 +70,18 @@ export function validateCategoryFiles(
     PDF: ["application/pdf"],
     IMAGE: ["image/png", "image/jpeg", "image/webp", "image/gif"],
     VIDEO: ["video/mp4", "video/webm"],
-    DOC: ["application/octet-stream"], // zip container docx/xlsx/pptx
+    // DOC: semua container zip/office — docx, xlsx, pptx, zip biasa.
+    DOC: [
+      "application/octet-stream",
+      "application/zip",
+      "application/x-zip-compressed",
+      "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+      "application/msword",
+      "application/vnd.ms-excel",
+      "application/vnd.ms-powerpoint",
+    ],
   };
   for (const c of cats) {
     const f = filesByCategory.get(c.id);

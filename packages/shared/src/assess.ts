@@ -44,6 +44,12 @@ export const assessmentInputSchema = z.object({
   shuffleOpt: z.boolean().default(true),
   questionIds: z.array(z.string().min(1).max(64)).max(100).default([]),
   inline: z.array(questionInputSchema).max(100).default([]),
+  // FASE 3 shared: tugaskan ke N kelas sekaligus (kompat: classId tunggal bila kosong).
+  classTargets: z.array(z.object({
+    classId: z.string().min(1).max(64),
+    deadline: z.string().datetime({ offset: true }).optional().nullable(),
+    publishAt: z.string().datetime({ offset: true }).optional().nullable(),
+  })).max(20).optional(),
 }).superRefine((v, ctx) => {
   if (v.questionIds.length + v.inline.length === 0) {
     ctx.addIssue({ code: z.ZodIssueCode.custom, message: "minimal 1 soal" });

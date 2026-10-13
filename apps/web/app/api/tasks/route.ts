@@ -67,14 +67,17 @@ export async function GET(req: NextRequest) {
   }
 
   // Guru/admin: filter status draf/terjadwal/aktif/selesai + kelas.
-  const where: { classId?: string | { in: string[] }; status?: "DRAFT" | "PUBLISHED" } = {};
+  // FASE 3: filter kelas memakai join targets (induk shared bisa muncul di N kelas).
+  const targetClassFilter = classId ?? null;
+  const where: { status?: "DRAFT" | "PUBLISHED"; OR?: object[] } = {};
   if (a.role === "GURU") {
     const mine = await guruClassIds(a.school.id, a.userId);
     if (mine.size === 0) return NextResponse.json({ rows: [] });
     if (classId && !mine.has(classId)) return NextResponse.json({ error: "bukan kelas Anda" }, { status: 403 });
-    where.classId = classId ?? { in: [...mine] };
+    const allowed = classId ? [classId] : [...mine];
+    where.OR = [{ classId: { in: allowed } }, { targets: { some: { classId: { in: allowed } } } }];
   } else if (classId) {
-    where.classId = classId;
+    where.OR = [{ classId }, { targets: { some: { classId } } }];
   }
   if (statusF === "draf") where.status = "DRAFT";
   if (statusF === "aktif") where.status = "PUBLISHED";
@@ -83,18 +86,27 @@ export async function GET(req: NextRequest) {
     tx.task.findMany({
       where,
       include: {
-        class: { select: { name: true } },
+        class: { select: { id: true, name: true } },
         subject: { select: { name: true } },
+        targets: { include: { class: { select: { id: true, name: true } } }, orderBy: { createdAt: "asc" } },
         _count: { select: { submissions: true, materials: true, categories: true } },
       },
       orderBy: { createdAt: "desc" },
       take: 200,
     }),
   );
+  // Bila filter kelas: deadline tampil = deadline per-kelas (target), fallback kolom lama.
+  const withTarget = tasks.map((t) => {
+    const tg = targetClassFilter ? t.targets.find((x) => x.classId === targetClassFilter) ?? null : null;
+    return { ...t, targetForFilter: tg };
+  });
   return NextResponse.json({
-    rows: tasks.map((t) => ({
+    rows: withTarget.map((t) => ({
       ...t,
-      visible: isVisibleToStudent(t, now),
+      deadline: t.targetForFilter?.deadline ?? t.deadline,
+      publishAt: t.targetForFilter?.publishAt ?? t.publishAt,
+      allowLate: t.targetForFilter?.allowLate ?? t.allowLate,
+      visible: isVisibleToStudent({ publishAt: t.targetForFilter?.publishAt ?? t.publishAt, deadline: t.targetForFilter?.deadline ?? t.deadline, allowLate: t.targetForFilter?.allowLate ?? t.allowLate, status: (t.targetForFilter as { status?: string } | null)?.status ?? t.status }, now),
       // Label status daftar guru: Draf / Terjadwal / Aktif / Selesai.
       listStatus:
         t.status === "DRAFT" ? "Draf"
@@ -114,38 +126,74 @@ export async function POST(req: NextRequest) {
   if (!rl.ok) return NextResponse.json({ error: "Terlalu sering, coba lagi nanti" }, { status: 429 });
   const body = taskInputSchema.safeParse(await req.json().catch(() => null));
   if (!body.success) return NextResponse.json({ error: "input tidak valid", detail: body.error.issues.slice(0, 3) }, { status: 400 });
+  // FASE 3 shared: classTargets (multi-kelas) atau fallback classId tunggal + deadline setingkat.
+  const targets: { classId: string; status: string; deadline?: string | null; publishAt?: string | null; allowLate?: boolean }[] =
+    (body.data.classTargets?.length ? body.data.classTargets : [{
+      classId: body.data.classId,
+      status: body.data.status,
+      deadline: body.data.deadline ?? null,
+      publishAt: body.data.publishAt ?? null,
+      allowLate: body.data.allowLate,
+    }]);
+  const targetClassIds = [...new Set(targets.map((t) => t.classId))];
   if (a.role === "GURU") {
     const mine = await guruClassIds(a.school.id, a.userId);
-    if (!mine.has(body.data.classId)) return NextResponse.json({ error: "bukan kelas Anda" }, { status: 403 });
+    const outside = targetClassIds.filter((c) => !mine.has(c));
+    if (outside.length > 0) return NextResponse.json({ error: "bukan kelas Anda" }, { status: 403 });
   } else {
-    const c = await runAsSchool(db, a.school.id, (tx) => tx.class.findUnique({ where: { id: body.data.classId } }));
-    if (!c) return NextResponse.json({ error: "kelas tidak ditemukan" }, { status: 400 });
+    for (const cid of targetClassIds) {
+      const c = await runAsSchool(db, a.school.id, (tx) => tx.class.findUnique({ where: { id: cid } }));
+      if (!c) return NextResponse.json({ error: "kelas tidak ditemukan" }, { status: 400 });
+    }
   }
   if (body.data.subjectId) {
     const s = await runAsSchool(db, a.school.id, (tx) => tx.subject.findUnique({ where: { id: body.data.subjectId! } }));
     if (!s) return NextResponse.json({ error: "mapel tidak ditemukan" }, { status: 400 });
   }
 
-  const { categories, ...taskData } = body.data;
+  const { categories, classTargets: _ct, ...taskData } = body.data;
+  const primary = targets[0];
   const row = await runAsSchool(db, a.school.id, async (tx) => {
     const task = await tx.task.create({
       data: {
         schoolId: a.school.id,
-        classId: taskData.classId,
+        classId: primary.classId,
         subjectId: taskData.subjectId ?? null,
         authorId: a.userId,
         title: taskData.title,
         instruction: taskData.instruction,
         type: taskData.type,
         status: taskData.status,
-        deadline: taskData.deadline ? new Date(taskData.deadline) : null,
-        publishAt: taskData.publishAt ? new Date(taskData.publishAt) : new Date(),
-        allowLate: taskData.allowLate,
+        deadline: primary.deadline ? new Date(primary.deadline) : null,
+        publishAt: primary.publishAt ? new Date(primary.publishAt) : new Date(),
+        allowLate: primary.allowLate ?? false,
         isGroup: taskData.isGroup,
         groupMin: taskData.groupMin,
         groupMax: taskData.groupMax,
       },
     });
+    // FASE 3: satu join per kelas (termasuk kelas utama dari kolom lama via backfill).
+    for (const tg of targets) {
+      const tgStatus = (tg.status === "DRAFT" ? "DRAFT" : "PUBLISHED") as "DRAFT" | "PUBLISHED";
+      await tx.taskTarget.upsert({
+        where: { taskId_classId: { taskId: task.id, classId: tg.classId } },
+        create: {
+          schoolId: a.school.id,
+          taskId: task.id,
+          classId: tg.classId,
+          status: tgStatus,
+          deadline: tg.deadline ? new Date(tg.deadline) : null,
+          publishAt: tg.publishAt ? new Date(tg.publishAt) : new Date(),
+          allowLate: tg.allowLate ?? false,
+        },
+        update: {
+          status: tgStatus,
+          deadline: tg.deadline ? new Date(tg.deadline) : null,
+          publishAt: tg.publishAt ? new Date(tg.publishAt) : new Date(),
+          allowLate: tg.allowLate ?? false,
+        },
+      });
+    }
     const cats = categories?.length
       ? await tx.taskCategory.createManyAndReturn({
           data: categories.map((c, i) => ({

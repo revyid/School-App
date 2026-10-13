@@ -33,20 +33,35 @@ export async function POST(req: NextRequest) {
   const hash = endpointHash(String(endpoint));
   const ua = req.headers.get("user-agent")?.slice(0, 300) ?? null;
 
-  await runAsSchool(db, a.school.id, (tx) => tx.pushSubscription.upsert({
-    where: { userId_endpointHash: { userId: a.userId, endpointHash: hash } },
-    create: {
-      id: randomUUID(),
-      schoolId: a.school.id,
-      userId: a.userId,
-      endpoint: String(endpoint),
-      endpointHash: hash,
-      p256dh: String(keys.p256dh),
-      auth: String(keys.auth),
-      userAgent: ua,
-    },
-    update: { p256dh: String(keys.p256dh), auth: String(keys.auth), userAgent: ua },
-  }));
+  try {
+    await runAsSchool(db, a.school.id, (tx) => tx.pushSubscription.upsert({
+      where: { userId_endpointHash: { userId: a.userId, endpointHash: hash } },
+      create: {
+        id: randomUUID(),
+        schoolId: a.school.id,
+        userId: a.userId,
+        endpoint: String(endpoint),
+        endpointHash: hash,
+        p256dh: String(keys.p256dh),
+        auth: String(keys.auth),
+        userAgent: ua,
+      },
+      update: { p256dh: String(keys.p256dh), auth: String(keys.auth), userAgent: ua },
+    }));
+  } catch (e) {
+    console.error("push subscribe gagal", e);
+    const code = (e as { code?: string })?.code;
+    if (code === "P2002") {
+      return NextResponse.json({ error: "perangkat ini sudah terdaftar" }, { status: 409 });
+    }
+    if (code === "P2021" || code === "P2010") {
+      return NextResponse.json(
+        { error: "tabel langganan belum siap (migrasi DB belum jalan) — hubungi admin" },
+        { status: 503 },
+      );
+    }
+    return NextResponse.json({ error: `gagal menyimpan langganan (${code ?? "unknown"}) — coba lagi atau hubungi admin` }, { status: 500 });
+  }
 
   return NextResponse.json({ ok: true });
 }
@@ -61,8 +76,13 @@ export async function DELETE(req: NextRequest) {
   if (!endpoint) return NextResponse.json({ error: "endpoint wajib" }, { status: 400 });
 
   const hash = endpointHash(String(endpoint));
-  await runAsSchool(db, a.school.id, (tx) => tx.pushSubscription.deleteMany({
-    where: { userId: a.userId, endpointHash: hash },
-  }));
+  try {
+    await runAsSchool(db, a.school.id, (tx) => tx.pushSubscription.deleteMany({
+      where: { userId: a.userId, endpointHash: hash },
+    }));
+  } catch (e) {
+    console.error("push unsubscribe gagal", e);
+    return NextResponse.json({ error: "gagal menghapus langganan, coba lagi" }, { status: 500 });
+  }
   return NextResponse.json({ ok: true });
 }
