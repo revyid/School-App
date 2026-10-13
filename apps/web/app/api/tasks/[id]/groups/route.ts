@@ -79,7 +79,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
         isMine: g.members.some((m) => m.studentId === a.userId),
       })),
       classmates: names
-        .filter((r) => !grouped.has(r.user.id))
+        .filter((r) => !grouped.has(r.user.id) && r.user.id !== a.userId)
         .map((r) => ({ id: r.user.id, name: r.user.name, groupId: null })),
     });
   }

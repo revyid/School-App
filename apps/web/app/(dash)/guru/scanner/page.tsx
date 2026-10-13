@@ -85,6 +85,10 @@ export default function ScannerPage() {
   // Kontrol volume (0–100%) & kecepatan suara TTS (0.5–2x). Tersimpan per perangkat.
   const [vol, setVol] = useState(100);
   const [rate, setRate] = useState(1);
+  // FASE 3: status decoder QR (Brave tanpa BarcodeDetector → fallback jsQR).
+  const [scanState, setScanState] = useState<"idle" | "mencari" | "tanpa-decoder" | "qr-asing">("idle");
+  const [scanDetail, setScanDetail] = useState<string | null>(null);
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
   useEffect(() => {
     try {
       const v = Number(localStorage.getItem("tts-vol") ?? 100);
@@ -205,25 +209,66 @@ export default function ScannerPage() {
   }, [cam]);
 
   // Loop deteksi: BarcodeDetector tiap 500ms; token sms1-* langsung dipost.
+  // FASE 3: Brave Android tidak punya BarcodeDetector → fallback jsQR
+  // (lazy-import, hanya di scanner) dari frame video via canvas.
+  const decodeWithJsqr = useCallback(async (video: HTMLVideoElement): Promise<string | null> => {
+    if (video.videoWidth === 0 || video.videoHeight === 0) return null;
+    let canvas = canvasRef.current;
+    if (!canvas) {
+      canvas = document.createElement("canvas");
+      canvasRef.current = canvas;
+    }
+    const w = Math.min(640, video.videoWidth);
+    const h = Math.round((w * video.videoHeight) / video.videoWidth);
+    canvas.width = w;
+    canvas.height = h;
+    const ctx = canvas.getContext("2d", { willReadFrequently: true });
+    if (!ctx) return null;
+    ctx.drawImage(video, 0, 0, w, h);
+    const img = ctx.getImageData(0, 0, w, h);
+    const { default: jsQR } = await import("jsqr");
+    const code = jsQR(img.data, img.width, img.height);
+    return code?.data?.trim() ?? null;
+  }, []);
+
   useEffect(() => {
-    if (!cam.streaming) return;
+    if (!cam.streaming) { setScanState("idle"); return; }
     let alive = true;
+    setScanState("mencari");
+    let jsqrFailed = false;
     const loop = async () => {
+      let bdFailed = false;
       while (alive) {
         await new Promise((r) => setTimeout(r, 500));
         if (!alive || scanning.current) continue;
         try {
           const BD = (window as unknown as { BarcodeDetector?: new (o: object) => { detect(v: HTMLVideoElement): Promise<{ rawValue: string }[]> } }).BarcodeDetector;
-          if (!BD || !videoRef.current) continue;
-          const det = new BD({ formats: ["qr_code"] });
-          const codes = await det.detect(videoRef.current);
-          const val = codes[0]?.rawValue?.trim();
-          if (val && /^sms1-[0-9a-f]{32}$/.test(val)) {
+          let val: string | null | undefined;
+          if (BD && videoRef.current) {
+            const det = new BD({ formats: ["qr_code"] });
+            const codes = await det.detect(videoRef.current).catch(() => []);
+            val = codes[0]?.rawValue?.trim();
+          } else {
+            bdFailed = true;
+            val = videoRef.current ? await decodeWithJsqr(videoRef.current).catch(() => { jsqrFailed = true; return null; }) : null;
+          }
+          if (!val) {
+            if (bdFailed && jsqrFailed) setScanState("tanpa-decoder");
+            else if (alive) setScanState("mencari");
+            continue;
+          }
+          if (/^sms1-[0-9a-f]{32}$/.test(val)) {
             scanning.current = true;
+            setScanState("mencari");
+            setScanDetail(null);
             await postToken(val);
             setTimeout(() => {
               scanning.current = false;
             }, 2000);
+          } else {
+            // QR terdeteksi tapi bukan token absensi: beri tahu, jangan diam.
+            setScanState("qr-asing");
+            setScanDetail(val.length > 48 ? `${val.slice(0, 48)}…` : val);
           }
         } catch { /* abaikan frame gagal */ }
       }
@@ -292,6 +337,14 @@ export default function ScannerPage() {
           </label>
         </div>
         <Note>Di iPhone: ketuk “Aktifkan suara” sekali agar nama terbaca lantang saat scan.</Note>
+        {cam.streaming && (
+          <p style={{ fontSize: 13, fontWeight: 700, color: scanState === "qr-asing" ? "#c94b35" : "#575752", margin: "8px 0 0" }}>
+            {scanState === "mencari" && "Mencari QR — arahkan kamera ke kartu QR siswa…"}
+            {scanState === "tanpa-decoder" && "Decoder tidak tersedia di browser ini — gunakan input token manual di bawah."}
+            {scanState === "qr-asing" && `QR tak dikenal${scanDetail ? `: ${scanDetail}` : ""} — pastikan QR dari kartu siswa.`}
+            {scanState === "idle" && ""}
+          </p>
+        )}
         <video ref={videoRef} playsInline muted style={{ width: "100%", maxWidth: 480, background: "#171716", borderRadius: 16 }} />
         <form onSubmit={(e) => { e.preventDefault(); if (manual.trim()) { void postToken(manual.trim()); setManual(""); } }} style={{ display: "grid", gap: 10, marginTop: 12, maxWidth: 480 }}>
           <label style={{ display: "grid", gap: 6, fontSize: 13, color: "#74746d" }}>

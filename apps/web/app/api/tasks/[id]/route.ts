@@ -4,7 +4,7 @@ import { requireRole } from "@/server/auth-gate";
 import { db } from "@sms/db/client";
 import { runAsSchool } from "@sms/db/tenant";
 import { logAuth } from "@/server/audit";
-import { taskPatchSchema, isVisibleToStudent, submitState } from "@sms/shared/lms";
+import { taskPatchSchema, taskTargetPatchSchema, isVisibleToStudent, submitState } from "@sms/shared/lms";
 import { guruClassIds, siswaClassId } from "@/server/lms-scope";
 import { canManageTask, notifyTaskChange } from "@/server/task-helpers";
 import { removeFile } from "@/server/files";
@@ -28,6 +28,7 @@ async function loadTask(schoolId: string, id: string) {
       where: { id },
       include: {
         class: { select: { id: true, name: true } },
+        targets: { include: { class: { select: { id: true, name: true } } }, orderBy: { createdAt: "asc" } },
         subject: { select: { id: true, name: true } },
         author: { select: { id: true, name: true } },
         materials: {
@@ -127,8 +128,36 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   if (!(await canManageTask(a.school.id, a.userId, a.role, t))) {
     return NextResponse.json({ error: "bukan tugas kelas Anda" }, { status: 403 });
   }
-  const body = taskPatchSchema.safeParse(await req.json().catch(() => null));
+  const raw = await req.json().catch(() => null) as Record<string, unknown> | null;
+  const body = taskPatchSchema.safeParse(raw);
   if (!body.success) return NextResponse.json({ error: "input tidak valid", detail: body.error.issues.slice(0, 3) }, { status: 400 });
+  // FASE 3: patch per-kelas opsional { target: { classId, deadline?, publishAt?, allowLate?, status? } }.
+  const targetPatch = taskTargetPatchSchema.safeParse((raw as Record<string, unknown> | null)?.target ?? null);
+  const perKelas = targetPatch.success ? targetPatch.data : null;
+  if (perKelas) {
+    if (a.role === "GURU") {
+      const mine = await guruClassIds(a.school.id, a.userId);
+      if (!mine.has(perKelas.classId)) return NextResponse.json({ error: "bukan tugas kelas Anda" }, { status: 403 });
+    }
+    const row = await runAsSchool(db, a.school.id, (tx) => tx.taskTarget.upsert({
+      where: { taskId_classId: { taskId: t.id, classId: perKelas.classId } },
+      create: {
+        schoolId: a.school.id, taskId: t.id, classId: perKelas.classId,
+        ...(perKelas.status ? { status: perKelas.status } : {}),
+        ...(perKelas.deadline !== undefined ? { deadline: perKelas.deadline ? new Date(perKelas.deadline) : null } : {}),
+        ...(perKelas.publishAt !== undefined ? { publishAt: perKelas.publishAt ? new Date(perKelas.publishAt) : new Date() } : {}),
+        ...(perKelas.allowLate !== undefined ? { allowLate: perKelas.allowLate } : {}),
+      },
+      update: {
+        ...(perKelas.status ? { status: perKelas.status } : {}),
+        ...(perKelas.deadline !== undefined ? { deadline: perKelas.deadline ? new Date(perKelas.deadline) : null } : {}),
+        ...(perKelas.publishAt !== undefined ? { publishAt: perKelas.publishAt ? new Date(perKelas.publishAt) : new Date() } : {}),
+        ...(perKelas.allowLate !== undefined ? { allowLate: perKelas.allowLate } : {}),
+      },
+    }));
+    await logAuth(a.school.id, "TASK.TARGET_UPDATE", { actorId: a.userId, meta: { id: t.id, classId: perKelas.classId } });
+    return NextResponse.json({ task: t, target: row });
+  }
 
   // isGroup tidak boleh dimatikan bila sudah ada pengumpulan.
   if (body.data.isGroup === false) {
@@ -163,17 +192,36 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   return NextResponse.json({ task: row });
 }
 
-// DELETE /api/tasks/[id] — ADMIN dan guru penulis bila belum ada pengumpulan;
-// selain itu (sudah ada pengumpulan) → tolak dengan 409 (data nilai milik siswa).
-// File materi di disk ikut dihapus (B7).
+// DELETE /api/tasks/[id]?scope=semua | ?scope=kelas&classId= — FASE 3 shared.
+// scope=kelas: hapus penugasan kelas itu saja (induk + target lain tetap).
+// scope=semua (default): hapus induk + semua target. ADMIN dan guru pengelola
+// bila belum ada pengumpulan; selain itu → 409 (data nilai milik siswa).
+// File materi di disk ikut dihapus (B7) hanya saat hapus induk.
 export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const a = await gate(req, ["ADMIN", "GURU"]);
   if (!a.ok) return NextResponse.json({ error: a.error }, { status: a.status });
   const { id } = await params;
+  const url = new URL(req.url);
+  const scope = url.searchParams.get("scope") === "kelas" ? "kelas" : "semua";
+  const scopeClassId = (url.searchParams.get("classId") ?? "").slice(0, 64);
   const t = await loadTask(a.school.id, id.slice(0, 64));
   if (!t) return NextResponse.json({ error: "tugas tidak ditemukan" }, { status: 404 });
   if (!(await canManageTask(a.school.id, a.userId, a.role, t))) {
     return NextResponse.json({ error: "bukan tugas kelas Anda" }, { status: 403 });
+  }
+  if (scope === "kelas") {
+    if (!scopeClassId) return NextResponse.json({ error: "classId wajib untuk scope=kelas" }, { status: 400 });
+    if (scopeClassId === t.classId) {
+      return NextResponse.json({ error: "kelas utama tidak bisa dilepas — hapus semua bila perlu" }, { status: 400 });
+    }
+    if (a.role === "GURU") {
+      const mine = await guruClassIds(a.school.id, a.userId);
+      if (!mine.has(scopeClassId)) return NextResponse.json({ error: "bukan tugas kelas Anda" }, { status: 403 });
+    }
+    await runAsSchool(db, a.school.id, (tx) =>
+      tx.taskTarget.deleteMany({ where: { taskId: t.id, classId: scopeClassId } }));
+    await logAuth(a.school.id, "TASK.TARGET_DELETE", { actorId: a.userId, meta: { id: t.id, classId: scopeClassId } });
+    return NextResponse.json({ ok: true, scope: "kelas", classId: scopeClassId });
   }
   const hasSub = await runAsSchool(db, a.school.id, (tx) => tx.submission.count({ where: { taskId: t.id } }));
   if (hasSub > 0) {

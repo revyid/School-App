@@ -118,7 +118,11 @@ async function subscribePush(): Promise<{ ok: true } | { ok: false; reason: stri
     if (!res.ok) {
       const d = await res.json().catch(() => ({}));
       await sub.unsubscribe().catch(() => {});
-      return { ok: false, reason: `Server menolak subscription (${res.status}: ${d.error ?? "coba login ulang"}).` };
+      const msg =
+        res.status === 401 ? "sesi berakhir — login ulang lalu coba lagi."
+        : res.status === 403 ? "permintaan ditolak browser/server (CSRF/origin) — reload halaman lalu coba lagi."
+        : `${d.error ?? "coba login ulang"}.`;
+      return { ok: false, reason: `Server menolak subscription (${res.status}: ${msg})` };
     }
     return { ok: true };
   } catch (e) {
@@ -296,10 +300,8 @@ export default function Bell() {
         {/* N9: lonceng = tombol ikon biasa + badge (bukan BellToggle). */}
         <button
           type="button"
-          onClick={() => {
-            setOpen((o) => !o);
-            if (!open) void reload();
-          }}
+          data-bell-toggle
+          onClick={() => setOpen((o) => !o)}
           aria-label={`Notifikasi${unread > 0 ? `, ${unread} belum dibaca` : ""}`}
           aria-expanded={open}
           className={cn(
@@ -414,6 +416,9 @@ function BellInbox({
       const t = e.target as HTMLElement;
       // Klik di dalam portal (Dialog detail) bukan klik-luar.
       if (t.closest?.('[data-slot="dialog-content"]')) return;
+      // Klik pada tombol lonceng ditangani toggle-nya sendiri (hindari
+      // balapan pointerdown-tutup vs click-buka = kedip tutup-buka).
+      if (t.closest?.("[data-bell-toggle]")) return;
       if (ref.current && !ref.current.contains(t)) onClose();
     };
     document.addEventListener("pointerdown", handler);
@@ -483,7 +488,7 @@ function BellInbox({
                 )}
               >
                 <span className={cn("mt-1.5 size-2 shrink-0 rounded-full", isUnread ? "bg-terracotta" : "bg-transparent")} />
-                <span className="min-w-0">
+                <span className="min-w-0 overflow-hidden">
                   <span className={cn("mb-0.5 line-clamp-2 block text-[13px] leading-snug", isUnread ? "font-bold" : "font-medium", "text-ink")} style={{ overflowWrap: "anywhere" }}>
                     {n.title}
                   </span>
@@ -503,7 +508,7 @@ function BellInbox({
         <span className="text-xs text-muted-foreground">Notifikasi push di perangkat ini</span>
         <Switch checked={pushState === "on"} onCheckedChange={() => onTogglePush()} disabled={pushLoading || pushState === "unknown"} aria-label="Aktifkan notifikasi push" />
       </div>
-      {pushError && <p className="m-0 px-4 pb-3 text-[11px] text-terracotta-dark" style={{ overflowWrap: "anywhere" }}>{pushError}</p>}
+      {pushError && <p className="m-0 px-4 pb-3 text-[11px] text-terracotta-dark" style={{ overflowWrap: "anywhere", wordBreak: "break-word" }}>{pushError}</p>}
     </div>
   );
 }

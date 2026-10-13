@@ -13,6 +13,7 @@ export default function AssignmentsPage() {
   const [classId, setClassId] = useState("");
   const [subject, setSubject] = useState("");
   const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
+  const [syncMsg, setSyncMsg] = useState<string | null>(null);
 
   async function create() {
     if (!teacherId || !classId) { alert("Pilih guru dan kelas"); return; }
@@ -29,6 +30,18 @@ export default function AssignmentsPage() {
     setDeleteTarget(id);
   }
 
+  async function sync() {
+    setSyncMsg("Menyinkronkan…");
+    const res = await api("/api/assignments/sync", {
+      method: "POST", headers: { "content-type": "application/json" },
+      body: JSON.stringify(classId ? { classId } : {}),
+    });
+    const d = await res.json().catch(() => ({}));
+    if (!res.ok) { setSyncMsg("Gagal: " + (d.error || res.status)); return; }
+    setSyncMsg(`Sinkron selesai: ${d.created} dibuat, ${d.skipped} sudah ada`);
+    reload();
+  }
+
   async function doRemove() {
     if (!deleteTarget) return;
     const id = deleteTarget;
@@ -40,6 +53,13 @@ export default function AssignmentsPage() {
   return (
     <>
       <PageHead kicker="Data master" title="Penugasan guru-kelas" desc="Tautkan guru ke kelas yang diajarnya, plus mapel bila perlu." />
+      <Panel style={{ marginBottom: 16 }}>
+        <Toolbar>
+          <Btn onClick={sync}>Sinkronkan dari jadwal</Btn>
+          {syncMsg && <Note>{syncMsg}</Note>}
+        </Toolbar>
+        <Note>Penugasan yang belum ada dibuat otomatis dari slot jadwal berisi guru (mapel = mapel tersering). Yang sudah ada tidak diubah.</Note>
+      </Panel>
       <Panel style={{ marginBottom: 16 }}>
         {loading && <Note>Memuat…</Note>}
         {error && <Err>Error: {error}</Err>}

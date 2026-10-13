@@ -56,7 +56,7 @@ export default function SiswaDashboard() {
               Halo, {pertama}! {belum > 0 ? `${belum} tugas menunggumu — sedikit lagi.` : "Semua tugas beres. Pertahankan!"}
               {profile.data?.user.studentProfile?.class && <> Kelas {profile.data.user.studentProfile.class.name}.</>}
             </p>
-            <Link href="/siswa/tugas" className="btn-sticker btn-primary">
+            <Link href="/siswa/kelasku" className="btn-sticker btn-primary">
               Lanjut belajar
             </Link>
           </div>
@@ -92,29 +92,11 @@ export default function SiswaDashboard() {
             <p style={{ fontSize: 12, color: "#f5c94a", margin: 0 }}>{pct}% dari semua tugas</p>
           </div>
         </Reveal>
-        <Reveal delay={120}>
-          <div className="card card-lift" style={{ padding: 18, minHeight: 150 }}>
-            <p style={{ fontSize: 12, color: "#74746d", margin: 0 }}>Menunggu dikerjakan</p>
-            <p className="display" style={{ fontSize: 40, margin: "6px 0" }}>{tasks.loading ? "…" : tasks.error ? "—" : belum}</p>
-            <p style={{ fontSize: 12, color: "#74746d", margin: 0 }}>
-              {belum > 0 ? "Yuk cicil satu per satu" : "Bersih, kerja bagus!"}
-            </p>
-          </div>
-        </Reveal>
         <Reveal delay={180}>
           <div className="card card-lift" style={{ background: "#f5c94a", padding: 18, minHeight: 150 }}>
             <p style={{ fontSize: 12, margin: 0 }}>Bintang terkumpul</p>
             <p className="display" style={{ fontSize: 40, margin: "6px 0" }}>{exp.loading ? "…" : exp.error ? "—" : points}</p>
             <p style={{ fontSize: 12, margin: 0 }}>poin EXP</p>
-          </div>
-        </Reveal>
-        <Reveal delay={240}>
-          <div className="card card-lift" style={{ padding: 18, minHeight: 150 }}>
-            <p style={{ fontSize: 12, color: "#74746d", margin: 0 }}>Lencana</p>
-            <p className="display" style={{ fontSize: 40, margin: "6px 0" }}>{exp.loading ? "…" : exp.error ? "—" : badges.length}</p>
-            <p style={{ fontSize: 12, color: "#74746d", margin: 0 }}>
-              {badges.length > 0 ? badges[badges.length - 1].name : "Belum ada — kumpulkan!"}
-            </p>
           </div>
         </Reveal>
       </section>
@@ -138,7 +120,7 @@ export default function SiswaDashboard() {
               <ul style={{ listStyle: "none", margin: 0, padding: 0, display: "grid", gap: 10 }}>
                 {menunggu.map((t) => (
                   <li key={t.id} style={{ borderTop: "1px solid rgba(23,23,22,.14)", paddingTop: 10 }}>
-                    <Link href={`/siswa/tugas/${t.id}`} style={{ fontWeight: 700, color: "#171716" }}>
+                    <Link href={`/siswa/kelasku?tugas=${t.id}`} style={{ fontWeight: 700, color: "#171716" }}>
                       {t.title}
                     </Link>
                     <p style={{ fontSize: 12, color: "#74746d", margin: "2px 0 0" }}>

@@ -2,6 +2,7 @@
 
 import { useFetch } from "@/app/lib/api";
 import { PageHead, Panel, Note, Err, LinkBtn } from "@/components/DashUI";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export default function GuruHome() {
   const { data, loading, error } = useFetch<{ rows: { id: string; class: { name: string }; subject: string | null }[] }>(`/api/assignments`);
@@ -14,7 +15,19 @@ export default function GuruHome() {
         right={<LinkBtn href="/change-password">Ganti kata sandi</LinkBtn>}
       />
       <Panel>
-        {loading && <Note>Memuat…</Note>}
+        {loading && !data && (
+          <div className="divide-y divide-line">
+            {[0, 1, 2, 3].map((i) => (
+              <div key={i} className="flex items-center gap-3 px-1 py-3">
+                <div className="flex-1 space-y-1.5">
+                  <Skeleton className="h-4 w-3/4" />
+                  <Skeleton className="h-3 w-1/2" />
+                </div>
+                <Skeleton className="h-7 w-16 rounded-full" />
+              </div>
+            ))}
+          </div>
+        )}
         {error && <Err>Gagal: {error}</Err>}
         {data && data.rows.length === 0 && <Note>Belum ada penugasan. Hubungi admin.</Note>}
         {data && data.rows.length > 0 && (

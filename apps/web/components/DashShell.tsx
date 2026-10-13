@@ -24,7 +24,7 @@ export type MenuItem = {
   href: string;
   label: string;
   badge?: number;
-  icon?: LucideIcon;
+  icon?: keyof typeof MENU_ICONS;
 };
 
 export const MENU_ICONS = {
@@ -85,7 +85,7 @@ export default function DashShell({
   const nav = (items: MenuItem[]) =>
     items.map((m) => {
       const active = path === m.href || (m.href.length > 1 && path.startsWith(m.href + "/"));
-      const Icon = m.icon ?? LayoutGrid;
+      const Icon = (m.icon ? MENU_ICONS[m.icon] : null) ?? LayoutGrid;
       return (
         <Link
           key={m.href}
@@ -129,7 +129,7 @@ export default function DashShell({
   return (
     <div className="flex min-h-screen">
       {/* Sidebar desktop */}
-      <aside className="dash-sidebar-desktop sticky top-0 flex h-screen flex-col gap-1 overflow-y-auto border-r border-line bg-cream px-3.5 py-5" style={{ width: 232, flexShrink: 0 }}>
+      <aside className="dash-sidebar-desktop sticky top-0 hidden md:flex h-screen flex-col gap-1 overflow-y-auto border-r border-line bg-cream px-3.5 py-5" style={{ width: 232, flexShrink: 0 }}>
         {sidebar}
       </aside>
 
@@ -153,7 +153,7 @@ export default function DashShell({
           {/* Burger mobile */}
           <button
             type="button"
-            className="dash-burger btn-ghost btn-sticker cursor-pointer"
+            className="dash-burger btn-ghost btn-sticker cursor-pointer md:hidden"
             onClick={() => setOpen(true)}
             aria-label="Buka menu"
           >
@@ -179,13 +179,13 @@ export default function DashShell({
                 aria-expanded={profileOpen}
                 className="flex cursor-pointer items-center gap-2 border-l border-line bg-transparent py-1 pl-3 text-[13px] text-ink outline-none"
               >
+                <span className="dash-username max-w-[140px] overflow-hidden text-ellipsis whitespace-nowrap font-bold">{userName}</span>
                 <span
                   className="grid size-[34px] shrink-0 place-items-center rounded-full border-2 border-cream font-extrabold text-cream"
                   style={{ background: accent, boxShadow: `0 0 0 2px ${accent}` }}
                 >
                   {(userName || "?").slice(0, 1).toUpperCase()}
                 </span>
-                <span className="dash-username max-w-[140px] overflow-hidden text-ellipsis whitespace-nowrap font-bold">{userName}</span>
                 <svg width="10" height="10" viewBox="0 0 12 12" fill="none" aria-hidden="true"><path d="M2 4l4 4 4-4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" /></svg>
               </button>
               {profileOpen && (

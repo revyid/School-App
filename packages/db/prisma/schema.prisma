@@ -132,6 +132,8 @@ model School {
   taskGroups      TaskGroup[]
   taskGroupMembers TaskGroupMember[]
   taskCategories  TaskCategory[]
+  taskTargets     TaskTarget[]
+  assessmentTargets AssessmentTarget[]
   submissionFiles SubmissionFile[]
   expLogs         ExpLog[]
   expBadges       ExpBadge[]
@@ -202,7 +204,9 @@ model Class {
   attendance        AttendanceRecord[]
   calendarOverrides AcademicCalendar[]
   tasks             Task[]
+  taskTargets       TaskTarget[]
   assessments       Assessment[]
+  assessmentTargets AssessmentTarget[]
   @@unique([schoolId, name])
   @@index([schoolId])
 }
@@ -407,10 +411,35 @@ model Task {
   submissions Submission[]
   groups      TaskGroup[]
   categories  TaskCategory[]
+  targets     TaskTarget[]
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
   @@index([schoolId, classId, publishAt])
   @@index([schoolId, authorId])
+}
+
+// FASE 3 guru: tugas SHARED antar kelas. Induk (Task) menyimpan field shared
+// (judul, instruksi, subject, type, kelompok, kategori); tiap baris TaskTarget
+// menyimpan penugasan per kelas (deadline, publishAt, allowLate, status).
+// Kolom lama Task.classId/deadline/publishAt/allowLate/status TETAP dipakai
+// sebagai fallback (kelas utama) — JANGAN drop sebelum 2 rilis hijau.
+model TaskTarget {
+  id        String   @id @default(cuid())
+  schoolId  String
+  school    School   @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  taskId    String
+  task      Task     @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  classId   String
+  class     Class    @relation(fields: [classId], references: [id], onDelete: Cascade)
+  status    TaskStatus @default(PUBLISHED)
+  deadline  DateTime?
+  publishAt DateTime @default(now())
+  allowLate Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  @@unique([taskId, classId])
+  @@index([schoolId, classId, publishAt])
+  @@index([schoolId, taskId])
 }
 
 // T1: kategori unggahan per tugas (D3) — guru mendefinisikan 0..n kategori;
@@ -655,11 +684,31 @@ model Assessment {
   questions   AssessQuestion[]
   attempts    AssessAttempt[]
   groups      StudyGroup[]
+  targets     AssessmentTarget[]
   memberLinks StudyGroupMember[] @relation("MemberAssessment")
-  createdAt   DateTime   @default(now())
-  updatedAt   DateTime   @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
   @@index([schoolId, classId, publishAt])
   @@index([schoolId, authorId])
+}
+
+// FASE 3 guru: asesmen SHARED antar kelas (pola sama dengan TaskTarget).
+// Kolom lama Assessment.classId/deadline/publishAt TETAP sebagai fallback.
+model AssessmentTarget {
+  id        String   @id @default(cuid())
+  schoolId  String
+  school    School   @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  assessmentId String
+  assessment Assessment @relation(fields: [assessmentId], references: [id], onDelete: Cascade)
+  classId   String
+  class     Class    @relation(fields: [classId], references: [id], onDelete: Cascade)
+  deadline  DateTime?
+  publishAt DateTime @default(now())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  @@unique([assessmentId, classId])
+  @@index([schoolId, classId, publishAt])
+  @@index([schoolId, assessmentId])
 }
 
 // Bank soal milik guru per mapel: Question + snapshot AssessQuestion per asesmen.
