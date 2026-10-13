@@ -1,21 +1,20 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
+import { type ColumnDef } from "@tanstack/react-table";
 import { api, useFetch } from "@/app/lib/api";
 import {
   Panel,
-  Toolbar,
   TextInput,
   TextSelect,
   Btn,
   Badge,
-  WarmTable,
-  warmCell,
   Note,
   Err,
   LinkBtn,
 } from "@/components/DashUI";
 import ConfirmDialog from "@/components/ConfirmDialog";
+import { DataTable, selectColumn, actionsColumn } from "@/components/ui/data-table";
 
 interface TeacherRow {
   id: string;
@@ -53,6 +52,8 @@ export default function GuruManager() {
   const [editHomeroom, setEditHomeroom] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [pending, setPending] = useState<{ title: string; message: string; action: () => Promise<void> } | null>(null);
+  const [q, setQ] = useState("");
+  const [filterWali, setFilterWali] = useState<"semua" | "wali" | "nonwali">("semua");
 
   function askConfirm(title: string, message: string, action: () => Promise<void>) {
     setPending({ title, message, action });
@@ -149,7 +150,95 @@ export default function GuruManager() {
     });
   }
 
+  async function setAktifBulk(ids: string[], aktif: boolean) {
+    if (ids.length === 0) return;
+    askConfirm(aktif ? "Aktifkan Guru" : "Nonaktifkan Guru", `${aktif ? "Aktifkan" : "Nonaktifkan"} ${ids.length} guru terpilih?`, async () => {
+      for (const id of ids) {
+        await api(`/api/teachers/${id}`, {
+          method: "PATCH",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ isActive: aktif }),
+        });
+      }
+      reload();
+    });
+  }
+
   const classes = classesData?.rows ?? [];
+  const tampil = useMemo(() => (data?.rows ?? []).filter((t) => {
+    if (q.trim() && !`${t.name} ${t.email ?? ""}`.toLowerCase().includes(q.trim().toLowerCase())) return false;
+    if (filterWali === "wali" && !(t.homeroomOf?.length)) return false;
+    if (filterWali === "nonwali" && t.homeroomOf?.length) return false;
+    return true;
+  }), [data, q, filterWali]);
+
+  const columns: ColumnDef<TeacherRow, unknown>[] = useMemo(() => [
+    selectColumn<TeacherRow>(),
+    {
+      accessorKey: "name",
+      header: "Nama Guru",
+      cell: ({ row }) => {
+        const t = row.original;
+        return (
+          <span style={{ fontWeight: 700 }}>
+            {t.name}
+            {t.email && <div style={{ fontWeight: 400, fontSize: 12, color: "#74746d" }}>{t.email}</div>}
+          </span>
+        );
+      },
+    },
+    {
+      id: "wali",
+      header: "Wali Kelas",
+      cell: ({ row }) => {
+        const nm = row.original.homeroomOf?.[0]?.name;
+        return nm ? (
+          <span
+            style={{
+              background: "#aec6a4", padding: "3px 10px", borderRadius: 99,
+              fontWeight: 700, fontSize: 12, border: "1px solid #171716",
+            }}
+          >
+            Kelas {nm}
+          </span>
+        ) : (<span style={{ color: "#a0a096" }}>-</span>);
+      },
+    },
+    {
+      id: "mapel",
+      header: "Mapel & Kelas Diampu",
+      cell: ({ row }) => {
+        const taught = row.original.taughtFromSlots ?? [];
+        if (taught.length === 0) return <span style={{ color: "#a0a096" }}>Belum ada mapel</span>;
+        return (
+          <div style={{ display: "flex", gap: 4, flexWrap: "wrap", maxWidth: 280 }}>
+            {taught.map((tc) => (
+              <span
+                key={`${tc.teacherId}:${tc.classId}:${tc.subject ?? "-"}`}
+                style={{ background: "#eeeadd", padding: "2px 8px", borderRadius: 6, fontSize: 11, whiteSpace: "nowrap" }}
+              >
+                {tc.subject ?? "Mapel"} ({tc.class.name})
+              </span>
+            ))}
+          </div>
+        );
+      },
+    },
+    {
+      accessorKey: "isActive",
+      header: "Status",
+      cell: ({ row }) => (
+        <Badge status={row.original.isActive ? "AKTIF" : "NONAKTIF"}>
+          {row.original.isActive ? "Aktif" : "Nonaktif"}
+        </Badge>
+      ),
+    },
+    actionsColumn<TeacherRow>((t) => [
+      { label: "Atur penugasan", onClick: () => startEdit(t) },
+      { label: "Reset password", onClick: () => resetPw(t.id, t.name) },
+      { label: t.isActive ? "Nonaktifkan" : "Aktifkan", onClick: () => toggle(t.id, t.isActive, t.name) },
+    ]),
+  ], [startEdit, resetPw, toggle]);
 
   return (
     <>
@@ -244,82 +333,29 @@ export default function GuruManager() {
 
       {/* Tabel Data Guru */}
       <Panel style={{ marginBottom: 20 }}>
-        {loading && <Note>Memuat data guru…</Note>}
-        {error && <Err>Error: {error}</Err>}
-        {data && data.rows.length === 0 && <Note>Belum ada data guru. Tambahkan di bawah.</Note>}
-        {data && data.rows.length > 0 && (
-          <WarmTable head={["Nama Guru", "Email", "Wali Kelas", "Mapel & Kelas Diampu", "Status", "Aksi"]}>
-            {data.rows.map((t) => {
-              const homeroomName = t.homeroomOf?.[0]?.name;
-              const taught = t.taughtFromSlots ?? [];
-
-              return (
-                <tr key={t.id}>
-                  <td style={warmCell({ fontWeight: 700 })}>{t.name}</td>
-                  <td style={warmCell()}>{t.email ?? "-"}</td>
-                  <td style={warmCell()}>
-                    {homeroomName ? (
-                      <span
-                        style={{
-                          background: "#aec6a4",
-                          padding: "3px 10px",
-                          borderRadius: 99,
-                          fontWeight: 700,
-                          fontSize: 12,
-                          border: "1px solid #171716",
-                        }}
-                      >
-                        Kelas {homeroomName}
-                      </span>
-                    ) : (
-                      <span style={{ color: "#a0a096" }}>-</span>
-                    )}
-                  </td>
-                  <td style={warmCell()}>
-                    {taught.length === 0 ? (
-                      <span style={{ color: "#a0a096" }}>Belum ada mapel</span>
-                    ) : (
-                      <div style={{ display: "flex", gap: 4, flexWrap: "wrap", maxWidth: 280 }}>
-                        {taught.map((tc) => (
-                          <span
-                            key={`${tc.teacherId}:${tc.classId}:${tc.subject ?? "-"}`}
-                            style={{
-                              background: "#eeeadd",
-                              padding: "2px 8px",
-                              borderRadius: 6,
-                              fontSize: 11,
-                              whiteSpace: "nowrap",
-                            }}
-                          >
-                            {tc.subject ?? "Mapel"} ({tc.class.name})
-                          </span>
-                        ))}
-                      </div>
-                    )}
-                  </td>
-                  <td style={warmCell()}>
-                    <Badge status={t.isActive ? "AKTIF" : "NONAKTIF"}>
-                      {t.isActive ? "Aktif" : "Nonaktif"}
-                    </Badge>
-                  </td>
-                  <td style={warmCell()}>
-                    <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-                      <Btn kind="ghost" onClick={() => startEdit(t)}>
-                        Atur Penugasan
-                      </Btn>
-                      <Btn kind="ghost" onClick={() => resetPw(t.id, t.name)}>
-                        Reset PW
-                      </Btn>
-                      <Btn kind="ghost" onClick={() => toggle(t.id, t.isActive, t.name)}>
-                        {t.isActive ? "Nonaktifkan" : "Aktifkan"}
-                      </Btn>
-                    </div>
-                  </td>
-                </tr>
-              );
-            })}
-          </WarmTable>
-        )}
+        <DataTable<TeacherRow>
+          columns={columns}
+          rows={tampil}
+          getRowId={(t) => t.id}
+          searchValue={q}
+          onSearchChange={setQ}
+          searchPlaceholder="Cari nama / email guru…"
+          filters={(
+            <label style={{ display: "grid", gap: 6, fontSize: 13, color: "#74746d" }}>
+              Wali kelas:
+              <TextSelect value={filterWali} onChange={(e) => setFilterWali(e.target.value as typeof filterWali)} style={{ minHeight: 44 }}>
+                <option value="semua">Semua</option>
+                <option value="wali">Wali kelas saja</option>
+                <option value="nonwali">Bukan wali kelas</option>
+              </TextSelect>
+            </label>
+          )}
+          bulkActions={[
+            { label: "Aktifkan terpilih", onClick: (ids) => setAktifBulk(ids, true) },
+            { label: "Nonaktifkan terpilih", onClick: (ids) => setAktifBulk(ids, false) },
+          ]}
+          emptyText="Tidak ada guru yang cocok."
+        />
       </Panel>
 
       {/* Form Tambah Guru Baru */}

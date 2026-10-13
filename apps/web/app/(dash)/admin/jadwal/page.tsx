@@ -1,9 +1,11 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useMemo, useRef, useState } from "react";
+import { type ColumnDef } from "@tanstack/react-table";
 import { api, useFetch } from "@/app/lib/api";
 import { PageHead, Panel, Toolbar, TextInput, TextSelect, Btn, WarmTable, warmCell, Note, Err } from "@/components/DashUI";
 import ConfirmDialog from "@/components/ConfirmDialog";
+import { DataTable, selectColumn } from "@/components/ui/data-table";
 
 const DAYS = ["Min", "Sen", "Sel", "Rab", "Kam", "Jum", "Sab"];
 const DAY_FULL = ["Minggu", "Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu"];
@@ -13,6 +15,11 @@ interface SlotRow {
   subjectName: string | null; subjectId: string | null;
   subjectRef: { id: string; name: string } | null;
   teacher: { id: string; name: string } | null; teacherId: string | null;
+}
+
+interface LiburRow {
+  id: string; date: string; kind: string; note: string | null;
+  class: { id: string; name: string; gradeLevel: string | null } | null;
 }
 
 interface EditState {
@@ -25,7 +32,7 @@ export default function TimetablePage() {
     typeof window !== "undefined" ? new URLSearchParams(window.location.search).get("dari") : null,
   );
   const fileRef = useRef<HTMLInputElement>(null);
-  const { data: classes } = useFetch<{ rows: { id: string; name: string }[] }>(`/api/classes?page=1&perPage=100`);
+  const { data: classes } = useFetch<{ rows: { id: string; name: string; gradeLevel: string | null }[] }>(`/api/classes?page=1&perPage=100`);
   const { data: teachers } = useFetch<{ rows: { id: string; name: string }[] }>(`/api/teachers?page=1&perPage=200`);
   const [classId, setClassId] = useState("");
   const [refresh, setRefresh] = useState(0);
@@ -57,10 +64,10 @@ export default function TimetablePage() {
   const [liburSampai, setLiburSampai] = useState("");
   const [liburNote, setLiburNote] = useState("");
   const [liburMsg, setLiburMsg] = useState<string | null>(null);
-  const [liburBulan, setLiburBulan] = useState(() => new Date().toISOString().slice(0, 7));
+  const [liburScope, setLiburScope] = useState<string>("semua");
   const [liburRefresh, setLiburRefresh] = useState(0);
-  const { data: liburData, reload: reloadLibur } = useFetch<{ rows: { id: string; date: string; kind: string; note: string | null; class: { id: string; name: string } | null }[] }>(
-    `/api/attendance/calendar?month=${liburBulan}&r=${liburRefresh}`,
+  const { data: liburData } = useFetch<{ rows: { id: string; date: string; kind: string; note: string | null; class: { id: string; name: string; gradeLevel: string | null } | null }[] }>(
+    `/api/attendance/calendar?scope=${encodeURIComponent(liburScope)}&r=${liburRefresh}`,
   );
 
   function bump() { setRefresh((r) => r + 1); reload(); }
@@ -150,22 +157,58 @@ export default function TimetablePage() {
     const dates = expandDates(liburDari, liburSampai);
     if (dates.length === 0) { setLiburMsg("Isi tanggal dari–sampai yang valid"); return; }
     setLiburMsg("Menyimpan…");
+    const scopeBody: Record<string, string | null> = {};
+    if (liburScope.startsWith("kelas:")) scopeBody.classId = liburScope.slice(6);
+    else if (liburScope.startsWith("tingkat:")) scopeBody.gradeLevel = liburScope.slice(8);
     const res = await api("/api/attendance/calendar/batch", {
       method: "POST", headers: { "content-type": "application/json" },
-      body: JSON.stringify({ dates, kind: "LIBUR", note: liburNote.trim() || null }),
+      body: JSON.stringify({ dates, kind: "LIBUR", note: liburNote.trim() || null, ...scopeBody }),
     });
     const d = await res.json().catch(() => ({}));
     if (!res.ok) { setLiburMsg("Gagal: " + (d.error || res.status)); return; }
-    setLiburMsg(`${d.ok} hari libur ditambah (${dates[0]} s/d ${dates[dates.length - 1]}). Absensi tanggal itu nonaktif.`);
+    setLiburMsg(`${d.ok} entri libur ditambah (${dates[0]} s/d ${dates[dates.length - 1]}). Absensi tanggal itu nonaktif.`);
     setLiburDari(""); setLiburSampai(""); setLiburNote("");
     setLiburRefresh((r) => r + 1);
   }
 
-  async function hapusLibur(id: string) {
-    setDeleteTarget(null);
-    await api(`/api/attendance/calendar?id=${id}`, { method: "DELETE" });
+  async function hapusLiburBulk(ids: string[]) {
+    if (ids.length === 0) return;
+    if (!confirm(`Hapus ${ids.length} hari libur terpilih?`)) return;
+    const res = await api("/api/attendance/calendar/batch", {
+      method: "DELETE", headers: { "content-type": "application/json" },
+      body: JSON.stringify({ ids }),
+    });
+    const d = await res.json().catch(() => ({}));
+    if (!res.ok) { setLiburMsg("Gagal: " + (d.error || res.status)); return; }
+    setLiburMsg(`${d.ok} hari libur dihapus.`);
     setLiburRefresh((r) => r + 1);
   }
+
+  const liburColumns: ColumnDef<LiburRow, unknown>[] = useMemo(() => [
+    selectColumn<LiburRow>(),
+    {
+      accessorKey: "date",
+      header: "Tanggal",
+      cell: ({ row }) => (
+        <span style={{ fontWeight: 700 }}>{new Date(row.original.date).toISOString().slice(0, 10)}</span>
+      ),
+    },
+    {
+      id: "jenis",
+      header: "Jenis",
+      cell: ({ row }) => (row.original.kind === "LIBUR" ? "Libur" : "Efektif"),
+    },
+    {
+      id: "berlaku",
+      header: "Berlaku",
+      cell: ({ row }) => (row.original.class ? `Kelas ${row.original.class.name}` : "Semua kelas"),
+    },
+    {
+      accessorKey: "note",
+      header: "Keterangan",
+      cell: ({ row }) => row.original.note ?? "-",
+    },
+  ], []);
 
   return (
     <>
@@ -236,40 +279,40 @@ export default function TimetablePage() {
             </Toolbar>
             <Note>Mapel kelas ini ({mapelKelas?.subjects.length ?? 0}) diambil dari jadwal; bila kelas belum punya slot, daftar global dipakai.</Note>
           </Panel>
-          <Panel>
-            <h2 className="display" style={{ fontSize: 18, margin: "0 0 12px" }}>Import dari Excel</h2>
-            <Note>Mode per-kelas: Hari|Mulai|Selesai|Mapel|Guru (pilih kelas dulu). Mode semua-kelas: Kelas|Hari|Mulai|Selesai|Mapel|Guru (satu file untuk semua kelas). Maks 10MB. Nama mapel baru otomatis dibuat; guru/kelas tak dikenal dilaporkan per baris.</Note>
-            <Toolbar>
-              <label style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 13 }}>
-                <input type="checkbox" checked={impIsAll} onChange={(e) => setImpIsAll(e.target.checked)} />
-                Semua kelas
-              </label>
-              <TextSelect value={impMode} onChange={(e) => setImpMode(e.target.value as "replace" | "merge")} title="Replace: hapus slot lama kelas di file. Merge: hanya tambah.">
-                <option value="replace">Replace (hapus lama)</option>
-                <option value="merge">Merge (tambah saja)</option>
-              </TextSelect>
-              <input ref={fileRef} type="file" accept=".xlsx" />
-              <Btn onClick={upload}>Upload</Btn>
-              <a className="btn-sticker btn-ghost" style={{ textDecoration: "none" }} href={impIsAll ? "/api/timetable/template?mode=all" : "/api/timetable/template"}>Unduh template</a>
-            </Toolbar>
-            {impMsg && <Note>{impMsg}</Note>}
-            {impErrors.length > 0 && (
-              <WarmTable head={["Baris", "Kesalahan"]}>
-                {impErrors.slice(0, 20).map((e, i) => (
-                  <tr key={i}>
-                    <td style={warmCell({ fontWeight: 700 })}>{e.baris}</td>
-                    <td style={warmCell()}>{e.pesan}</td>
-                  </tr>
-                ))}
-              </WarmTable>
-            )}
-            {impErrors.length > 20 && <Note>…dan {impErrors.length - 20} kesalahan lain.</Note>}
-          </Panel>
         </>
       )}
       <Panel style={{ marginTop: 16 }}>
+        <h2 className="display" style={{ fontSize: 18, margin: "0 0 12px" }}>Import dari Excel</h2>
+        <Note>Mode per-kelas: Hari|Mulai|Selesai|Mapel|Guru (pilih kelas di atas dulu). Mode semua-kelas: Kelas|Hari|Mulai|Selesai|Mapel|Guru (satu file untuk semua kelas, tanpa pilih kelas). Maks 10MB. Nama mapel baru otomatis dibuat; guru/kelas tak dikenal dilaporkan per baris.</Note>
+        <Toolbar>
+          <label style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 13 }}>
+            <input type="checkbox" checked={impIsAll} onChange={(e) => setImpIsAll(e.target.checked)} />
+            Semua kelas
+          </label>
+          <TextSelect value={impMode} onChange={(e) => setImpMode(e.target.value as "replace" | "merge")} title="Replace: hapus slot lama kelas di file. Merge: hanya tambah.">
+            <option value="replace">Replace (hapus lama)</option>
+            <option value="merge">Merge (tambah saja)</option>
+          </TextSelect>
+          <input ref={fileRef} type="file" accept=".xlsx" />
+          <Btn onClick={upload}>Upload</Btn>
+          <a className="btn-sticker btn-ghost" style={{ textDecoration: "none" }} href={impIsAll ? "/api/timetable/template?mode=all" : "/api/timetable/template"}>Unduh template</a>
+        </Toolbar>
+        {impMsg && <Note>{impMsg}</Note>}
+        {impErrors.length > 0 && (
+          <WarmTable head={["Baris", "Kesalahan"]}>
+            {impErrors.slice(0, 20).map((e, i) => (
+              <tr key={i}>
+                <td style={warmCell({ fontWeight: 700 })}>{e.baris}</td>
+                <td style={warmCell()}>{e.pesan}</td>
+              </tr>
+            ))}
+          </WarmTable>
+        )}
+        {impErrors.length > 20 && <Note>…dan {impErrors.length - 20} kesalahan lain.</Note>}
+      </Panel>
+      <Panel style={{ marginTop: 16 }}>
         <h2 className="display" style={{ fontSize: 18, margin: "0 0 12px" }}>Hari Libur Sekolah</h2>
-        <Note>Tambah rentang tanggal libur sekaligus. Saat hari libur, absensi otomatis nonaktif (rekap kosong, scan/input ditolak).</Note>
+        <Note>Tambah rentang tanggal libur sekaligus untuk semua kelas, satu tingkatan, atau satu kelas. Saat hari libur, absensi otomatis nonaktif (rekap kosong, scan/input ditolak).</Note>
         <Toolbar>
           <label style={{ display: "grid", gap: 6, fontSize: 13, color: "#74746d" }}>
             Dari:
@@ -280,31 +323,35 @@ export default function TimetablePage() {
             <TextInput type="date" value={liburSampai} onChange={(e) => setLiburSampai(e.target.value)} style={{ width: "auto" }} />
           </label>
           <label style={{ display: "grid", gap: 6, fontSize: 13, color: "#74746d" }}>
-            Keterangan:
-            <TextInput placeholder="mis. Libur semester" value={liburNote} onChange={(e) => setLiburNote(e.target.value)} style={{ minWidth: 200 }} />
+            Berlaku untuk:
+            <TextSelect value={liburScope} onChange={(e) => { setLiburScope(e.target.value); setLiburRefresh((r) => r + 1); }} style={{ minWidth: 180 }}>
+              <option value="semua">Semua kelas</option>
+              {[...new Set((classes?.rows ?? []).map((c) => c.gradeLevel).filter(Boolean))].map((g) => (
+                <option key={g as string} value={`tingkat:${g as string}`}>Tingkatan {g as string}</option>
+              ))}
+              {(classes?.rows ?? []).map((c) => (
+                <option key={c.id} value={`kelas:${c.id}`}>Kelas {c.name}</option>
+              ))}
+            </TextSelect>
           </label>
-          <div style={{ display: "flex", alignItems: "flex-end", gap: 8 }}>
-            <TextInput type="month" value={liburBulan} onChange={(e) => { setLiburBulan(e.target.value); setLiburRefresh((r) => r + 1); }} style={{ width: "auto" }} />
+          <label style={{ display: "grid", gap: 6, fontSize: 13, color: "#74746d" }}>
+            Keterangan:
+            <TextInput placeholder="mis. Libur semester" value={liburNote} onChange={(e) => setLiburNote(e.target.value)} style={{ minWidth: 180 }} />
+          </label>
+          <div style={{ display: "flex", alignItems: "flex-end" }}>
             <Btn onClick={tambahLibur}>Tambah Libur</Btn>
           </div>
         </Toolbar>
         {liburMsg && <Note>{liburMsg}</Note>}
-        {liburData && liburData.rows.length === 0 && <Note>Belum ada hari khusus bulan ini.</Note>}
-        {liburData && liburData.rows.length > 0 && (
-          <WarmTable head={["Tanggal", "Jenis", "Kelas", "Keterangan", "Aksi"]}>
-            {liburData.rows.map((l) => (
-              <tr key={l.id}>
-                <td style={warmCell({ fontWeight: 700 })}>{new Date(l.date).toISOString().slice(0, 10)}</td>
-                <td style={warmCell()}>{l.kind === "LIBUR" ? "Libur" : "Efektif"}</td>
-                <td style={warmCell()}>{l.class?.name ?? "Semua kelas"}</td>
-                <td style={warmCell()}>{l.note ?? "-"}</td>
-                <td style={warmCell()}>
-                  <Btn kind="ghost" onClick={() => hapusLibur(l.id)}>Hapus</Btn>
-                </td>
-              </tr>
-            ))}
-          </WarmTable>
-        )}
+        <DataTable<LiburRow>
+          columns={liburColumns}
+          rows={liburData?.rows ?? []}
+          getRowId={(l) => l.id}
+          bulkActions={[
+            { label: "Hapus terpilih", danger: true, onClick: (ids) => hapusLiburBulk(ids) },
+          ]}
+          emptyText="Belum ada hari libur mendatang untuk cakupan ini."
+        />
       </Panel>
       {edit && (
         <div role="dialog" aria-modal="true" aria-label="Edit slot jadwal" onClick={() => setEdit(null)}

@@ -19,19 +19,37 @@ async function gate(req: NextRequest, roles: ("ADMIN" | "GURU")[]) {
   });
 }
 
-// GET /api/attendance/calendar?month=YYYY-MM — daftar hari khusus bulan itu.
+// GET /api/attendance/calendar[?month=YYYY-MM][?scope=semua|kelas:<id>|tingkat:<lvl>]
+// Tanpa month: daftar mendatang (hari ini ke depan, maks 200). Month tetap didukung untuk kompatibilitas.
 export async function GET(req: NextRequest) {
   const a = await gate(req, ["ADMIN", "GURU"]);
   if (!a.ok) return NextResponse.json({ error: a.error }, { status: a.status });
-  const month = (new URL(req.url).searchParams.get("month") ?? "").slice(0, 7);
+  const sp = new URL(req.url).searchParams;
+  const scope = (sp.get("scope") ?? "semua").slice(0, 96);
+  const month = (sp.get("month") ?? "").slice(0, 7);
   const m = /^(\d{4})-(\d{2})$/.exec(month);
-  if (!m) return NextResponse.json({ error: "month format YYYY-MM" }, { status: 400 });
-  const from = new Date(Date.UTC(Number(m[1]), Number(m[2]) - 1, 1));
-  const to = new Date(Date.UTC(Number(m[1]), Number(m[2]), 1));
+  let where: Record<string, unknown>;
+  if (m) {
+    const from = new Date(Date.UTC(Number(m[1]), Number(m[2]) - 1, 1));
+    const to = new Date(Date.UTC(Number(m[1]), Number(m[2]), 1));
+    where = { date: { gte: from, lt: to } };
+  } else {
+    const today = new Date();
+    today.setUTCHours(0, 0, 0, 0);
+    where = { date: { gte: today } };
+  }
+  if (scope.startsWith("kelas:")) {
+    where = { ...where, classId: scope.slice(6) };
+  } else if (scope.startsWith("tingkat:")) {
+    const lvl = scope.slice(8);
+    const list = await runAsSchool(db, a.school.id, (tx) =>
+      tx.class.findMany({ where: { gradeLevel: lvl }, select: { id: true } }));
+    where = { ...where, classId: { in: list.map((c) => c.id) } };
+  }
   const rows = await runAsSchool(db, a.school.id, (tx) =>
     tx.academicCalendar.findMany({
-      where: { date: { gte: from, lt: to } },
-      include: { class: { select: { id: true, name: true } } },
+      where,
+      include: { class: { select: { id: true, name: true, gradeLevel: true } } },
       orderBy: { date: "asc" },
       take: 200,
     }),
