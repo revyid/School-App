@@ -8,6 +8,7 @@ import { logAuth } from "@/server/audit";
 import { scanSchema, SCAN_COOLDOWN_SEC, parseDay, scanDecision, todayWib } from "@sms/shared/attendance";
 import { publishScan } from "@/server/realtime";
 import { awardExp } from "@/server/exp";
+import { guruClassIds } from "@/server/lms-scope";
 
 async function gate(req: NextRequest, roles: ("ADMIN" | "GURU")[]) {
   return requireRole({
@@ -25,11 +26,7 @@ async function gate(req: NextRequest, roles: ("ADMIN" | "GURU")[]) {
 function teacherClasses(a: { role: string; userId: string }, schoolId: string) {
   return (async () => {
     if (a.role !== "GURU") return null;
-    const mine = await runAsSchool(db, schoolId, (tx) =>
-      tx.teacherClass.findMany({ where: { teacherId: a.userId }, select: { classId: true } }));
-    const homeroom = await runAsSchool(db, schoolId, (tx) =>
-      tx.class.findMany({ where: { homeroomTeacherId: a.userId }, select: { id: true } }));
-    return new Set([...mine.map((m) => m.classId), ...homeroom.map((h) => h.id)]);
+    return guruClassIds(schoolId, a.userId);
   })();
 }
 
@@ -68,6 +65,16 @@ export async function POST(req: NextRequest) {
 
   const day = todayWib();
   const now = new Date();
+  // Hari libur → absensi nonaktif.
+  const liburScan = await runAsSchool(db, a.school.id, (tx) =>
+    tx.academicCalendar.findFirst({
+      where: { date: day, kind: "LIBUR", OR: [{ classId: null }, ...(classId ? [{ classId }] : [])] },
+      select: { note: true },
+    }),
+  );
+  if (liburScan) {
+    return NextResponse.json({ error: "Hari libur — absensi nonaktif", holiday: true, note: liburScan.note }, { status: 403 });
+  }
   const existing = await runAsSchool(db, a.school.id, (tx) =>
     tx.attendanceRecord.findUnique({
       where: { schoolId_studentId_date: { schoolId: a.school.id, studentId: qr.student.id, date: day } },

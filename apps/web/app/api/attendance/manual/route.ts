@@ -5,6 +5,7 @@ import { db } from "@sms/db/client";
 import { runAsSchool } from "@sms/db/tenant";
 import { logAuth } from "@/server/audit";
 import { manualSchema, parseDay } from "@sms/shared/attendance";
+import { guruClassIds } from "@/server/lms-scope";
 
 async function gate(req: NextRequest, roles: ("ADMIN" | "GURU")[]) {
   return requireRole({
@@ -38,14 +39,20 @@ export async function POST(req: NextRequest) {
   if (!target || !target.isActive) return NextResponse.json({ error: "siswa tidak ditemukan" }, { status: 404 });
   const classId = target.studentProfile?.classId ?? null;
   if (a.role === "GURU") {
-    const mine = await runAsSchool(db, a.school.id, (tx) =>
-      tx.teacherClass.findMany({ where: { teacherId: a.userId }, select: { classId: true } }));
-    const homeroom = await runAsSchool(db, a.school.id, (tx) =>
-      tx.class.findMany({ where: { homeroomTeacherId: a.userId }, select: { id: true } }));
-    const ids = new Set([...mine.map((m) => m.classId), ...homeroom.map((h) => h.id)]);
+    const ids = await guruClassIds(a.school.id, a.userId);
     if (!classId || !ids.has(classId)) {
       return NextResponse.json({ error: "bukan siswa kelas Anda" }, { status: 403 });
     }
+  }
+  // Hari libur → absensi nonaktif.
+  const liburManual = await runAsSchool(db, a.school.id, (tx) =>
+    tx.academicCalendar.findFirst({
+      where: { date: day, kind: "LIBUR", OR: [{ classId: null }, ...(classId ? [{ classId }] : [])] },
+      select: { note: true },
+    }),
+  );
+  if (liburManual) {
+    return NextResponse.json({ error: "Hari libur — absensi nonaktif", holiday: true, note: liburManual.note }, { status: 403 });
   }
 
   const row = await runAsSchool(db, a.school.id, (tx) =>
