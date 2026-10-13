@@ -65,8 +65,7 @@ export const teacherCreateSchema = z.object({
   name: z.string().trim().min(1).max(128),
   nisn: z.string().trim().max(32).optional().nullable(),
   homeroomClassId: z.string().min(1).max(64).optional().nullable(),
-  subject: z.string().trim().max(128).optional().nullable(),
-  subjectClassId: z.string().min(1).max(64).optional().nullable(),
+  // Penugasan mapel TIDAK via API ini — atur lewat slot jadwal (/admin/jadwal).
 });
 
 export const studentCreateSchema = z.object({

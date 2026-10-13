@@ -2,7 +2,7 @@
 
 // Kelasku: kartu per mapel — nama, guru, jadwal mingguan, badge lingkaran
 // tugas+asesmen belum, klik untuk membuka daftar.
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 import Link from "next/link";
 import { useFetch } from "@/app/lib/api";
 import { PageHead, Panel, Note, Err } from "@/components/DashUI";
@@ -47,11 +47,6 @@ function namaMapel(s: Slot): string {
 }
 
 export default function KelaskuPage() {
-  // Sorot tugas dari redirect URL lama (/siswa/tugas/[id] → ?tugas=).
-  // Baca window.location langsung (tanpa useSearchParams agar tak perlu Suspense).
-  const [sorotTugas] = useState<string | null>(() =>
-    typeof window === "undefined" ? null : new URLSearchParams(window.location.search).get("tugas"),
-  );
   const profil = useFetch<{ user: { studentProfile: { class: { id: string; name: string } | null } | null } }>(
     "/api/profile",
   );
@@ -59,7 +54,6 @@ export default function KelaskuPage() {
   const jadwal = useFetch<{ rows: Slot[] }>(classId ? `/api/timetable?classId=${classId}` : null);
   const tugas = useFetch<{ rows: Tugas[] }>("/api/tasks?status=semua");
   const asesmen = useFetch<{ rows: Asesmen[] }>("/api/assessments");
-  const [buka, setBuka] = useState<string | null>(null);
 
   const mapels = useMemo(() => {
     const slots = jadwal.data?.rows ?? [];
@@ -137,98 +131,38 @@ export default function KelaskuPage() {
       )}
       <div style={{ display: "grid", gap: 12, gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))" }}>
         {mapels.map((m) => {
-          const terbuka = buka === m.key;
           return (
-            <article key={m.key} className="card card-lift" style={{ padding: 18 }}>
-              <button
-                type="button"
-                onClick={() => setBuka(terbuka ? null : m.key)}
-                aria-expanded={terbuka}
+            <Link
+              key={m.key}
+              href={`/siswa/kelasku/${encodeURIComponent(m.key)}`}
+              className="card card-lift"
+              style={{ padding: 18, display: "flex", alignItems: "flex-start", gap: 12, textDecoration: "none", color: "inherit" }}
+            >
+              <span style={{ flex: 1, minWidth: 0 }}>
+                <span className="display" style={{ fontSize: 19, display: "block" }}>{m.nama}</span>
+                <span style={{ fontSize: 13, color: "#74746d", display: "block", marginTop: 2 }}>
+                  {m.guru}
+                </span>
+                <span style={{ fontSize: 12.5, color: "#74746d", display: "block", marginTop: 6 }}>
+                  {m.slot.length === 0
+                    ? "Jadwal belum diatur"
+                    : m.slot.map((s) => `${HARI[s.dayOfWeek] ?? "?"} ${s.startTime}–${s.endTime}`).join(" · ")}
+                </span>
+              </span>
+              <span
+                aria-label={m.belum > 0 ? `${m.belum} belum dikerjakan` : "Semua beres"}
+                title={m.belum > 0 ? `${m.belum} belum dikerjakan` : "Semua beres"}
                 style={{
-                  all: "unset", cursor: "pointer", display: "flex", width: "100%",
-                  alignItems: "flex-start", gap: 12, boxSizing: "border-box",
+                  flexShrink: 0, width: 40, height: 40, borderRadius: "50%",
+                  display: "inline-flex", alignItems: "center", justifyContent: "center",
+                  fontWeight: 800, fontSize: 15, color: "#fffdf8",
+                  background: m.belum > 0 ? "#e85e43" : "#50643e",
+                  border: "2px solid #171716",
                 }}
               >
-                <span style={{ flex: 1, minWidth: 0 }}>
-                  <span className="display" style={{ fontSize: 19, display: "block" }}>{m.nama}</span>
-                  <span style={{ fontSize: 13, color: "#74746d", display: "block", marginTop: 2 }}>
-                    {m.guru}
-                  </span>
-                  <span style={{ fontSize: 12.5, color: "#74746d", display: "block", marginTop: 6 }}>
-                    {m.slot.length === 0
-                      ? "Jadwal belum diatur"
-                      : m.slot.map((s) => `${HARI[s.dayOfWeek] ?? "?"} ${s.startTime}–${s.endTime}`).join(" · ")}
-                  </span>
-                </span>
-                <span
-                  aria-label={m.belum > 0 ? `${m.belum} belum dikerjakan` : "Semua beres"}
-                  title={m.belum > 0 ? `${m.belum} belum dikerjakan` : "Semua beres"}
-                  style={{
-                    flexShrink: 0, width: 40, height: 40, borderRadius: "50%",
-                    display: "inline-flex", alignItems: "center", justifyContent: "center",
-                    fontWeight: 800, fontSize: 15, color: "#fffdf8",
-                    background: m.belum > 0 ? "#e85e43" : "#50643e",
-                    border: "2px solid #171716",
-                  }}
-                >
-                  {m.belum}
-                </span>
-              </button>
-              {terbuka && (
-                <div style={{ marginTop: 12, borderTop: "1px solid rgba(23,23,22,.14)", paddingTop: 12, display: "grid", gap: 8 }}>
-                  {m.tugas.length === 0 && m.asesmen.length === 0 && (
-                    <p style={{ fontSize: 13, color: "#74746d", margin: 0 }}>Tidak ada tugas atau asesmen mapel ini.</p>
-                  )}
-                  {m.tugas.map((t) => (
-                    <div key={t.id} style={{ display: "flex", gap: 8, alignItems: "baseline", fontSize: 13.5 }}>
-                      <span
-                        style={{
-                          flexShrink: 0, fontSize: 11, fontWeight: 800, padding: "2px 8px", borderRadius: 999,
-                          background: t.state === "SUDAH" ? "#dcead0" : t.state === "TERLAMBAT" || t.state === "TUTUP" ? "#f6e8e3" : "#eeeadd",
-                          border: "1px solid rgba(23,23,22,.2)",
-                        }}
-                      >
-                        Tugas
-                      </span>
-                      <Link
-                        href={`/siswa/kelasku/tugas/${t.id}`}
-                        style={{
-                          fontWeight: sorotTugas === t.id ? 800 : 600, color: "#171716",
-                          background: sorotTugas === t.id ? "#f5c94a" : "transparent",
-                          borderRadius: 6, padding: "0 4px",
-                        }}
-                      >
-                        {t.title}
-                      </Link>
-                      <span style={{ marginLeft: "auto", fontSize: 12, color: "#74746d", flexShrink: 0 }}>
-                        {t.state === "SUDAH" ? (t.score != null ? `Nilai ${t.score}` : "Sudah") : t.state === "TERLAMBAT" ? "Terlambat" : t.state === "TUTUP" ? "Tutup" : "Belum"}
-                        {t.deadline ? ` · ${new Date(t.deadline).toLocaleDateString("id-ID")}` : ""}
-                      </span>
-                    </div>
-                  ))}
-                  {m.asesmen.map((a) => (
-                    <div key={a.id} style={{ display: "flex", gap: 8, alignItems: "baseline", fontSize: 13.5 }}>
-                      <span
-                        style={{
-                          flexShrink: 0, fontSize: 11, fontWeight: 800, padding: "2px 8px", borderRadius: 999,
-                          background: a.submitted ? "#dcead0" : "#eeeadd",
-                          border: "1px solid rgba(23,23,22,.2)",
-                        }}
-                      >
-                        Asesmen
-                      </span>
-                      <Link href={`/siswa/kelasku/asesmen/${a.id}`} style={{ fontWeight: 600, color: "#171716" }}>
-                        {a.title}
-                      </Link>
-                      <span style={{ marginLeft: "auto", fontSize: 12, color: "#74746d", flexShrink: 0 }}>
-                        {a.submitted ? (a.score != null ? `Skor ${a.score}` : "Sudah") : "Belum"}
-                        {a.deadline ? ` · ${new Date(a.deadline).toLocaleDateString("id-ID")}` : ""}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </article>
+                {m.belum}
+              </span>
+            </Link>
           );
         })}
       </div>

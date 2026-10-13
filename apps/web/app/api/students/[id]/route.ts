@@ -6,6 +6,7 @@ import { runAsSchool } from "@sms/db/tenant";
 import { logAuth } from "@/server/audit";
 import { studentPatchSchema } from "@sms/shared/master";
 import { parseBirthDate } from "@sms/shared/master";
+import { guruClassIds } from "@/server/lms-scope";
 
 async function gate(req: NextRequest, roles: ("ADMIN" | "GURU" | "SISWA")[]) {
   return requireRole({
@@ -23,13 +24,7 @@ async function gate(req: NextRequest, roles: ("ADMIN" | "GURU" | "SISWA")[]) {
 function scopedClassIds(a: { role: string; userId: string }, schoolId: string) {
   return (async () => {
     if (a.role !== "GURU") return null;
-    const mine = await runAsSchool(db, schoolId, (tx) =>
-      tx.teacherClass.findMany({ where: { teacherId: a.userId }, select: { classId: true } }),
-    );
-    const homeroom = await runAsSchool(db, schoolId, (tx) =>
-      tx.class.findMany({ where: { homeroomTeacherId: a.userId }, select: { id: true } }),
-    );
-    return [...new Set([...mine.map((m) => m.classId), ...homeroom.map((h) => h.id)])];
+    return [...(await guruClassIds(schoolId, a.userId))];
   })();
 }
 

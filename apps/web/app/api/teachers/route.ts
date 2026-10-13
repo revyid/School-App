@@ -51,21 +51,50 @@ export async function GET(req: NextRequest) {
         email: true,
         isActive: true,
         homeroomOf: { select: { id: true, name: true } },
-        taughtClasses: {
-          select: {
-            id: true,
-            subject: true,
-            class: { select: { id: true, name: true } },
-          },
-        },
       },
       orderBy: { name: "asc" },
       skip: (page - 1) * perPage,
       take: perPage,
     }),
   );
+  // Penugasan guru dibaca LIVE dari TimetableSlot (shared data, tanpa tabel cache):
+  // distinct (teacherId, classId) + mapel tersering per pasangan.
+  const teacherIds = rows.map((r) => r.id);
+  const slots = teacherIds.length > 0 ? await runAsSchool(db, a.school.id, (tx) =>
+    tx.timetableSlot.findMany({
+      where: { teacherId: { in: teacherIds } },
+      include: {
+        class: { select: { id: true, name: true } },
+        subjectRef: { select: { name: true } },
+      },
+      take: 5000,
+    })) : [];
+  const taughtByTeacher = new Map<string, { teacherId: string; classId: string; subject: string | null; class: { id: string; name: string } }[]>();
+  {
+    const groups = new Map<string, { teacherId: string; classId: string; className: string; names: Map<string, number> }>();
+    for (const s of slots) {
+      if (!s.teacherId) continue;
+      const key = `${s.teacherId}${s.classId}`;
+      let g = groups.get(key);
+      if (!g) {
+        g = { teacherId: s.teacherId, classId: s.classId, className: s.class.name, names: new Map() };
+        groups.set(key, g);
+      }
+      const nm = (s.subjectRef?.name ?? s.subjectName ?? "").trim();
+      if (nm) g.names.set(nm, (g.names.get(nm) ?? 0) + 1);
+    }
+    for (const g of groups.values()) {
+      const top = [...g.names.entries()].sort((x, y) => y[1] - x[1])[0]?.[0] ?? null;
+      const list = taughtByTeacher.get(g.teacherId) ?? [];
+      list.push({ teacherId: g.teacherId, classId: g.classId, subject: top, class: { id: g.classId, name: g.className } });
+      taughtByTeacher.set(g.teacherId, list);
+    }
+  }
   const total = await runAsSchool(db, a.school.id, (tx) => tx.user.count({ where }));
-  return NextResponse.json({ rows, page, perPage, total });
+  return NextResponse.json({
+    rows: rows.map((r) => ({ ...r, taughtFromSlots: taughtByTeacher.get(r.id) ?? [] })),
+    page, perPage, total,
+  });
 }
 
 export async function POST(req: NextRequest) {
@@ -110,19 +139,8 @@ export async function POST(req: NextRequest) {
       ).catch(() => {});
     }
 
-    // Tetapkan penugasan mapel jika dipilih
-    if (body.data.subject && body.data.subjectClassId) {
-      await runAsSchool(db, a.school.id, (tx) =>
-        tx.teacherClass.create({
-          data: {
-            schoolId: a.school.id,
-            teacherId: row.id,
-            classId: body.data.subjectClassId!,
-            subject: body.data.subject!,
-          },
-        }),
-      ).catch(() => {});
-    }
+    // Penugasan mapel TIDAK dibuat di sini — atur lewat jadwal
+    // (/admin/jadwal): slot dengan teacherId guru ini otomatis tampil di profilnya.
 
     await logAuth(a.school.id, "TEACHER.CREATE", { actorId: a.userId, ip: ip(req), meta: { userId: row.id } });
     return NextResponse.json({ row: { id: row.id, name: row.name, email: row.email }, tempPassword: pw }, { status: 201 });

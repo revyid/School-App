@@ -4,6 +4,7 @@ import { requireRole } from "@/server/auth-gate";
 import { db } from "@sms/db/client";
 import { runAsSchool } from "@sms/db/tenant";
 import QRCode from "qrcode";
+import { guruClassIds } from "@/server/lms-scope";
 
 async function gate(req: NextRequest, roles: ("ADMIN" | "GURU" | "SISWA")[]) {
   return requireRole({
@@ -39,11 +40,7 @@ export async function GET(req: NextRequest) {
         select: { studentProfile: { select: { classId: true } } },
       }),
     );
-    const mine = await runAsSchool(db, a.school.id, (tx) =>
-      tx.teacherClass.findMany({ where: { teacherId: a.userId }, select: { classId: true } }));
-    const homeroom = await runAsSchool(db, a.school.id, (tx) =>
-      tx.class.findMany({ where: { homeroomTeacherId: a.userId }, select: { id: true } }));
-    const ids = new Set([...mine.map((m) => m.classId), ...homeroom.map((h) => h.id)]);
+    const ids = await guruClassIds(a.school.id, a.userId);
     const cid = target?.studentProfile?.classId;
     if (!cid || !ids.has(cid)) return NextResponse.json({ error: "bukan siswa kelas Anda" }, { status: 403 });
   }

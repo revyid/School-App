@@ -103,7 +103,6 @@ model School {
   updatedAt DateTime @updatedAt
   users           User[]
   classes         Class[]
-  teacherClasses  TeacherClass[]
   studentProfiles StudentProfile[]
   auditLogs       AuditLog[]
   subjects        Subject[]
@@ -161,7 +160,6 @@ model User {
   updatedAt          DateTime  @updatedAt
   studentProfile     StudentProfile?
   homeroomOf         Class[]        @relation("Homeroom")
-  taughtClasses      TeacherClass[] @relation("TeacherAssignments")
   timetableSlots     TimetableSlot[]
   attendance         AttendanceRecord[] @relation("StudentAttendance")
   editedAttendance   AttendanceRecord[] @relation("EditedAttendance")
@@ -199,7 +197,6 @@ model Class {
   homeroomTeacherId String?
   homeroomTeacher   User?    @relation("Homeroom", fields: [homeroomTeacherId], references: [id], onDelete: SetNull)
   students          StudentProfile[]
-  assignments       TeacherClass[]
   timetableSlots    TimetableSlot[]
   attendance        AttendanceRecord[]
   calendarOverrides AcademicCalendar[]
@@ -209,20 +206,6 @@ model Class {
   assessmentTargets AssessmentTarget[]
   @@unique([schoolId, name])
   @@index([schoolId])
-}
-
-model TeacherClass {
-  id        String  @id @default(cuid())
-  schoolId  String
-  school    School  @relation(fields: [schoolId], references: [id], onDelete: Cascade)
-  teacherId String
-  teacher   User    @relation("TeacherAssignments", fields: [teacherId], references: [id], onDelete: Cascade)
-  classId   String
-  class     Class   @relation(fields: [classId], references: [id], onDelete: Cascade)
-  subject   String?
-  @@unique([teacherId, classId])
-  @@index([schoolId])
-  @@index([classId])
 }
 
 model StudentProfile {

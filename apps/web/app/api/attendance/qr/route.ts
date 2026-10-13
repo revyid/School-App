@@ -5,6 +5,7 @@ import { requireRole } from "@/server/auth-gate";
 import { db } from "@sms/db/client";
 import { runAsSchool } from "@sms/db/tenant";
 import { logAuth } from "@/server/audit";
+import { guruClassIds } from "@/server/lms-scope";
 
 function newQrToken(): string {
   return `sms1-${randomBytes(16).toString("hex")}`;
@@ -44,11 +45,7 @@ export async function GET(req: NextRequest) {
   );
   if (!target) return NextResponse.json({ error: "siswa tidak ditemukan" }, { status: 404 });
   if (a.role === "GURU") {
-    const mine = await runAsSchool(db, a.school.id, (tx) =>
-      tx.teacherClass.findMany({ where: { teacherId: a.userId }, select: { classId: true } }));
-    const homeroom = await runAsSchool(db, a.school.id, (tx) =>
-      tx.class.findMany({ where: { homeroomTeacherId: a.userId }, select: { id: true } }));
-    const ids = new Set([...mine.map((m) => m.classId), ...homeroom.map((h) => h.id)]);
+    const ids = await guruClassIds(a.school.id, a.userId);
     const cid = target.studentProfile?.classId;
     if (!cid || !ids.has(cid)) return NextResponse.json({ error: "bukan siswa kelas Anda" }, { status: 403 });
   }

@@ -34,7 +34,7 @@ beforeAll(async () => {
   classB = (await dbSystem.class.create({ data: { schoolId: S, name: `LB-${t}` } })).id;
   const g = await mkuser("GURU");
   guruA = g.id;
-  await dbSystem.teacherClass.create({ data: { schoolId: S, teacherId: guruA, classId: classA } });
+  await dbSystem.timetableSlot.create({ data: { schoolId: S, teacherId: guruA, classId: classA, dayOfWeek: 1, startTime: "07:00", endTime: "08:00" } });
   siswaA = (await mkuser("SISWA", classA)).id;
   siswaB = (await mkuser("SISWA", classB)).id;
   const author = await mkuser("ADMIN");
