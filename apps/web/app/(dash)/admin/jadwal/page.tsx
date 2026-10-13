@@ -50,6 +50,18 @@ export default function TimetablePage() {
   const [editMsg, setEditMsg] = useState<string | null>(null);
   const [impMsg, setImpMsg] = useState<string | null>(null);
   const [impErrors, setImpErrors] = useState<{ baris: number; pesan: string }[]>([]);
+  const [impMode, setImpMode] = useState<"replace" | "merge">("replace");
+  const [impIsAll, setImpIsAll] = useState(false);
+  // Panel libur
+  const [liburDari, setLiburDari] = useState("");
+  const [liburSampai, setLiburSampai] = useState("");
+  const [liburNote, setLiburNote] = useState("");
+  const [liburMsg, setLiburMsg] = useState<string | null>(null);
+  const [liburBulan, setLiburBulan] = useState(() => new Date().toISOString().slice(0, 7));
+  const [liburRefresh, setLiburRefresh] = useState(0);
+  const { data: liburData, reload: reloadLibur } = useFetch<{ rows: { id: string; date: string; kind: string; note: string | null; class: { id: string; name: string } | null }[] }>(
+    `/api/attendance/calendar?month=${liburBulan}&r=${liburRefresh}`,
+  );
 
   function bump() { setRefresh((r) => r + 1); reload(); }
 
@@ -103,13 +115,13 @@ export default function TimetablePage() {
   async function upload() {
     const f = fileRef.current?.files?.[0];
     if (!f) { setImpMsg("Pilih file .xlsx dulu"); return; }
-    if (!classId) { setImpMsg("Pilih kelas dulu"); return; }
+    if (!impIsAll && !classId) { setImpMsg("Pilih kelas dulu (atau centang mode semua-kelas)"); return; }
     setImpMsg("Mengunggah…");
     setImpErrors([]);
     const form = new FormData();
     form.append("file", f);
-    form.append("classId", classId);
-    const res = await api("/api/timetable/import", { method: "POST", body: form });
+    if (!impIsAll) form.append("classId", classId);
+    const res = await api(`/api/timetable/import?mode=${impMode}`, { method: "POST", body: form });
     const d = await res.json().catch(() => ({}));
     if (!res.ok) {
       setImpMsg("Gagal: " + (d.error || res.status));
@@ -120,6 +132,39 @@ export default function TimetablePage() {
     setImpErrors(d.errors ?? []);
     if (fileRef.current) fileRef.current.value = "";
     bump();
+  }
+
+  function expandDates(dari: string, sampai: string): string[] {
+    const out: string[] = [];
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(dari) || !/^\d{4}-\d{2}-\d{2}$/.test(sampai)) return out;
+    const a = new Date(dari + "T00:00:00Z");
+    const b = new Date(sampai + "T00:00:00Z");
+    if (isNaN(a.getTime()) || isNaN(b.getTime()) || b < a) return out;
+    for (let t = a.getTime(); t <= b.getTime() && out.length < 365; t += 86400000) {
+      out.push(new Date(t).toISOString().slice(0, 10));
+    }
+    return out;
+  }
+
+  async function tambahLibur() {
+    const dates = expandDates(liburDari, liburSampai);
+    if (dates.length === 0) { setLiburMsg("Isi tanggal dari–sampai yang valid"); return; }
+    setLiburMsg("Menyimpan…");
+    const res = await api("/api/attendance/calendar/batch", {
+      method: "POST", headers: { "content-type": "application/json" },
+      body: JSON.stringify({ dates, kind: "LIBUR", note: liburNote.trim() || null }),
+    });
+    const d = await res.json().catch(() => ({}));
+    if (!res.ok) { setLiburMsg("Gagal: " + (d.error || res.status)); return; }
+    setLiburMsg(`${d.ok} hari libur ditambah (${dates[0]} s/d ${dates[dates.length - 1]}). Absensi tanggal itu nonaktif.`);
+    setLiburDari(""); setLiburSampai(""); setLiburNote("");
+    setLiburRefresh((r) => r + 1);
+  }
+
+  async function hapusLibur(id: string) {
+    setDeleteTarget(null);
+    await api(`/api/attendance/calendar?id=${id}`, { method: "DELETE" });
+    setLiburRefresh((r) => r + 1);
   }
 
   return (
@@ -193,10 +238,19 @@ export default function TimetablePage() {
           </Panel>
           <Panel>
             <h2 className="display" style={{ fontSize: 18, margin: "0 0 12px" }}>Import dari Excel</h2>
-            <Note>Format sendiri: Hari|Mulai|Selesai|Mapel|Guru (contoh Hari: Senin, Mulai/Selesai HH:MM). Maks 10MB. Nama mapel baru otomatis dibuat; guru tak dikenal dilaporkan per baris.</Note>
+            <Note>Mode per-kelas: Hari|Mulai|Selesai|Mapel|Guru (pilih kelas dulu). Mode semua-kelas: Kelas|Hari|Mulai|Selesai|Mapel|Guru (satu file untuk semua kelas). Maks 10MB. Nama mapel baru otomatis dibuat; guru/kelas tak dikenal dilaporkan per baris.</Note>
             <Toolbar>
+              <label style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 13 }}>
+                <input type="checkbox" checked={impIsAll} onChange={(e) => setImpIsAll(e.target.checked)} />
+                Semua kelas
+              </label>
+              <TextSelect value={impMode} onChange={(e) => setImpMode(e.target.value as "replace" | "merge")} title="Replace: hapus slot lama kelas di file. Merge: hanya tambah.">
+                <option value="replace">Replace (hapus lama)</option>
+                <option value="merge">Merge (tambah saja)</option>
+              </TextSelect>
               <input ref={fileRef} type="file" accept=".xlsx" />
               <Btn onClick={upload}>Upload</Btn>
+              <a className="btn-sticker btn-ghost" style={{ textDecoration: "none" }} href={impIsAll ? "/api/timetable/template?mode=all" : "/api/timetable/template"}>Unduh template</a>
             </Toolbar>
             {impMsg && <Note>{impMsg}</Note>}
             {impErrors.length > 0 && (
@@ -213,6 +267,45 @@ export default function TimetablePage() {
           </Panel>
         </>
       )}
+      <Panel style={{ marginTop: 16 }}>
+        <h2 className="display" style={{ fontSize: 18, margin: "0 0 12px" }}>Hari Libur Sekolah</h2>
+        <Note>Tambah rentang tanggal libur sekaligus. Saat hari libur, absensi otomatis nonaktif (rekap kosong, scan/input ditolak).</Note>
+        <Toolbar>
+          <label style={{ display: "grid", gap: 6, fontSize: 13, color: "#74746d" }}>
+            Dari:
+            <TextInput type="date" value={liburDari} onChange={(e) => setLiburDari(e.target.value)} style={{ width: "auto" }} />
+          </label>
+          <label style={{ display: "grid", gap: 6, fontSize: 13, color: "#74746d" }}>
+            Sampai:
+            <TextInput type="date" value={liburSampai} onChange={(e) => setLiburSampai(e.target.value)} style={{ width: "auto" }} />
+          </label>
+          <label style={{ display: "grid", gap: 6, fontSize: 13, color: "#74746d" }}>
+            Keterangan:
+            <TextInput placeholder="mis. Libur semester" value={liburNote} onChange={(e) => setLiburNote(e.target.value)} style={{ minWidth: 200 }} />
+          </label>
+          <div style={{ display: "flex", alignItems: "flex-end", gap: 8 }}>
+            <TextInput type="month" value={liburBulan} onChange={(e) => { setLiburBulan(e.target.value); setLiburRefresh((r) => r + 1); }} style={{ width: "auto" }} />
+            <Btn onClick={tambahLibur}>Tambah Libur</Btn>
+          </div>
+        </Toolbar>
+        {liburMsg && <Note>{liburMsg}</Note>}
+        {liburData && liburData.rows.length === 0 && <Note>Belum ada hari khusus bulan ini.</Note>}
+        {liburData && liburData.rows.length > 0 && (
+          <WarmTable head={["Tanggal", "Jenis", "Kelas", "Keterangan", "Aksi"]}>
+            {liburData.rows.map((l) => (
+              <tr key={l.id}>
+                <td style={warmCell({ fontWeight: 700 })}>{new Date(l.date).toISOString().slice(0, 10)}</td>
+                <td style={warmCell()}>{l.kind === "LIBUR" ? "Libur" : "Efektif"}</td>
+                <td style={warmCell()}>{l.class?.name ?? "Semua kelas"}</td>
+                <td style={warmCell()}>{l.note ?? "-"}</td>
+                <td style={warmCell()}>
+                  <Btn kind="ghost" onClick={() => hapusLibur(l.id)}>Hapus</Btn>
+                </td>
+              </tr>
+            ))}
+          </WarmTable>
+        )}
+      </Panel>
       {edit && (
         <div role="dialog" aria-modal="true" aria-label="Edit slot jadwal" onClick={() => setEdit(null)}
           style={{ position: "fixed", inset: 0, background: "rgba(23,23,22,.55)", zIndex: 9999, display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }}>

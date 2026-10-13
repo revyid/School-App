@@ -2,11 +2,15 @@ import { describe, it, expect } from "vitest";
 import * as XLSX from "xlsx";
 import {
   TIMETABLE_HEADER,
+  TIMETABLE_ALL_HEADER,
   DAY_FULL,
   parseDayLabel,
   buildTimetableWorkbook,
   buildTimetableTemplate,
   parseTimetableBuffer,
+  buildTimetableAllWorkbook,
+  buildTimetableAllTemplate,
+  parseTimetableAllBuffer,
 } from "../timetable-xlsx.js";
 
 const ROWS = [
@@ -91,5 +95,53 @@ describe("timetable xlsx format sendiri (Hari|Mulai|Selesai|Mapel|Guru)", () => 
     expect(errors).toEqual([]);
     expect(rows.length).toBeGreaterThan(0);
     expect(rows[0]).toMatchObject({ dayOfWeek: 1, startTime: "07:00" });
+  });
+});
+
+describe("timetable xlsx global (Kelas|Hari|Mulai|Selesai|Mapel|Guru)", () => {
+  const ALL_ROWS = [
+    { kelas: "X-IPA-1", dayOfWeek: 1, startTime: "07:00", endTime: "07:45", subject: "Matematika", teacher: "Budi" },
+    { kelas: "X-IPA-2", dayOfWeek: 1, startTime: "07:00", endTime: "07:45", subject: "Matematika", teacher: "Budi" },
+    { kelas: "X-IPA-1", dayOfWeek: 2, startTime: "08:00", endTime: "08:45", subject: "IPA", teacher: "" },
+  ];
+
+  it("header global 6 kolom", () => {
+    expect(TIMETABLE_ALL_HEADER).toEqual(["Kelas", "Hari", "Mulai", "Selesai", "Mapel", "Guru"]);
+  });
+
+  it("round-trip export→import kembali sama", () => {
+    const buf = buildTimetableAllWorkbook(ALL_ROWS);
+    const { rows, errors } = parseTimetableAllBuffer(buf);
+    expect(errors).toEqual([]);
+    expect(rows).toEqual(ALL_ROWS);
+  });
+
+  it("kelas kosong + format lama → ditolak dengan pesan jelas", () => {
+    const wb = XLSX.utils.book_new();
+    const ws = XLSX.utils.aoa_to_sheet([
+      [...TIMETABLE_ALL_HEADER],
+      ["", "Senin", "07:00", "07:45", "Matematika", "Budi"],
+    ]);
+    XLSX.utils.book_append_sheet(wb, ws, "Jadwal");
+    const buf: Buffer = XLSX.write(wb, { type: "buffer", bookType: "xlsx" });
+    const res = parseTimetableAllBuffer(buf);
+    expect(res.rows).toEqual([]);
+    expect(res.errors).toHaveLength(1);
+    expect(res.errors[0].pesan).toMatch(/kelas/i);
+    // file format lama (5 kolom) → header tak sesuai
+    const oldBuf = buildTimetableWorkbook([
+      { dayOfWeek: 1, startTime: "07:00", endTime: "07:45", subject: "MTK", teacher: "Budi" },
+    ]);
+    const res2 = parseTimetableAllBuffer(oldBuf);
+    expect(res2.rows).toEqual([]);
+    expect(res2.errors[0].pesan).toMatch(/Kelas\|Hari/i);
+  });
+
+  it("template global memuat 3 contoh 2 kelas", () => {
+    const buf = buildTimetableAllTemplate();
+    const { rows, errors } = parseTimetableAllBuffer(buf);
+    expect(errors).toEqual([]);
+    expect(rows).toHaveLength(3);
+    expect(new Set(rows.map((r) => r.kelas)).size).toBe(2);
   });
 });
