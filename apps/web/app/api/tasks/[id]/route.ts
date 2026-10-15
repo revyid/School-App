@@ -53,7 +53,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
 
   if (a.role === "SISWA") {
     const cid = await siswaClassId(a.school.id, a.userId);
-    if (t.classId !== cid) return NextResponse.json({ error: "bukan tugas kelas Anda" }, { status: 403 });
+    if (t.classId !== cid && !t.targets.some((x) => x.classId === cid)) return NextResponse.json({ error: "bukan tugas kelas Anda" }, { status: 403 });
     if (!isVisibleToStudent(t, now)) return NextResponse.json({ error: "tugas belum dipublikasikan" }, { status: 404 });
 
     const sub = await runAsSchool(db, a.school.id, (tx) =>
@@ -95,7 +95,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
   // Guru/admin.
   if (a.role === "GURU") {
     const mine = await guruClassIds(a.school.id, a.userId);
-    if (!mine.has(t.classId)) return NextResponse.json({ error: "bukan tugas kelas Anda" }, { status: 403 });
+    if (!mine.has(t.classId) && !t.targets.some((x) => mine.has(x.classId))) return NextResponse.json({ error: "bukan tugas kelas Anda" }, { status: 403 });
   }
   const stats = await runAsSchool(db, a.school.id, (tx) => {
     const total = tx.submission.count({ where: { taskId: t.id } });

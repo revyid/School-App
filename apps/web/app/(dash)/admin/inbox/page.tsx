@@ -3,7 +3,9 @@
 // Admin: reveal pengirim anonim (tercatat audit) + daftar thread.
 import { useState } from "react";
 import { api, useFetch } from "@/app/lib/api";
-import { PageHead, Panel, Btn, Badge, WarmTable, warmCell, Note } from "@/components/DashUI";
+import { PageHead, Panel, WarmTable, warmCell, Note } from "@/components/DashUI";
+import { Button } from "@/components/ui/button";
+import { Badge, statusVariant } from "@/components/ui/badge";
 
 export default function CollabAdminPage() {
   const { data, loading, reload } = useFetch<{ rows: { id: string; subject: string; anonymous: boolean; sender: string; revealed: boolean }[] }>(
@@ -35,11 +37,11 @@ export default function CollabAdminPage() {
                 <td style={warmCell({ fontWeight: 700 })}>{t.subject}</td>
                 <td style={warmCell()}>{t.sender}</td>
                 <td style={warmCell()}>
-                  {t.anonymous ? <Badge status={t.revealed ? "AKTIF" : "PENDING"}>{t.revealed ? "revealed" : "anonim"}</Badge> : <Badge status="AKTIF">terbuka</Badge>}
+                  {t.anonymous ? <Badge variant={statusVariant(t.revealed ? "AKTIF" : "PENDING")}>{t.revealed ? "revealed" : "anonim"}</Badge> : <Badge variant={statusVariant("AKTIF")}>terbuka</Badge>}
                 </td>
                 <td style={warmCell()}>
                   {t.anonymous && !t.revealed && (
-                    <Btn kind="ghost" type="button" onClick={() => reveal(t.id)}>Reveal pengirim</Btn>
+                    <Button variant="sticker-ghost" type="button" onClick={() => reveal(t.id)}>Reveal pengirim</Button>
                   )}
                 </td>
               </tr>

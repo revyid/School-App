@@ -3,7 +3,9 @@
 // Rapor: tabel agregasi tugas + asesmen per siswa + ekspor .xlsx.
 import { useState } from "react";
 import { useFetch } from "@/app/lib/api";
-import { PageHead, Panel, Toolbar, TextInput, TextSelect, WarmTable, warmCell, Note, Err, LinkBtn } from "@/components/DashUI";
+import { PageHead, Panel, Toolbar, TextInput, WarmTable, warmCell, Note, Err } from "@/components/DashUI";
+import { Select, SelectTrigger, SelectValue, SelectPositioner, SelectPopup, SelectItem } from "@/components/ui/select";
+import { buttonVariants } from "@/components/ui/button";
 
 export default function RaporPage() {
   const classes = useFetch<{ rows: { id: string; class: { id: string; name: string } }[] }>("/api/assignments");
@@ -25,8 +27,8 @@ export default function RaporPage() {
         desc="Agregasi nilai tugas dan asesmen per siswa, siap diekspor ke Excel."
         right={classId ? (
           <span style={{ display: "flex", gap: 8 }}>
-            <LinkBtn kind="ghost" href="#" onClick={(e) => { e.preventDefault(); window.print(); }}>Cetak / PDF</LinkBtn>
-            <LinkBtn kind="dark" href={`/api/gradebook/export?classId=${encodeURIComponent(classId)}`} target="_blank" rel="noreferrer">Ekspor .xlsx</LinkBtn>
+            <button type="button" className={buttonVariants({ variant: "sticker-ghost" })} onClick={(e) => { e.preventDefault(); window.print(); }}>Cetak / PDF</button>
+            <a className={buttonVariants({ variant: "sticker" })} style={{ textDecoration: "none", background: "#171716", color: "#fffdf8" }} href={`/api/gradebook/export?classId=${encodeURIComponent(classId)}`} target="_blank" rel="noreferrer">Ekspor .xlsx</a>
           </span>
         ) : undefined}
       />
@@ -34,12 +36,14 @@ export default function RaporPage() {
         <Toolbar>
           <label style={{ display: "flex", gap: 8, alignItems: "center", fontSize: 13, color: "#74746d" }}>
             Kelas:
-            <TextSelect value={classId} onChange={(e) => setClassId(e.target.value)}>
-              <option value="">— pilih kelas —</option>
-              {kelasUnik.map((r) => (
-                <option key={r.class.id} value={r.class.id}>{r.class.name}</option>
-              ))}
-            </TextSelect>
+            <Select value={classId} onValueChange={(v) => setClassId(v ?? "")}>
+              <SelectTrigger><SelectValue placeholder="— pilih kelas —" /></SelectTrigger>
+              <SelectPositioner><SelectPopup>
+                {kelasUnik.map((r) => (
+                  <SelectItem key={r.class.id} value={r.class.id}>{r.class.name}</SelectItem>
+                ))}
+              </SelectPopup></SelectPositioner>
+            </Select>
           </label>
         </Toolbar>
         {gb.loading && <Note>Memuat…</Note>}

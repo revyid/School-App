@@ -1,26 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
-import { SESSION_COOKIE } from "@sms/shared/auth";
-import { requireRole } from "@/server/auth-gate";
+import { apiGate } from "@/server/api-gate";
 import { db } from "@sms/db/client";
 import { runAsSchool } from "@sms/db/tenant";
 import { logAuth } from "@/server/audit";
 import { subjectSchema } from "@sms/shared/master";
 
-async function gate(req: NextRequest, roles: ("ADMIN" | "GURU")[]) {
-  return requireRole({
-    host: req.headers.get("host") ?? "",
-    token: req.cookies.get(SESSION_COOKIE)?.value,
-    pathname: new URL(req.url).pathname,
-    mutation: req.method !== "GET",
-    origin: req.headers.get("origin"),
-    referer: req.headers.get("referer"),
-    csrf: req.headers.get("x-csrf-token"),
-    roles,
-  });
-}
-
 export async function GET(req: NextRequest) {
-  const a = await gate(req, ["ADMIN", "GURU"]);
+  const a = await apiGate(req, ["ADMIN", "GURU"]);
   if (!a.ok) return NextResponse.json({ error: a.error }, { status: a.status });
   const rows = await runAsSchool(db, a.school.id, (tx) =>
     tx.subject.findMany({ orderBy: { name: "asc" }, take: 500 }),
@@ -29,7 +15,7 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
-  const a = await gate(req, ["ADMIN"]);
+  const a = await apiGate(req, ["ADMIN"]);
   if (!a.ok) return NextResponse.json({ error: a.error }, { status: a.status });
   const body = subjectSchema.safeParse(await req.json().catch(() => null));
   if (!body.success) return NextResponse.json({ error: "input tidak valid" }, { status: 400 });
@@ -45,7 +31,7 @@ export async function POST(req: NextRequest) {
 }
 
 export async function DELETE(req: NextRequest) {
-  const a = await gate(req, ["ADMIN"]);
+  const a = await apiGate(req, ["ADMIN"]);
   if (!a.ok) return NextResponse.json({ error: a.error }, { status: a.status });
   const id = (new URL(req.url).searchParams.get("id") ?? "").slice(0, 64);
   if (!id) return NextResponse.json({ error: "id wajib diisi" }, { status: 400 });

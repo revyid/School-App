@@ -3,7 +3,10 @@
 // Admin: dashboard kehadiran (ringkasan hari ini per kelas) + ekspor bulanan.
 import { useState } from "react";
 import { api, useFetch } from "@/app/lib/api";
-import { PageHead, Panel, Toolbar, TextInput, TextSelect, Btn, Badge, WarmTable, warmCell, SegStat, Note, Err } from "@/components/DashUI";
+import { PageHead, Panel, Toolbar, TextInput, WarmTable, warmCell, SegStat, Note, Err } from "@/components/DashUI";
+import { Select, SelectTrigger, SelectValue, SelectPositioner, SelectPopup, SelectItem } from "@/components/ui/select";
+import { Button } from "@/components/ui/button";
+import { Badge, statusVariant } from "@/components/ui/badge";
 
 interface Row {
   studentId: string;
@@ -86,18 +89,20 @@ export default function AdminKehadiranPage() {
           </label>
           <label style={{ display: "flex", gap: 8, alignItems: "center", fontSize: 13, color: "#74746d" }}>
             Kelas:
-            <TextSelect value={classId} onChange={(e) => setClassId(e.target.value)}>
-              <option value="">— pilih —</option>
-              {classes.data?.rows.map((c) => (
-                <option key={c.id} value={c.id}>{c.name}</option>
-              ))}
-            </TextSelect>
+            <Select value={classId} onValueChange={(v) => setClassId(v ?? "")}>
+              <SelectTrigger><SelectValue placeholder="— pilih —" /></SelectTrigger>
+              <SelectPositioner><SelectPopup>
+                {classes.data?.rows.map((c) => (
+                  <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+                ))}
+              </SelectPopup></SelectPositioner>
+            </Select>
           </label>
           <label style={{ display: "flex", gap: 8, alignItems: "center", fontSize: 13, color: "#74746d" }}>
             Bulan: <TextInput type="month" value={month} onChange={(e) => setMonth(e.target.value)} style={{ width: "auto" }} />
           </label>
-          <Btn kind="ghost" type="button" onClick={exportMonthly}>Unduh rekap (.xlsx)</Btn>
-          <Btn kind="ghost" type="button" onClick={cetakMassal}>Cetak kartu QR sekelas</Btn>
+          <Button variant="sticker-ghost" type="button" onClick={exportMonthly}>Unduh rekap (.xlsx)</Button>
+          <Button variant="sticker-ghost" type="button" onClick={cetakMassal}>Cetak kartu QR sekelas</Button>
         </Toolbar>
         {s && (
           <SegStat stats={[
@@ -117,7 +122,7 @@ export default function AdminKehadiranPage() {
               <tr key={r.studentId}>
                 <td style={warmCell({ fontWeight: 700 })}>{r.name}</td>
                 <td style={warmCell()}>{r.nisn ?? "-"}</td>
-                <td style={warmCell()}>{r.record ? <Badge status={r.record.status} /> : <Badge status="BELUM" />}</td>
+                <td style={warmCell()}>{r.record ? <Badge variant={statusVariant(r.record.status)}>{r.record.status}</Badge> : <Badge variant={statusVariant("BELUM")}>BELUM</Badge>}</td>
               </tr>
             ))}
           </WarmTable>

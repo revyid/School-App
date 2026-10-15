@@ -2,7 +2,8 @@
 
 // Dashboard super-admin: agregat /api/admin/health (semua sekolah).
 import { useEffect, useState } from "react";
-import { PageHead, Panel, Badge, WarmTable, warmCell, SegStat, Note, Err } from "@/components/DashUI";
+import { PageHead, Panel, WarmTable, warmCell, SegStat, Note, Err } from "@/components/DashUI";
+import { Badge, statusVariant } from "@/components/ui/badge";
 
 interface Health {
   schoolCount: number;
@@ -50,7 +51,7 @@ export default function PantauPage() {
             {(h.wa.rows ?? []).map((r) => (
               <tr key={r.schoolId}>
                 <td style={warmCell({ fontWeight: 700 })}>{r.slug}</td>
-                <td style={warmCell()}><Badge status={r.connected ? "AKTIF" : "ALPHA"}>{r.connected ? "terhubung" : `putus (${r.detail})`}</Badge></td>
+                <td style={warmCell()}><Badge variant={statusVariant(r.connected ? "AKTIF" : "ALPHA")}>{r.connected ? "terhubung" : `putus (${r.detail})`}</Badge></td>
               </tr>
             ))}
           </WarmTable>

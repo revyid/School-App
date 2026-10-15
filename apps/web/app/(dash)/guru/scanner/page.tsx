@@ -7,7 +7,9 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { io, type Socket } from "socket.io-client";
 import { api, useFetch } from "@/app/lib/api";
-import { PageHead, Panel, Toolbar, TextInput, Btn, Badge, Note, LinkBtn } from "@/components/DashUI";
+import { PageHead, Panel, Toolbar, TextInput, Note } from "@/components/DashUI";
+import { Button, buttonVariants } from "@/components/ui/button";
+import { Badge, statusVariant } from "@/components/ui/badge";
 import SwipeToast from "@/components/SwipeToast";
 import { useCamera } from "@/components/useCamera";
 
@@ -285,17 +287,17 @@ export default function ScannerPage() {
         kicker="Absensi"
         title="Scanner kehadiran"
         desc="Arahkan kamera ke kartu QR siswa. Bisa offline, antrean terkirim otomatis."
-        right={<LinkBtn href="/guru/kehadiran">Lihat rekap hari ini</LinkBtn>}
+        right={<a className={buttonVariants({ variant: "sticker-ghost" })} style={{ textDecoration: "none" }} href="/guru/kehadiran">Lihat rekap hari ini</a>}
       />
       <Panel style={{ maxWidth: 640 }}>
         {offlineCount > 0 && (
-          <p style={{ margin: "0 0 12px" }}><Badge status="PENDING">Antrean offline: {offlineCount} (otomatis dikirim saat online)</Badge></p>
+          <p style={{ margin: "0 0 12px" }}><Badge variant={statusVariant("PENDING")}>Antrean offline: {offlineCount} (otomatis dikirim saat online)</Badge></p>
         )}
         <Toolbar>
           {!cam.streaming
-            ? <Btn type="button" kind="dark" onClick={() => { void startCamera(); }}>Nyalakan kamera</Btn>
-            : <Btn kind="ghost" type="button" onClick={stopCamera}>Matikan kamera</Btn>}
-          <Btn kind="ghost" type="button" onClick={warmVoice}>Aktifkan suara</Btn>
+            ? <Button variant="sticker" style={{ background: "#171716", color: "#fffdf8" }} type="button" onClick={() => { void startCamera(); }}>Nyalakan kamera</Button>
+            : <Button variant="sticker-ghost" type="button" onClick={stopCamera}>Matikan kamera</Button>}
+          <Button variant="sticker-ghost" type="button" onClick={warmVoice}>Aktifkan suara</Button>
         </Toolbar>
 
         {/* KONTROL VOLUME & KECEPATAN SUARA TTS */}
@@ -351,7 +353,7 @@ export default function ScannerPage() {
             Token manual (bila kamera tak mendukung):
             <TextInput value={manual} onChange={(e) => setManual(e.target.value)} placeholder="sms1-…" />
           </label>
-          <Toolbar><Btn type="submit">Catat hadir</Btn></Toolbar>
+          <Toolbar><Button variant="sticker" type="submit">Catat hadir</Button></Toolbar>
         </form>
         {msg && <p style={{ fontWeight: 700 }}>{msg}</p>}
         {lastScan && (

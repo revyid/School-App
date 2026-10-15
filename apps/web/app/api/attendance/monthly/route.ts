@@ -1,28 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
-import { SESSION_COOKIE } from "@sms/shared/auth";
-import { requireRole } from "@/server/auth-gate";
+import { apiGate } from "@/server/api-gate";
 import { db } from "@sms/db/client";
 import { runAsSchool } from "@sms/db/tenant";
 import { logAuth } from "@/server/audit";
 import * as XLSX from "xlsx";
 
-async function gate(req: NextRequest) {
-  return requireRole({
-    host: req.headers.get("host") ?? "",
-    token: req.cookies.get(SESSION_COOKIE)?.value,
-    pathname: new URL(req.url).pathname,
-    mutation: req.method !== "GET",
-    origin: req.headers.get("origin"),
-    referer: req.headers.get("referer"),
-    csrf: req.headers.get("x-csrf-token"),
-    roles: ["ADMIN"],
-  });
-}
-
 // GET /api/attendance/monthly?month=YYYY-MM&classId=&format=xlsx — rekap bulanan.
 // Kolom: Nama, NISN, HADIR, IZIN, SAKIT, ALPHA, Tanpa Ket./BELUM.
 export async function GET(req: NextRequest) {
-  const a = await gate(req);
+  const a = await apiGate(req, ["ADMIN"]);
   if (!a.ok) return NextResponse.json({ error: a.error }, { status: a.status });
   const url = new URL(req.url);
   const m = /^(\d{4})-(\d{2})$/.exec((url.searchParams.get("month") ?? "").slice(0, 7));

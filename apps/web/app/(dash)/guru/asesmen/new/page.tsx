@@ -5,10 +5,12 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { api, useFetch } from "@/app/lib/api";
 import AssessmentStemMarkdown from "@/components/AssessmentStemMarkdown";
-import UploadPopup from "@/components/UploadPopup";
-import { PageHead, Panel, Toolbar, TextInput, TextSelect, Btn, Note, Err } from "@/components/DashUI";
+import { PageHead, Panel, Toolbar, TextInput, Note, Err } from "@/components/DashUI";
+import { Select, SelectTrigger, SelectValue, SelectPositioner, SelectPopup, SelectItem } from "@/components/ui/select";
+import { Button } from "@/components/ui/button";
+import SoalSheet from "@/components/SoalSheet";
 import { parseMultiQuestions, PLACEHOLDER_EXAMPLE } from "@/lib/parse-questions";
-import { PlusIcon, Trash2Icon, CheckIcon } from "lucide-react";
+import { PlusIcon, CheckIcon } from "lucide-react";
 
 interface BankRow {
   id: string; type: string; stem: string;
@@ -50,13 +52,8 @@ export default function AsesmenNewPage() {
 
   // Tambah ke bank
   const [addOpen, setAddOpen] = useState(false);
-  const [bStem, setBStem] = useState("");
-  const [bType, setBType] = useState("MCQ");
-  const [bOpts, setBOpts] = useState("a \nb \nc ");
-  const [bCorrect, setBCorrect] = useState("0");
-  const [bImg, setBImg] = useState<File | null>(null);
-  const [bVid, setBVid] = useState<File | null>(null);
   const [bankMsg, setBankMsg] = useState<string | null>(null);
+  const [bankBusy, setBankBusy] = useState(false);
 
   const [saving, setSaving] = useState(false);
   const [err, setErr] = useState<string | null>(null);
@@ -65,22 +62,21 @@ export default function AsesmenNewPage() {
     setPicked((p) => (p.includes(id) ? p.filter((x) => x !== id) : [...p, id]));
   }
 
-  async function tambahBank(e: React.FormEvent) {
-    e.preventDefault();
-    const opts = bOpts.split("\n").map((s) => s.replace(/^[a-hA-H\d][.)\-:]?\s+/, "").trim()).filter(Boolean);
-    if (!bStem.trim() || opts.length < 2) { setBankMsg("Isi batang soal + minimal 2 opsi"); return; }
+  async function tambahBank(p: { stem: string; type: string; options: string[]; correctIndex: string; image: File | null; video: File | null }) {
+    if (!p.stem.trim() || p.options.length < 2) { setBankMsg("Isi batang soal + minimal 2 opsi"); return; }
+    setBankBusy(true);
     const form = new FormData();
-    form.append("type", bType);
-    form.append("stem", bStem);
-    form.append("options", JSON.stringify(opts));
-    form.append("correctIndex", bType === "MCQ" ? bCorrect : "");
-    if (bImg) form.append("image", bImg);
-    if (bVid) form.append("video", bVid);
+    form.append("type", p.type);
+    form.append("stem", p.stem);
+    form.append("options", JSON.stringify(p.options));
+    form.append("correctIndex", p.type === "MCQ" ? p.correctIndex : "");
+    if (p.image) form.append("image", p.image);
+    if (p.video) form.append("video", p.video);
     const res = await api("/api/questions", { method: "POST", body: form });
     const d = await res.json().catch(() => ({}));
+    setBankBusy(false);
     if (!res.ok) { setBankMsg(d.error || `Gagal (${res.status})`); return; }
     setBankMsg("Soal masuk bank");
-    setBStem(""); setBOpts("a \nb \nc "); setBImg(null); setBVid(null);
     bank.reload();
   }
 
@@ -133,19 +129,14 @@ export default function AsesmenNewPage() {
           <h2 className="display mb-4 text-[15px]">Identitas asesmen</h2>
           <div className="grid gap-4">
             <Field label="Kelas utama" hint="Kelas utama target asesmen ini.">
-              <TextSelect
-                value={classId}
-                onChange={(e) => {
-                  setClassId(e.target.value);
-                  setExtraClassIds((prev) => prev.filter((id) => id !== e.target.value));
-                }}
-                required
-              >
-                <option value="">— pilih kelas —</option>
-                {kelasUnik.map((r) => (
-                  <option key={r.class.id} value={r.class.id}>{r.class.name}</option>
-                ))}
-              </TextSelect>
+              <Select value={classId} onValueChange={(v) => { setClassId(v ?? ""); setExtraClassIds((prev) => prev.filter((id) => id !== (v ?? ""))); }}>
+                <SelectTrigger><SelectValue placeholder="— pilih kelas —" /></SelectTrigger>
+                <SelectPositioner><SelectPopup>
+                  {kelasUnik.map((r) => (
+                    <SelectItem key={r.class.id} value={r.class.id}>{r.class.name}</SelectItem>
+                  ))}
+                </SelectPopup></SelectPositioner>
+              </Select>
             </Field>
 
             {classId && kelasUnik.length > 1 && (
@@ -267,7 +258,7 @@ export default function AsesmenNewPage() {
             </div>
             <button
               type="button"
-              onClick={() => setAddOpen((v) => !v)}
+              onClick={() => setAddOpen(true)}
               className="btn-sticker flex items-center gap-1.5 rounded-2xl border border-line bg-cream px-3 py-1.5 text-[12px] font-bold hover:bg-paper"
             >
               <PlusIcon size={13} /> Tambah soal
@@ -304,76 +295,18 @@ export default function AsesmenNewPage() {
               </label>
             ))}
           </div>
-
-          {/* Form tambah ke bank */}
-          {addOpen && (
-            <div className="mt-4 rounded-2xl border border-line bg-paper p-4">
-              <div className="mb-3 flex items-center justify-between">
-                <h3 className="display text-[14px]">Tambah soal ke bank</h3>
-                <button type="button" onClick={() => setAddOpen(false)} className="rounded-xl p-1 text-muted-strong hover:bg-cream">
-                  <Trash2Icon size={14} />
-                </button>
-              </div>
-              <form onSubmit={tambahBank} className="grid gap-3">
-                <Field label="Tipe">
-                  <TextSelect value={bType} onChange={(e) => setBType(e.target.value)}>
-                    <option value="MCQ">Pilihan ganda</option>
-                    <option value="SORTING">Mengurutkan</option>
-                  </TextSelect>
-                </Field>
-                <Field label="Batang soal">
-                  <textarea
-                    value={bStem}
-                    onChange={(e) => setBStem(e.target.value)}
-                    required
-                    rows={3}
-                    className="rounded-2xl border border-line bg-cream px-3 py-2 text-[13px] focus:outline-none focus:ring-1 focus:ring-ink/30"
-                  />
-                </Field>
-                <Field label="Opsi (satu per baris)">
-                  <textarea
-                    value={bOpts}
-                    onChange={(e) => setBOpts(e.target.value)}
-                    required
-                    rows={4}
-                    className="rounded-2xl border border-line bg-cream px-3 py-2 font-mono text-[13px] focus:outline-none focus:ring-1 focus:ring-ink/30"
-                  />
-                </Field>
-                {bType === "MCQ" && (
-                  <Field label="Index jawaban benar (0 = opsi pertama)">
-                    <TextInput value={bCorrect} onChange={(e) => setBCorrect(e.target.value)} inputMode="numeric" />
-                  </Field>
-                )}
-                <Field label="Gambar soal (JPG/PNG, maks 5MB, opsional)">
-                  <UploadPopup
-                    accept="image/jpeg,image/png,image/webp"
-                    maxMb={5}
-                    onFile={(f) => setBImg(f)}
-                    label={bImg?.name}
-                  />
-                </Field>
-                <Field label="Video soal (MP4/WebM, maks 20MB, opsional)">
-                  <UploadPopup
-                    accept="video/mp4,video/webm"
-                    maxMb={20}
-                    onFile={(f) => setBVid(f)}
-                    label={bVid?.name}
-                  />
-                </Field>
-                {bankMsg && <p className="text-[12px] font-bold" style={{ color: bankMsg.includes("bank") ? "#50643e" : "#c94b35" }}>{bankMsg}</p>}
-                <Toolbar><Btn type="submit">Simpan ke bank</Btn></Toolbar>
-              </form>
-            </div>
-          )}
+          {bankMsg && <p className="mt-2 text-[12px] font-bold" style={{ color: bankMsg.includes("bank") ? "#50643e" : "#c94b35" }}>{bankMsg}</p>}
         </Panel>
+
+        <SoalSheet open={addOpen} onOpenChange={setAddOpen} busy={bankBusy} msg={bankMsg} onSubmit={(p) => void tambahBank(p)} />
 
         {err && <p className="text-[13px] font-bold text-terracotta">{err}</p>}
 
         <Toolbar>
-          <Btn type="button" kind="ghost" onClick={() => router.back()}>Batal</Btn>
-          <Btn type="submit" disabled={saving || (parsed.length === 0 && picked.length === 0)}>
+          <Button variant="sticker-ghost" type="button" onClick={() => router.back()}>Batal</Button>
+          <Button variant="sticker" type="submit" disabled={saving || (parsed.length === 0 && picked.length === 0)}>
             {saving ? "Menyimpan…" : `Buat ${parsed.length + picked.length} soal`}
-          </Btn>
+          </Button>
         </Toolbar>
       </form>
     </>

@@ -3,7 +3,10 @@
 // Rekap kehadiran harian per kelas (guru: hanya kelasnya — server menolak yang lain).
 import { useState } from "react";
 import { api, useFetch } from "@/app/lib/api";
-import { PageHead, Panel, Toolbar, TextInput, TextSelect, Btn, Badge, WarmTable, warmCell, SegStat, Note, Err, LinkBtn } from "@/components/DashUI";
+import { PageHead, Panel, Toolbar, TextInput, WarmTable, warmCell, SegStat, Note, Err } from "@/components/DashUI";
+import { Select, SelectTrigger, SelectValue, SelectPositioner, SelectPopup, SelectItem } from "@/components/ui/select";
+import { Button, buttonVariants } from "@/components/ui/button";
+import { Badge, statusVariant } from "@/components/ui/badge";
 
 interface Row {
   studentId: string;
@@ -53,7 +56,7 @@ export default function KehadiranPage() {
         kicker="Absensi"
         title="Kehadiran harian"
         desc="Pilih tanggal dan kelas, lalu tandai manual bila ada yang terlewat scan."
-        right={<LinkBtn href="/guru/scanner">Buka scanner</LinkBtn>}
+        right={<a className={buttonVariants({ variant: "sticker-ghost" })} style={{ textDecoration: "none" }} href="/guru/scanner">Buka scanner</a>}
       />
       <Panel style={{ marginBottom: 16 }}>
         <Toolbar>
@@ -62,12 +65,14 @@ export default function KehadiranPage() {
           </label>
           <label style={{ display: "flex", gap: 8, alignItems: "center", fontSize: 13, color: "#74746d" }}>
             Kelas:
-            <TextSelect value={classId} onChange={(e) => setClassId(e.target.value)}>
-              <option value="">— pilih —</option>
-              {kelasUnik.map((r) => (
-                <option key={r.class.id} value={r.class.id}>{r.class.name}</option>
-              ))}
-            </TextSelect>
+            <Select value={classId} onValueChange={(v) => setClassId(v ?? "")}>
+              <SelectTrigger><SelectValue placeholder="— pilih —" /></SelectTrigger>
+              <SelectPositioner><SelectPopup>
+                {kelasUnik.map((r) => (
+                  <SelectItem key={r.class.id} value={r.class.id}>{r.class.name}</SelectItem>
+                ))}
+              </SelectPopup></SelectPositioner>
+            </Select>
           </label>
         </Toolbar>
         {s && (
@@ -89,18 +94,20 @@ export default function KehadiranPage() {
                 <td style={warmCell({ fontWeight: 700 })}>{r.name}</td>
                 <td style={warmCell()}>{r.nisn ?? "-"}</td>
                 <td style={warmCell()}>
-                  {r.record ? <><Badge status={r.record.status} /> <span style={{ fontSize: 12, color: "#74746d" }}>({r.record.source})</span></> : <Badge status="BELUM" />}
+                  {r.record ? <><Badge variant={statusVariant(r.record.status)}>{r.record.status}</Badge> <span style={{ fontSize: 12, color: "#74746d" }}>({r.record.source})</span></> : <Badge variant={statusVariant("BELUM")}>BELUM</Badge>}
                 </td>
                 <td style={warmCell()}>
                   <span style={{ display: "flex", gap: 6 }}>
-                    <TextSelect value={edit[r.studentId] ?? ""} onChange={(e) => setEdit({ ...edit, [r.studentId]: e.target.value })}>
-                      <option value="">—</option>
-                      <option value="HADIR">HADIR</option>
-                      <option value="IZIN">IZIN</option>
-                      <option value="SAKIT">SAKIT</option>
-                      <option value="ALPHA">ALPHA</option>
-                    </TextSelect>
-                    <Btn kind="ghost" type="button" onClick={() => saveManual(r.studentId)}>Simpan</Btn>
+                    <Select value={edit[r.studentId] ?? ""} onValueChange={(v) => setEdit({ ...edit, [r.studentId]: v ?? "" })}>
+                      <SelectTrigger><SelectValue placeholder="—" /></SelectTrigger>
+                      <SelectPositioner><SelectPopup>
+                        <SelectItem value="HADIR">HADIR</SelectItem>
+                        <SelectItem value="IZIN">IZIN</SelectItem>
+                        <SelectItem value="SAKIT">SAKIT</SelectItem>
+                        <SelectItem value="ALPHA">ALPHA</SelectItem>
+                      </SelectPopup></SelectPositioner>
+                    </Select>
+                    <Button variant="sticker-ghost" type="button" onClick={() => saveManual(r.studentId)}>Simpan</Button>
                   </span>
                 </td>
               </tr>

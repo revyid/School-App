@@ -3,7 +3,10 @@
 // Admin: pengumuman CRUD-minimal (buat + daftar) + reveal thread anonim + atur expRules.
 import { useState } from "react";
 import { api, useFetch } from "@/app/lib/api";
-import { PageHead, Panel, Toolbar, TextInput, TextSelect, Btn, Badge, WarmTable, warmCell, Note } from "@/components/DashUI";
+import { PageHead, Panel, Toolbar, TextInput, WarmTable, warmCell, Note } from "@/components/DashUI";
+import { Select, SelectTrigger, SelectValue, SelectPositioner, SelectPopup, SelectItem } from "@/components/ui/select";
+import { Button } from "@/components/ui/button";
+import { Badge, statusVariant } from "@/components/ui/badge";
 
 export default function PengumumanAdminPage() {
   const { data, reload } = useFetch<{ rows: { id: string; title: string; target: string }[] }>("/api/announcements");
@@ -44,13 +47,16 @@ export default function PengumumanAdminPage() {
           </label>
           <label style={{ display: "grid", gap: 6, fontSize: 13, color: "#74746d" }}>
             Target:
-            <TextSelect value={target} onChange={(e) => setTarget(e.target.value)}>
-              <option value="ALL">Semua</option>
-              <option value="GURU">Guru saja</option>
-              <option value="SISWA">Siswa saja</option>
-            </TextSelect>
+            <Select value={target} onValueChange={(v) => setTarget(v ?? "ALL")}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectPositioner><SelectPopup>
+                <SelectItem value="ALL">Semua</SelectItem>
+                <SelectItem value="GURU">Guru saja</SelectItem>
+                <SelectItem value="SISWA">Siswa saja</SelectItem>
+              </SelectPopup></SelectPositioner>
+            </Select>
           </label>
-          <Toolbar><Btn type="submit">Terbitkan</Btn></Toolbar>
+          <Toolbar><Button variant="sticker" type="submit">Terbitkan</Button></Toolbar>
         </form>
         {msg && <p style={{ fontWeight: 700 }}>{msg}</p>}
       </Panel>
@@ -63,7 +69,7 @@ export default function PengumumanAdminPage() {
             {data.rows.map((r) => (
               <tr key={r.id}>
                 <td style={warmCell({ fontWeight: 700 })}>{r.title}</td>
-                <td style={warmCell()}><Badge status={r.target === "ALL" ? "AKTIF" : "IZIN"}>{r.target}</Badge></td>
+                <td style={warmCell()}><Badge variant={statusVariant(r.target === "ALL" ? "AKTIF" : "IZIN")}>{r.target}</Badge></td>
               </tr>
             ))}
           </WarmTable>

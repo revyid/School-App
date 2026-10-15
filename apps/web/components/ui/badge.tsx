@@ -35,4 +35,15 @@ function Badge({
   );
 }
 
+// Status domain → varian (migrasi dari DashUI.Badge).
+export function statusVariant(status: string): "success" | "warning" | "danger" | "outline" | "secondary" | "default" {
+  switch (status.toUpperCase()) {
+    case "HADIR": case "SUDAH": case "AKTIF": case "APPROVED": return "success";
+    case "IZIN": return "secondary";
+    case "SAKIT": case "TERLAMBAT": case "PENDING": return "warning";
+    case "ALPHA": case "REJECTED": return "danger";
+    default: return "outline";
+  }
+}
+
 export { Badge, badgeVariants };

@@ -2,7 +2,8 @@
 
 // Kartu QR kehadiran siswa — dipakai di halaman Profil (pengganti /siswa/kartu).
 import { useFetch } from "@/app/lib/api";
-import { Panel, Note, Err, Btn } from "@/components/DashUI";
+import { Panel, Note, Err } from "@/components/DashUI";
+import { Button } from "@/components/ui/button";
 
 export default function KartuSection() {
   const { data, loading, error } = useFetch<{
@@ -26,7 +27,7 @@ export default function KartuSection() {
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src="/api/attendance/qr/png" alt="QR kehadiran" width={256} height={256} style={{ borderRadius: 16, border: "1px solid rgba(23,23,22,.14)", maxWidth: "100%", height: "auto" }} />
           <div style={{ marginTop: 14 }}>
-            <Btn kind="dark" type="button" onClick={() => window.print()}>Cetak kartu</Btn>
+            <Button variant="sticker" style={{ background: "#171716", color: "#fffdf8" }} type="button" onClick={() => window.print()}>Cetak kartu</Button>
           </div>
         </>
       )}

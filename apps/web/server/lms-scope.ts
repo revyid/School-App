@@ -23,3 +23,15 @@ export async function siswaClassId(schoolId: string, siswaId: string): Promise<s
     tx.studentProfile.findUnique({ where: { userId: siswaId }, select: { classId: true } }));
   return p?.classId ?? null;
 }
+
+// Assert akses kelas: GURU hanya kelas yang diajar/diampu; ADMIN lolos (cek
+// eksistensi tetap inline di caller karena status error-nya beda per route).
+export async function assertClassAccess(
+  schoolId: string, role: string, userId: string, classIds: string | string[],
+): Promise<{ ok: true } | { ok: false; error: string; status: number }> {
+  if (role !== "GURU") return { ok: true };
+  const ids = Array.isArray(classIds) ? classIds : [classIds];
+  const mine = await guruClassIds(schoolId, userId);
+  if (ids.some((c) => !mine.has(c))) return { ok: false, error: "bukan kelas Anda", status: 403 };
+  return { ok: true };
+}

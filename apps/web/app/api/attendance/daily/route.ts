@@ -1,37 +1,23 @@
 import { NextRequest, NextResponse } from "next/server";
-import { SESSION_COOKIE } from "@sms/shared/auth";
-import { requireRole } from "@/server/auth-gate";
+import { apiGate } from "@/server/api-gate";
 import { db } from "@sms/db/client";
 import { runAsSchool } from "@sms/db/tenant";
 import { parseDay } from "@sms/shared/attendance";
-import { guruClassIds } from "@/server/lms-scope";
-
-async function gate(req: NextRequest, roles: ("ADMIN" | "GURU")[]) {
-  return requireRole({
-    host: req.headers.get("host") ?? "",
-    token: req.cookies.get(SESSION_COOKIE)?.value,
-    pathname: new URL(req.url).pathname,
-    mutation: req.method !== "GET",
-    origin: req.headers.get("origin"),
-    referer: req.headers.get("referer"),
-    csrf: req.headers.get("x-csrf-token"),
-    roles,
-  });
-}
+import { assertClassAccess } from "@/server/lms-scope";
 
 // GET /api/attendance/daily?date=YYYY-MM-DD&classId= — rekap harian per kelas.
 // Guru otomatis dibatasi ke kelasnya bila classId tidak diisi? Tidak: classId wajib,
 // dan guru yang bukan pengajar kelas itu ditolak.
 export async function GET(req: NextRequest) {
-  const a = await gate(req, ["ADMIN", "GURU"]);
+  const a = await apiGate(req, ["ADMIN", "GURU"]);
   if (!a.ok) return NextResponse.json({ error: a.error }, { status: a.status });
   const url = new URL(req.url);
   const day = parseDay((url.searchParams.get("date") ?? "").slice(0, 10));
   const classId = (url.searchParams.get("classId") ?? "").slice(0, 64);
   if (!day || !classId) return NextResponse.json({ error: "date & classId wajib diisi" }, { status: 400 });
-  if (a.role === "GURU") {
-    const ids = await guruClassIds(a.school.id, a.userId);
-    if (!ids.has(classId)) return NextResponse.json({ error: "bukan kelas Anda" }, { status: 403 });
+  {
+    const chk = await assertClassAccess(a.school.id, a.role, a.userId, classId);
+    if (!chk.ok) return NextResponse.json({ error: chk.error }, { status: chk.status });
   }
   // Hari libur → absensi nonaktif.
   const libur = await runAsSchool(db, a.school.id, (tx) =>

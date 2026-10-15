@@ -1,3 +1,5 @@
+import { db } from "@sms/db/client";
+import { runAsSchool } from "@sms/db/tenant";
 // Resolve nama mapel bebas → Subject.id (find-or-create per sekolah).
 // Dipakai POST/PATCH/import timetable agar format Excel bebas (kolom Mapel teks)
 // tetap terhubung ke tabel Subject (dropdown guru + auto-mapping).
@@ -27,4 +29,23 @@ export async function resolveSubjectName(
     const retry = await tx.subject.findFirst({ where: { schoolId, name } });
     return { id: retry?.id ?? null };
   }
+}
+
+// Validasi relasi slot timetable se-sekolah (dipakai POST & PATCH).
+// Pesan + status identik dengan validasi inline sebelumnya.
+export async function validateSlotRefs(
+  schoolId: string, d: { classId: string; subjectId?: string | null; teacherId?: string | null },
+): Promise<{ ok: true } | { ok: false; error: string; status: number }> {
+  const cls = await runAsSchool(db, schoolId, (tx) => tx.class.findUnique({ where: { id: d.classId } }));
+  if (!cls) return { ok: false, error: "kelas tidak ditemukan", status: 400 };
+  if (d.subjectId) {
+    const s = await runAsSchool(db, schoolId, (tx) => tx.subject.findUnique({ where: { id: d.subjectId! } }));
+    if (!s) return { ok: false, error: "mapel tidak ditemukan", status: 400 };
+  }
+  if (d.teacherId) {
+    const t = await runAsSchool(db, schoolId, (tx) =>
+      tx.user.findFirst({ where: { id: d.teacherId!, role: "GURU" } }));
+    if (!t) return { ok: false, error: "guru tidak ditemukan", status: 400 };
+  }
+  return { ok: true };
 }

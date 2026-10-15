@@ -7,7 +7,9 @@ import { use, useRef, useState } from "react";
 import Link from "next/link";
 import { api, useFetch } from "@/app/lib/api";
 import RichText from "@/components/RichText";
+import ConfirmDialog from "@/components/ConfirmDialog";
 import GroupSheet from "@/components/GroupSheet";
+import CategorySheet from "@/components/CategorySheet";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -20,10 +22,6 @@ import { Switch } from "@/components/ui/switch";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
 } from "@/components/ui/dialog";
-import {
-  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription,
-  AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
 import { TASK_TYPE_LABEL, SUBMIT_STATE_LABEL } from "@sms/shared/lms";
 import { ArrowLeftIcon, BellIcon, FileTextIcon, UsersIcon, Trash2Icon, PlusIcon } from "lucide-react";
 
@@ -73,16 +71,16 @@ export default function GuruTugasDetail({ params }: { params: Promise<{ id: stri
   const [nudgeWa, setNudgeWa] = useState(false);
   const [nudgeResult, setNudgeResult] = useState<{ summary?: { total: number; waQueued: number; noPhone: string[] } } | null>(null);
   const [nudgeBusy, setNudgeBusy] = useState(false);
+  const [confirmHapus, setConfirmHapus] = useState(false);
+  const [confirmHapusKelas, setConfirmHapusKelas] = useState<string | null>(null);
   const [edit, setEdit] = useState<{
     title?: string; instruction?: string; deadline?: string; allowLate?: boolean;
     subjectId?: string | null; type?: string; publishAt?: string;
     isGroup?: boolean; groupMin?: number; groupMax?: number;
   }>({});
   const [editMsg, setEditMsg] = useState<string | null>(null);
-  const [newCatName, setNewCatName] = useState("");
-  const [newCatAccept, setNewCatAccept] = useState<string[]>([]);
-  const [newCatRequired, setNewCatRequired] = useState(false);
   const [catBusy, setCatBusy] = useState(false);
+  const [catOpen, setCatOpen] = useState(false);
   const subjects = useFetch<{ rows: { id: string; name: string }[] }>("/api/subjects");
   const tClsId = detail.data?.task.class.id ?? "";
   // Mapel kelas tugas ini dari jadwal (auto-mapping); fallback global.
@@ -164,16 +162,16 @@ export default function GuruTugasDetail({ params }: { params: Promise<{ id: stri
     else { setEditMsg("Tersimpan"); detail.reload(); }
   }
 
-  async function tambahKategori() {
-    if (!t || !newCatName.trim()) return;
+  async function tambahKategori(c: { name: string; instruction: string; required: boolean; accept: string[] }) {
+    if (!t) return;
     setCatBusy(true);
     const res = await api(`/api/tasks/${t.id}/categories`, {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ name: newCatName.trim(), accept: newCatAccept, required: newCatRequired }),
+      body: JSON.stringify({ name: c.name, instruction: c.instruction || undefined, accept: c.accept, required: c.required }),
     });
     setCatBusy(false);
-    if (res.ok) { setNewCatName(""); setNewCatAccept([]); setNewCatRequired(false); detail.reload(); }
+    if (res.ok) detail.reload();
   }
 
   async function hapusKategori(catId: string) {
@@ -242,6 +240,26 @@ export default function GuruTugasDetail({ params }: { params: Promise<{ id: stri
           {t.class.name}{t.subject ? ` · ${t.subject.name}` : ""}
           {deadline ? ` · Tenggat: ${deadline.toLocaleString("id-ID", { dateStyle: "full", timeStyle: "short" })} WIB` : " · Tanpa tenggat"}
         </p>
+        <div className="mt-3 flex flex-wrap items-center gap-2">
+          <Button variant="sticker" size="sm" onClick={() => void simpanPengaturan()}>Simpan</Button>
+          {t.status === "DRAFT" ? (
+            <Button variant="sticker" size="sm" onClick={() => void terbitkan(true)}>Terbitkan</Button>
+          ) : (
+            <Button variant="outline" size="sm" onClick={() => void terbitkan(false)}>Batalkan terbit</Button>
+          )}
+          <details className="relative">
+            <summary className="cursor-pointer rounded-lg border border-line bg-paper px-3 py-1.5 text-xs font-bold hover:bg-paper-deep">Lainnya</summary>
+            <div className="card absolute z-20 mt-1 flex min-w-44 flex-col p-1.5">
+              <button type="button" className="rounded-md px-3 py-2 text-left text-sm font-medium hover:bg-paper" onClick={() => { setNudgeTarget("massal"); setNudgeResult(null); }}>Ingatkan / Nudge</button>
+              {t.isGroup && (
+                <button type="button" className="rounded-md px-3 py-2 text-left text-sm font-medium hover:bg-paper" onClick={() => setGroupOpen(true)}>Kelola kelompok</button>
+              )}
+              <button type="button" className="rounded-md px-3 py-2 text-left text-sm font-medium hover:bg-paper" onClick={() => window.print()}>Cetak</button>
+              <button type="button" className="rounded-md px-3 py-2 text-left text-sm font-bold text-destructive hover:bg-destructive/10"
+                onClick={() => setConfirmHapus(true)}>Hapus</button>
+            </div>
+          </details>
+        </div>
       </div>
 
       {/* Banner kontekstual pengingat (muncul bila deadline <24 jam atau terlewat) */}
@@ -470,11 +488,7 @@ export default function GuruTugasDetail({ params }: { params: Promise<{ id: stri
                       {tg.class.name}
                       <button
                         type="button"
-                        onClick={async () => {
-                          if (!confirm(`Hapus penugasan dari kelas ${tg.class.name}?`)) return;
-                          await api(`/api/tasks/${t.id}?scope=kelas&classId=${tg.classId}`, { method: "DELETE" });
-                          detail.reload();
-                        }}
+                        onClick={() => setConfirmHapusKelas(tg.classId)}
                         className="text-terracotta hover:opacity-70"
                         title="Hapus dari kelas ini"
                       >
@@ -646,7 +660,12 @@ export default function GuruTugasDetail({ params }: { params: Promise<{ id: stri
               </div>
 
               <div>
-                <h3 className="font-extrabold">Kategori unggahan</h3>
+                <div className="mb-2 flex items-center justify-between">
+                  <h3 className="font-extrabold">Kategori unggahan</h3>
+                  <Button variant="sticker-ghost" size="sm" onClick={() => setCatOpen(true)}>
+                    <PlusIcon className="size-3.5" /> Tambah kategori
+                  </Button>
+                </div>
                 <ul className="mt-2 space-y-1 text-sm">
                   {cats.map((c) => (
                     <li key={c.id} className="flex items-center justify-between gap-2">
@@ -662,64 +681,11 @@ export default function GuruTugasDetail({ params }: { params: Promise<{ id: stri
                   ))}
                   {cats.length === 0 && <li className="text-xs text-muted-foreground">Belum ada kategori.</li>}
                 </ul>
-
-                {/* Form tambah kategori */}
-                <div className="mt-3 space-y-2 rounded-lg border border-line p-3">
-                  <p className="text-xs font-extrabold uppercase tracking-wide text-muted-strong">Tambah kategori</p>
-                  <div className="grid gap-1">
-                    <Label htmlFor="cat-name" className="text-xs">Nama kategori</Label>
-                    <Input id="cat-name" className="h-8" placeholder="mis. Laporan PDF" value={newCatName} onChange={(e) => setNewCatName(e.target.value)} maxLength={80} />
-                  </div>
-                  <div className="grid gap-1">
-                    <p className="text-xs font-medium">Tipe file diterima</p>
-                    <div className="flex flex-wrap gap-3">
-                      {(["PDF", "IMAGE", "VIDEO", "DOC"] as const).map((ft) => (
-                        <label key={ft} className="flex items-center gap-1.5 text-xs font-medium">
-                          <Checkbox
-                            checked={newCatAccept.includes(ft)}
-                            onCheckedChange={(v) =>
-                              setNewCatAccept((prev) =>
-                                v === true ? [...prev, ft] : prev.filter((x) => x !== ft)
-                              )
-                            }
-                          />
-                          {ft}
-                        </label>
-                      ))}
-                    </div>
-                  </div>
-                  <label className="flex items-center gap-2 text-xs font-medium">
-                    <Checkbox checked={newCatRequired} onCheckedChange={(v) => setNewCatRequired(v === true)} />
-                    Wajib dikumpulkan
-                  </label>
-                  <Button variant="sticker-ghost" size="sm" disabled={catBusy || !newCatName.trim()} onClick={() => void tambahKategori()}>
-                    <PlusIcon className="size-3.5" /> Tambah kategori
-                  </Button>
-                </div>
               </div>
 
               <div>
                 <h3 className="font-extrabold">Status</h3>
-                <div className="mt-2 flex gap-2">
-                  {t.status === "DRAFT" ? (
-                    <Button variant="sticker" onClick={() => void terbitkan(true)}>Terbitkan</Button>
-                  ) : (
-                    <Button variant="outline" onClick={() => void terbitkan(false)}>Batalkan terbit</Button>
-                  )}
-                  <AlertDialog>
-                    <AlertDialogTrigger render={<Button variant="destructive" />}>Hapus tugas</AlertDialogTrigger>
-                    <AlertDialogContent>
-                      <AlertDialogHeader>
-                        <AlertDialogTitle>Hapus tugas ini?</AlertDialogTitle>
-                        <AlertDialogDescription>Tugas dan semua materi akan dihapus permanen. Hanya bisa bila belum ada pengumpulan.</AlertDialogDescription>
-                      </AlertDialogHeader>
-                      <AlertDialogFooter>
-                        <AlertDialogCancel>Batal</AlertDialogCancel>
-                        <AlertDialogAction onClick={() => void hapusTugas()}>Hapus</AlertDialogAction>
-                      </AlertDialogFooter>
-                    </AlertDialogContent>
-                  </AlertDialog>
-                </div>
+                <p className="mt-2 text-sm text-muted-foreground">Ubah status / hapus lewat tombol di atas (menu &quot;Lainnya&quot;).</p>
               </div>
             </div>
           </div>
@@ -759,6 +725,37 @@ export default function GuruTugasDetail({ params }: { params: Promise<{ id: stri
       </Dialog>
 
       <GroupSheet taskId={t.id} mode="teacher" open={groupOpen} onOpenChange={setGroupOpen} onChanged={() => { roster.reload(); detail.reload(); }} />
+      <CategorySheet
+        open={catOpen}
+        onOpenChange={setCatOpen}
+        cats={cats}
+        loading={detail.loading}
+        busy={catBusy}
+        onAdd={(c) => void tambahKategori(c)}
+        onRemove={(id) => void hapusKategori(id as string)}
+      />
+
+      <ConfirmDialog
+        open={confirmHapus}
+        title="Hapus tugas?"
+        message="Hapus tugas ini? Hanya bisa bila belum ada pengumpulan."
+        confirmLabel="Hapus"
+        onCancel={() => setConfirmHapus(false)}
+        onConfirm={async () => { setConfirmHapus(false); await hapusTugas(); }}
+      />
+      <ConfirmDialog
+        open={!!confirmHapusKelas}
+        title="Hapus dari kelas?"
+        message={`Hapus penugasan dari kelas ${t.targets?.find((tg) => tg.classId === confirmHapusKelas)?.class.name ?? ""}?`}
+        confirmLabel="Hapus"
+        onCancel={() => setConfirmHapusKelas(null)}
+        onConfirm={async () => {
+          if (!confirmHapusKelas) return;
+          await api(`/api/tasks/${t.id}?scope=kelas&classId=${confirmHapusKelas}`, { method: "DELETE" });
+          setConfirmHapusKelas(null);
+          detail.reload();
+        }}
+      />
     </div>
   );
 }

@@ -5,8 +5,11 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { api, useFetch } from "@/app/lib/api";
-import { PageHead, Panel, Toolbar, TextInput, TextSelect, Btn, Note, Err } from "@/components/DashUI";
-import { TASK_TYPE_LABEL, UPLOAD_ACCEPT_LABEL } from "@sms/shared/lms";
+import { PageHead, Panel, Toolbar, TextInput, Note, Err } from "@/components/DashUI";
+import { Select, SelectTrigger, SelectValue, SelectPositioner, SelectPopup, SelectItem } from "@/components/ui/select";
+import { Button } from "@/components/ui/button";
+import CategorySheet from "@/components/CategorySheet";
+import { TASK_TYPE_LABEL } from "@sms/shared/lms";
 import { PlusIcon, Trash2Icon } from "lucide-react";
 
 /* ── types ──────────────────────────────────────────────── */
@@ -16,10 +19,6 @@ interface Category {
   required: boolean;
   accept: ("PDF" | "IMAGE" | "VIDEO" | "DOC")[];
 }
-
-const EMPTY_CAT = (): Category => ({
-  name: "", instruction: "", required: false, accept: ["PDF"],
-});
 
 /* ── helpers ─────────────────────────────────────────────── */
 function Field({
@@ -75,23 +74,14 @@ export default function TugasNewPage() {
 
   /* kategori unggahan */
   const [cats, setCats] = useState<Category[]>([]);
+  const [catOpen, setCatOpen] = useState(false);
 
   /* submit state */
   const [saving, setSaving] = useState(false);
   const [err, setErr] = useState<string | null>(null);
 
   /* ── kategori helpers ── */
-  function addCat() { setCats((c) => [...c, EMPTY_CAT()]); }
   function removeCat(i: number) { setCats((c) => c.filter((_, j) => j !== i)); }
-  function patchCat<K extends keyof Category>(i: number, key: K, val: Category[K]) {
-    setCats((c) => c.map((cat, j) => (j === i ? { ...cat, [key]: val } : cat)));
-  }
-  function toggleAccept(i: number, acc: "PDF" | "IMAGE" | "VIDEO" | "DOC") {
-    const cur = cats[i].accept;
-    const next = cur.includes(acc) ? cur.filter((x) => x !== acc) : [...cur, acc];
-    if (next.length === 0) return; // minimal 1
-    patchCat(i, "accept", next as Category["accept"]);
-  }
 
   /* ── submit ── */
   async function submit(e: React.FormEvent) {
@@ -155,19 +145,14 @@ export default function TugasNewPage() {
           <div className="grid gap-4">
 
             <Field label="Kelas utama" hint="Kelas utama target tugas ini.">
-              <TextSelect
-                value={classId}
-                onChange={(e) => {
-                  setClassId(e.target.value);
-                  setExtraClassIds((prev) => prev.filter((id) => id !== e.target.value));
-                }}
-                required
-              >
-                <option value="">— pilih kelas —</option>
-                {kelasUnik.map((r) => (
-                  <option key={r.class.id} value={r.class.id}>{r.class.name}</option>
-                ))}
-              </TextSelect>
+              <Select value={classId} onValueChange={(v) => { setClassId(v ?? ""); setExtraClassIds((prev) => prev.filter((id) => id !== (v ?? ""))); }}>
+                <SelectTrigger><SelectValue placeholder="— Pilih kelas… —" /></SelectTrigger>
+                <SelectPositioner><SelectPopup>
+                  {kelasUnik.map((r) => (
+                    <SelectItem key={r.class.id} value={r.class.id}>{r.class.name}</SelectItem>
+                  ))}
+                </SelectPopup></SelectPositioner>
+              </Select>
             </Field>
 
             {classId && kelasUnik.length > 1 && (
@@ -194,12 +179,14 @@ export default function TugasNewPage() {
             )}
 
             <Field label="Mata pelajaran (opsional)">
-              <TextSelect value={subjectId} onChange={(e) => setSubjectId(e.target.value)}>
-                <option value="">— tanpa mapel —</option>
-                {mapelOpts.map((s) => (
-                  <option key={s.id} value={s.id}>{s.name}</option>
-                ))}
-              </TextSelect>
+              <Select value={subjectId} onValueChange={(v) => setSubjectId(v ?? "")}>
+                <SelectTrigger><SelectValue placeholder="— Pilih mapel… —" /></SelectTrigger>
+                <SelectPositioner><SelectPopup>
+                  {mapelOpts.map((s) => (
+                    <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>
+                  ))}
+                </SelectPopup></SelectPositioner>
+              </Select>
             </Field>
 
             <Field label="Judul tugas">
@@ -213,11 +200,14 @@ export default function TugasNewPage() {
             </Field>
 
             <Field label="Tipe tugas">
-              <TextSelect value={type} onChange={(e) => setType(e.target.value)}>
-                {Object.entries(TASK_TYPE_LABEL).map(([v, l]) => (
-                  <option key={v} value={v}>{l}</option>
-                ))}
-              </TextSelect>
+              <Select value={type} onValueChange={(v) => setType(v ?? "TUGAS")}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectPositioner><SelectPopup>
+                  {Object.entries(TASK_TYPE_LABEL).map(([v, l]) => (
+                    <SelectItem key={v} value={v}>{l}</SelectItem>
+                  ))}
+                </SelectPopup></SelectPositioner>
+              </Select>
             </Field>
 
           </div>
@@ -357,7 +347,7 @@ export default function TugasNewPage() {
             </div>
             <button
               type="button"
-              onClick={addCat}
+              onClick={() => setCatOpen(true)}
               className="btn-sticker flex items-center gap-1.5 rounded-2xl border border-line bg-cream px-3 py-1.5 text-[12px] font-bold hover:bg-paper"
             >
               <PlusIcon size={13} /> Tambah
@@ -368,97 +358,37 @@ export default function TugasNewPage() {
             <Note>Belum ada kategori. Klik "Tambah" untuk menambah.</Note>
           )}
 
-          <div className="grid gap-3">
+          <ul className="grid gap-2">
             {cats.map((cat, i) => (
-              <div
-                key={i}
-                className="rounded-2xl border border-line bg-paper p-4"
-              >
-                <div className="mb-3 flex items-center justify-between">
-                  <span className="text-[12px] font-bold text-muted-strong uppercase tracking-wide">
-                    Kategori {i + 1}
-                  </span>
-                  <button
-                    type="button"
-                    onClick={() => removeCat(i)}
-                    className="rounded-xl p-1 text-muted-strong hover:text-terracotta"
-                  >
-                    <Trash2Icon size={14} />
-                  </button>
-                </div>
-
-                <div className="grid gap-3">
-                  <Field label="Nama kategori">
-                    <TextInput
-                      value={cat.name}
-                      onChange={(e) => patchCat(i, "name", e.target.value)}
-                      placeholder="mis. Laporan, Presentasi, Video…"
-                      required
-                      maxLength={120}
-                    />
-                  </Field>
-
-                  <Field label="Instruksi kategori (opsional)">
-                    <textarea
-                      value={cat.instruction}
-                      onChange={(e) => patchCat(i, "instruction", e.target.value)}
-                      rows={2}
-                      maxLength={10000}
-                      placeholder="Catatan khusus untuk kategori ini…"
-                      className="rounded-2xl border border-line bg-cream px-3 py-2 text-[13px] focus:outline-none focus:ring-1 focus:ring-ink/30"
-                    />
-                  </Field>
-
-                  <div>
-                    <span className="mb-1.5 block text-[12px] font-bold text-muted-strong uppercase tracking-wide">
-                      Tipe file diterima
-                    </span>
-                    <div className="flex flex-wrap gap-2">
-                      {(Object.keys(UPLOAD_ACCEPT_LABEL) as ("PDF" | "IMAGE" | "VIDEO" | "DOC")[]).map((acc) => (
-                        <label
-                          key={acc}
-                          className="flex cursor-pointer items-center gap-1.5 rounded-xl border px-3 py-1.5 text-[12px] font-bold transition-colors"
-                          style={cat.accept.includes(acc)
-                            ? { background: "#50643e", color: "#fff", borderColor: "#50643e" }
-                            : { background: "#fffdf8", color: "#575752", borderColor: "rgba(23,23,22,.2)" }}
-                        >
-                          <input
-                            type="checkbox"
-                            className="sr-only"
-                            checked={cat.accept.includes(acc)}
-                            onChange={() => toggleAccept(i, acc)}
-                          />
-                          {UPLOAD_ACCEPT_LABEL[acc]}
-                        </label>
-                      ))}
-                    </div>
-                  </div>
-
-                  <label className="flex cursor-pointer items-center gap-2 text-[13px]">
-                    <input
-                      type="checkbox"
-                      checked={cat.required}
-                      onChange={(e) => patchCat(i, "required", e.target.checked)}
-                      className="size-4"
-                    />
-                    Wajib dikumpulkan
-                  </label>
-                </div>
-              </div>
+              <li key={i} className="flex items-center justify-between gap-2 rounded-2xl border border-line bg-paper px-3 py-2 text-sm">
+                <span className="truncate"><strong>{cat.name || `Kategori ${i + 1}`}</strong>{cat.required ? " (wajib)" : ""} · {cat.accept.join(", ")}</span>
+                <button type="button" onClick={() => removeCat(i)} className="rounded-xl p-1 text-muted-strong hover:text-terracotta" aria-label={`Hapus kategori ${i + 1}`}>
+                  <Trash2Icon size={14} />
+                </button>
+              </li>
             ))}
-          </div>
+          </ul>
         </Panel>
+
+        <CategorySheet
+          open={catOpen}
+          onOpenChange={setCatOpen}
+          cats={cats}
+          busy={saving}
+          onAdd={(c) => setCats((prev) => [...prev, { name: c.name, instruction: c.instruction, required: c.required, accept: c.accept as Category["accept"] }])}
+          onRemove={(i) => removeCat(i as number)}
+        />
 
         {/* ── Error & submit ── */}
         {err && <Err>{err}</Err>}
 
         <Toolbar>
-          <Btn type="button" kind="ghost" onClick={() => router.back()}>Batal</Btn>
-          <Btn type="submit" disabled={saving}>
+          <Button variant="sticker-ghost" type="button" onClick={() => router.back()}>Batal</Button>
+          <Button variant="sticker" type="submit" disabled={saving}>
             {saving
               ? "Menyimpan…"
               : status === "DRAFT" ? "Simpan draf" : "Terbitkan tugas"}
-          </Btn>
+          </Button>
         </Toolbar>
 
       </form>

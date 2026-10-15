@@ -1,29 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
-import { SESSION_COOKIE } from "@sms/shared/auth";
-import { requireRole } from "@/server/auth-gate";
+import { apiGate } from "@/server/api-gate";
 import { db } from "@sms/db/client";
 import { runAsSchool } from "@sms/db/tenant";
 import { logAuth } from "@/server/audit";
 import { manualSchema, parseDay } from "@sms/shared/attendance";
-import { guruClassIds } from "@/server/lms-scope";
-
-async function gate(req: NextRequest, roles: ("ADMIN" | "GURU")[]) {
-  return requireRole({
-    host: req.headers.get("host") ?? "",
-    token: req.cookies.get(SESSION_COOKIE)?.value,
-    pathname: new URL(req.url).pathname,
-    mutation: req.method !== "GET",
-    origin: req.headers.get("origin"),
-    referer: req.headers.get("referer"),
-    csrf: req.headers.get("x-csrf-token"),
-    roles,
-  });
-}
+import { assertClassAccess } from "@/server/lms-scope";
 
 // POST /api/attendance/manual {studentId, date, status, note?} — GURU/ADMIN.
 // Guru hanya untuk siswa kelasnya. Tercatat editedBy + audit.
 export async function POST(req: NextRequest) {
-  const a = await gate(req, ["ADMIN", "GURU"]);
+  const a = await apiGate(req, ["ADMIN", "GURU"]);
   if (!a.ok) return NextResponse.json({ error: a.error }, { status: a.status });
   const body = manualSchema.safeParse(await req.json().catch(() => null));
   if (!body.success) return NextResponse.json({ error: "input tidak valid" }, { status: 400 });
@@ -39,10 +25,9 @@ export async function POST(req: NextRequest) {
   if (!target || !target.isActive) return NextResponse.json({ error: "siswa tidak ditemukan" }, { status: 404 });
   const classId = target.studentProfile?.classId ?? null;
   if (a.role === "GURU") {
-    const ids = await guruClassIds(a.school.id, a.userId);
-    if (!classId || !ids.has(classId)) {
-      return NextResponse.json({ error: "bukan siswa kelas Anda" }, { status: 403 });
-    }
+    if (!classId) return NextResponse.json({ error: "bukan siswa kelas Anda" }, { status: 403 });
+    const chk = await assertClassAccess(a.school.id, a.role, a.userId, classId);
+    if (!chk.ok) return NextResponse.json({ error: "bukan siswa kelas Anda" }, { status: chk.status });
   }
   // Hari libur → absensi nonaktif.
   const liburManual = await runAsSchool(db, a.school.id, (tx) =>

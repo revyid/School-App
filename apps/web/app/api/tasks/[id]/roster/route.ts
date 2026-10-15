@@ -35,12 +35,13 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
   const t = await runAsSchool(db, a.school.id, (tx) =>
     tx.task.findUnique({
       where: { id: id.slice(0, 64) },
-      select: { id: true, classId: true, deadline: true, allowLate: true, isGroup: true, publishAt: true, authorId: true },
+      select: { id: true, classId: true, deadline: true, allowLate: true, isGroup: true, publishAt: true, authorId: true, targets: { select: { classId: true } } },
     }));
   if (!t) return NextResponse.json({ error: "tugas tidak ditemukan" }, { status: 404 });
   if (a.role === "GURU") {
     const mine = await guruClassIds(a.school.id, a.userId);
-    if (!mine.has(t.classId)) return NextResponse.json({ error: "bukan tugas kelas Anda" }, { status: 403 });
+    const ok = mine.has(t.classId) || t.targets.some((x) => mine.has(x.classId));
+    if (!ok) return NextResponse.json({ error: "bukan tugas kelas Anda" }, { status: 403 });
   }
 
   // Roster: semua siswa kelas + submission-nya (jika ada) + kelompoknya.

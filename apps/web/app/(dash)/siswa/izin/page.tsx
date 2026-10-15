@@ -5,7 +5,10 @@
 // Foto: SATU jepretan foto bersama siswa + orang tua dalam satu frame.
 import { useEffect, useRef, useState } from "react";
 import { api, useFetch } from "@/app/lib/api";
-import { PageHead, Panel, Toolbar, TextInput, TextSelect, Btn, Badge, Note } from "@/components/DashUI";
+import { PageHead, Panel, Toolbar, TextInput, Note } from "@/components/DashUI";
+import { Select, SelectTrigger, SelectValue, SelectPositioner, SelectPopup, SelectItem } from "@/components/ui/select";
+import { Button } from "@/components/ui/button";
+import { Badge, statusVariant } from "@/components/ui/badge";
 import { useCamera } from "@/components/useCamera";
 
 function todayWibInput() {
@@ -134,22 +137,19 @@ export default function IzinPage() {
       <Panel style={{ marginBottom: 16 }}>
         <Toolbar>
           {!streaming
-            ? <Btn type="button" kind="dark" onClick={startCamera}>Nyalakan kamera</Btn>
-            : <Btn type="button" kind="ghost" onClick={stopCamera}>Matikan kamera</Btn>}
+            ? <Button variant="sticker" type="button" style={{ background: "#171716", color: "#fffdf8" }} onClick={startCamera}>Nyalakan kamera</Button>
+            : <Button variant="sticker-ghost" onClick={stopCamera}>Matikan kamera</Button>}
         </Toolbar>
         <video ref={videoRef} playsInline muted style={{ width: "100%", maxWidth: 480, background: "#171716", borderRadius: 16 }} />
         <canvas ref={canvasRef} style={{ display: "none" }} />
         <Toolbar>
-          <Btn
-            type="button"
-            kind="ghost"
-            onClick={jepret}
+          <Button variant="sticker-ghost"            type="button"                        onClick={jepret}
             disabled={!streaming || needConsent || busy}
             title={needConsent ? "Menunggu persetujuan orang tua dicatat admin" : "Jepret foto bersama dalam satu frame"}
           >
             Jepret foto bersama
-          </Btn>
-          {foto && <Btn type="button" kind="ghost" onClick={ulang}>Ulangi</Btn>}
+          </Button>
+          {foto && <Button variant="sticker-ghost" onClick={ulang}>Ulangi</Button>}
           <span style={{ fontSize: 13, color: "#74746d" }}>{foto ? "Foto bersama: sudah ada" : "Foto bersama: belum ada"}</span>
         </Toolbar>
         {preview && (
@@ -162,23 +162,26 @@ export default function IzinPage() {
           </label>
           <label style={{ display: "grid", gap: 6, fontSize: 13, color: "#74746d" }}>
             Jenis:
-            <TextSelect value={kind} onChange={(e) => setKind(e.target.value)}>
-              <option value="IZIN">IZIN</option>
-              <option value="SAKIT">SAKIT</option>
-            </TextSelect>
+            <Select value={kind} onValueChange={(v) => setKind(v ?? "IZIN")}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectPositioner><SelectPopup>
+                <SelectItem value="IZIN">IZIN</SelectItem>
+                <SelectItem value="SAKIT">SAKIT</SelectItem>
+              </SelectPopup></SelectPositioner>
+            </Select>
           </label>
           <label style={{ display: "grid", gap: 6, fontSize: 13, color: "#74746d" }}>
             Alasan (min 10 huruf):
             <textarea value={desc} onChange={(e) => setDesc(e.target.value)} required minLength={10} rows={3} style={{ borderRadius: 14, border: "1px solid rgba(23,23,22,.25)", background: "#fffdf8", padding: "9px 14px", fontSize: 14 }} />
           </label>
           <Toolbar>
-            <Btn
+            <Button variant="sticker"
               type="submit"
               disabled={busy || needConsent}
               title={needConsent ? "Menunggu persetujuan orang tua dicatat admin" : "Kirim pengajuan"}
             >
               {busy ? "Mengirim..." : "Ajukan"}
-            </Btn>
+            </Button>
           </Toolbar>
           {needConsent && (
             <span style={{ fontSize: 13, color: "#74746d" }}>Tombol Ajukan aktif setelah admin mencatat persetujuan orang tua.</span>
@@ -194,8 +197,8 @@ export default function IzinPage() {
             {history.data.rows.map((r) => (
               <li key={r.id} style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap", fontSize: 14 }}>
                 <span style={{ fontFamily: "var(--font-meta)", fontSize: 12 }}>{r.date.slice(0, 10)}</span>
-                <Badge status={r.kind} />
-                <Badge status={r.status} />
+                <Badge variant={statusVariant(r.kind)}>{r.kind}</Badge>
+                <Badge variant={statusVariant(r.status)}>{r.status}</Badge>
               </li>
             ))}
           </ul>

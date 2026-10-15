@@ -1,7 +1,8 @@
 "use client";
 
 import { useFetch } from "@/app/lib/api";
-import { PageHead, Panel, Note, Err, LinkBtn } from "@/components/DashUI";
+import { PageHead, Panel, Note, Err } from "@/components/DashUI";
+import { buttonVariants } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 
 export default function GuruHome() {
@@ -12,7 +13,7 @@ export default function GuruHome() {
         kicker="Dasbor guru"
         title="Kelas yang diampu"
         desc="Daftar kelas tempatmu mengajar semester ini."
-        right={<LinkBtn href="/change-password">Ganti kata sandi</LinkBtn>}
+        right={<a className={buttonVariants({ variant: "sticker-ghost" })} style={{ textDecoration: "none" }} href="/change-password">Ganti kata sandi</a>}
       />
       <Panel>
         {loading && !data && (

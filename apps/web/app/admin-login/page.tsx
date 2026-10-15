@@ -3,7 +3,8 @@
 // Login SUPER_ADMIN — hanya dilayani di admin.<apex> (lihat proxy + admin-login route).
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { TextInput, Btn, Err } from "@/components/DashUI";
+import { TextInput, Err } from "@/components/DashUI";
+import { Button } from "@/components/ui/button";
 
 export default function AdminLoginPage() {
   const router = useRouter();
@@ -52,7 +53,7 @@ export default function AdminLoginPage() {
             <TextInput type="password" value={password} onChange={(e) => setPassword(e.target.value)} autoComplete="current-password" required />
           </label>
           {error && <Err>{error}</Err>}
-          <Btn type="submit" disabled={busy}>{busy ? "Memproses…" : "Masuk"}</Btn>
+          <Button variant="sticker" type="submit" disabled={busy}>{busy ? "Memproses…" : "Masuk"}</Button>
         </form>
       </div>
     </main>

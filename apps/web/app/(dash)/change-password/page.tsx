@@ -3,7 +3,8 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { api } from "@/app/lib/api";
-import { PageHead, Panel, Toolbar, TextInput, Btn, Err } from "@/components/DashUI";
+import { PageHead, Panel, Toolbar, TextInput, Err } from "@/components/DashUI";
+import { Button } from "@/components/ui/button";
 
 export default function ChangePasswordPage() {
   const router = useRouter();
@@ -57,7 +58,7 @@ export default function ChangePasswordPage() {
             <TextInput type="password" value={p2} onChange={(e) => setP2(e.target.value)} autoComplete="new-password" required />
           </label>
           {error && <Err>{error}</Err>}
-          <Toolbar><Btn type="submit" disabled={busy}>{busy ? "Menyimpan…" : "Simpan"}</Btn></Toolbar>
+          <Toolbar><Button variant="sticker" type="submit" disabled={busy}>{busy ? "Menyimpan…" : "Simpan"}</Button></Toolbar>
         </form>
       </Panel>
     </>

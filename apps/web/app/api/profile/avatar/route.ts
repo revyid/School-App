@@ -22,9 +22,10 @@ async function gate(req: NextRequest, roles: ("ADMIN" | "GURU" | "SISWA")[]) {
 
 const root = () => process.env.UPLOADS_ROOT ?? "/data/uploads";
 
-// POST /api/profile/avatar — upload avatar diri (SISWA/GURU/ADMIN). PNG/JPG/WEBP <=2MB.
+// POST /api/profile/avatar — upload avatar diri (SISWA saja; User guru/admin
+// tidak punya kolom avatar). PNG/JPG/WEBP <=2MB.
 export async function POST(req: NextRequest) {
-  const a = await gate(req, ["ADMIN", "GURU", "SISWA"]);
+  const a = await gate(req, ["SISWA"]);
   if (!a.ok) return NextResponse.json({ error: a.error }, { status: a.status });
   const form = await req.formData().catch(() => null);
   const file = form?.get("file");
@@ -38,14 +39,12 @@ export async function POST(req: NextRequest) {
   await mkdir(dir, { recursive: true });
   await writeFile(`${dir}/${name}`, buf);
   const url = `/api/files/avatar/${name}`;
-  if (a.role === "SISWA") {
-    await runAsSchool(db, a.school.id, (tx) =>
-      tx.studentProfile.upsert({
-        where: { userId: a.userId },
-        update: { avatarUrl: url },
-        create: { schoolId: a.school.id, userId: a.userId, avatarUrl: url },
-      }),
-    );
-  }
+  await runAsSchool(db, a.school.id, (tx) =>
+    tx.studentProfile.upsert({
+      where: { userId: a.userId },
+      update: { avatarUrl: url },
+      create: { schoolId: a.school.id, userId: a.userId, avatarUrl: url },
+    }),
+  );
   return NextResponse.json({ url }, { status: 201 });
 }

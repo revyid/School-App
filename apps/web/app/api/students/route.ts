@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { randomBytes } from "node:crypto";
 import argon2 from "argon2";
-import { SESSION_COOKIE } from "@sms/shared/auth";
-import { requireRole } from "@/server/auth-gate";
+import { apiGate } from "@/server/api-gate";
 import { hit } from "@/server/rate-limit";
 import { db } from "@sms/db/client";
 import { runAsSchool } from "@sms/db/tenant";
@@ -15,22 +14,9 @@ import { paginationSchema, studentCreateSchema, normalizePhone } from "@sms/shar
 
 const ip = (r: NextRequest) => r.headers.get("x-real-ip")?.split(",")[0].trim() || "unknown";
 
-async function gate(req: NextRequest, roles: ("ADMIN" | "GURU" | "SISWA")[]) {
-  return requireRole({
-    host: req.headers.get("host") ?? "",
-    token: req.cookies.get(SESSION_COOKIE)?.value,
-    pathname: new URL(req.url).pathname,
-    mutation: req.method !== "GET",
-    origin: req.headers.get("origin"),
-    referer: req.headers.get("referer"),
-    csrf: req.headers.get("x-csrf-token"),
-    roles,
-  });
-}
-
 // GET /api/students?page&perPage&q&classId — ADMIN/GURU (SISWA ditolak).
 export async function GET(req: NextRequest) {
-  const a = await gate(req, ["ADMIN", "GURU"]);
+  const a = await apiGate(req, ["ADMIN", "GURU"]);
   if (!a.ok) return NextResponse.json({ error: a.error }, { status: a.status });
   const url = new URL(req.url);
   const p = paginationSchema.safeParse({
@@ -89,7 +75,7 @@ export async function GET(req: NextRequest) {
 // - application/json: Tambah siswa tunggal (1 per 1)
 // - multipart/form-data: Import file .xlsx massal
 export async function POST(req: NextRequest) {
-  const a = await gate(req, ["ADMIN"]);
+  const a = await apiGate(req, ["ADMIN"]);
   if (!a.ok) return NextResponse.json({ error: a.error }, { status: a.status });
 
   const contentType = req.headers.get("content-type") ?? "";

@@ -1,21 +1,23 @@
 import * as React from "react";
 import { cn } from "./cn";
-import { PageHead, Panel, WarmTable, warmCell, TextInput, TextSelect, Btn, Toolbar, Note, Err as DashErr } from "./DashUI";
+import { PageHead, Panel, WarmTable, warmCell, TextInput, Toolbar, Note, Err as DashErr } from "./DashUI";
+import { Button as ShadcnButton } from "./ui/button";
 
 type Variant = "primary" | "ghost" | "danger";
 type Size = "sm" | "md";
 
-// Kompat: gaya diselaraskan ke DashUI (stiker edukids), API tetap sama.
+// Kompat: primary→sticker, ghost→sticker-ghost, danger→destructive.
 export function Button({
   variant = "primary",
   size = "md",
   className,
   ...props
-}: React.ButtonHTMLAttributes<HTMLButtonElement> & { variant?: Variant; size?: Size }) {
-  const kind = variant === "danger" ? "dark" : variant === "ghost" ? "ghost" : "primary";
+}: Omit<React.ComponentProps<typeof ShadcnButton>, "variant" | "size"> & { variant?: Variant; size?: Size }) {
+  const v = variant === "danger" ? "destructive" : variant === "ghost" ? "sticker-ghost" : "sticker";
   return (
-    <Btn
-      kind={kind as "primary" | "ghost" | "dark"}
+    <ShadcnButton
+      variant={v as "sticker" | "sticker-ghost" | "destructive"}
+      size={size === "sm" ? "sm" : "default"}
       {...props}
       className={cn(size === "sm" && "text-[13px]", className)}
     />
@@ -24,10 +26,6 @@ export function Button({
 
 export function Input(props: React.InputHTMLAttributes<HTMLInputElement>) {
   return <TextInput {...props} />;
-}
-
-export function Select(props: React.SelectHTMLAttributes<HTMLSelectElement>) {
-  return <TextSelect {...props} />;
 }
 
 export function Field({ label, children }: { label: string; children: React.ReactNode }) {
