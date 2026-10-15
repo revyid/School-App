@@ -3,21 +3,25 @@
 import { useEffect, useMemo, useState } from "react";
 import QRCode from "qrcode";
 import JSZip from "jszip";
+import * as XLSX from "xlsx";
 import { type ColumnDef } from "@tanstack/react-table";
 import { api, useFetch } from "@/app/lib/api";
 import {
   Panel,
   Toolbar,
   TextInput,
-  TextSelect,
-  Btn,
-  Badge,
   Note,
   Err,
-  LinkBtn,
 } from "@/components/DashUI";
+import { Select, SelectTrigger, SelectValue, SelectPositioner, SelectPopup, SelectItem } from "@/components/ui/select";
+import { Button } from "@/components/ui/button";
+import { Badge, statusVariant } from "@/components/ui/badge";
 import ConfirmDialog from "@/components/ConfirmDialog";
+import UploadPopup from "@/components/UploadPopup";
 import { DataTable, selectColumn, actionsColumn } from "@/components/ui/data-table";
+import {
+  Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription,
+} from "@/components/ui/sheet";
 
 interface StudentRow {
   userId: string;
@@ -195,7 +199,7 @@ export default function SiswaManager() {
       id: "status",
       header: "Status",
       cell: ({ row }) => (
-        <Badge status={row.original.user.isActive ? "AKTIF" : "NONAKTIF"}>
+        <Badge variant={statusVariant(row.original.user.isActive ? "AKTIF" : "NONAKTIF")}>
           {row.original.user.isActive ? "Aktif" : "Nonaktif"}
         </Badge>
       ),
@@ -208,7 +212,7 @@ export default function SiswaManager() {
     ]),
   ], [downloadSingleCard, startEdit, resetPw, toggleActive]);
 
-  // Form Tambah Siswa Baru (1 per 1)
+  // Form Tambah Siswa Baru
   const [showAddForm, setShowAddForm] = useState(false);
   const [newName, setNewName] = useState("");
   const [newNisn, setNewNisn] = useState("");
@@ -231,6 +235,49 @@ export default function SiswaManager() {
   const { data: settingsData } = useFetch<{ settings: { portalName?: string } }>(`/api/settings`);
   const schoolName = settingsData?.settings?.portalName || "Sekolah";
   const [pending, setPending] = useState<{ title: string; message: string; action: () => Promise<void> } | null>(null);
+
+  // Import Excel state (preview -> proses -> progress)
+  const [impFile, setImpFile] = useState<File | null>(null);
+  const [impPreview, setImpPreview] = useState<{ cols: string[]; rows: string[][]; total: number } | null>(null);
+  const [impMsg, setImpMsg] = useState<string | null>(null);
+  const [impBatch, setImpBatch] = useState<{ id: string; status: string; totalRows: number; processedRows: number; okRows: number; errRows: number } | null>(null);
+
+  async function previewImport(f: File) {
+    setImpFile(f); setImpPreview(null); setImpBatch(null);
+    if (!/\.xlsx$/i.test(f.name)) { setImpMsg("File harus .xlsx"); return; }
+    setImpMsg(`File: ${f.name} (${(f.size / 1024).toFixed(1)} KB) — membaca…`);
+    try {
+      const buf = await f.arrayBuffer();
+      const wb = XLSX.read(buf, { type: "array" });
+      const ws = wb.Sheets[wb.SheetNames[0]];
+      const aoa = XLSX.utils.sheet_to_json<string[]>(ws, { header: 1, defval: "" }) as string[][];
+      const head = (aoa[0] ?? []).map(String);
+      setImpPreview({ cols: head, rows: aoa.slice(1, 6).map((r) => r.map(String)), total: Math.max(0, aoa.length - 1) });
+      setImpMsg(`Preview: ${aoa.length - 1} baris, ${head.length} kolom. Klik "Proses" untuk upload.`);
+    } catch { setImpMsg("Gagal membaca .xlsx"); }
+  }
+
+  async function uploadImport() {
+    if (!impFile) { setImpMsg("Pilih file .xlsx dulu"); return; }
+    setImpMsg("Mengunggah…");
+    const form = new FormData();
+    form.append("file", impFile);
+    const res = await api("/api/students/import", { method: "POST", body: form });
+    const d = await res.json().catch(() => ({}));
+    if (!res.ok) { setImpMsg("Gagal: " + (d.error || res.status)); return; }
+    setImpMsg("Batch dibuat, memproses…");
+    pollImport(d.batchId);
+  }
+
+  async function pollImport(id: string) {
+    const res = await fetch(`/api/students/import/${id}`, { cache: "no-store" });
+    const d = await res.json().catch(() => ({}));
+    if (d.batch) {
+      setImpBatch({ id, ...d.batch });
+      if (d.batch.status === "PENDING" || d.batch.status === "PROCESSING") setTimeout(() => pollImport(id), 2000);
+      else setImpMsg(d.batch.status === "DONE" ? "Selesai" : `Status: ${d.batch.status}`);
+    }
+  }
 
   function askConfirm(title: string, message: string, action: () => Promise<void>) {
     setPending({ title, message, action });
@@ -419,18 +466,25 @@ export default function SiswaManager() {
   return (
     <>
       <Toolbar>
-        <Btn kind="primary" onClick={() => setShowAddForm((s) => !s)}>
-          {showAddForm ? "Tutup Form Siswa" : "+ Tambah Siswa (1 per 1)"}
-        </Btn>
-        <Btn
-          kind="dark"
-          onClick={downloadAllCardsZip}
-          disabled={zipLoading}
-          style={{ background: "#50643e", borderColor: "#50643e", color: "#fffdf8" }}
-        >
-          {zipLoading ? (zipProgress ?? "Memproses…") : "Unduh Kartu QR (.ZIP)"}
-        </Btn>
-        <LinkBtn href="/admin/import">Import Excel</LinkBtn>
+        <Button variant="sticker" onClick={() => setShowAddForm(true)}>
+          + Tambah Siswa
+        </Button>
+        <details style={{ position: "relative" }}>
+          <summary className="btn-sticker btn-ghost" style={{ cursor: "pointer", listStyle: "none" }}>
+            Unduh ▾
+          </summary>
+          <div style={{ position: "absolute", top: "calc(100% + 8px)", left: 0, zIndex: 30, display: "grid", gap: 8, minWidth: 240, background: "#fffdf8", border: "2px solid #171716", borderRadius: 14, padding: 10 }}>
+            <Button variant="sticker"
+              
+              onClick={downloadAllCardsZip}
+              disabled={zipLoading}
+              style={{ background: "#50643e", borderColor: "#50643e", color: "#fffdf8", width: "100%" }}
+            >
+              {zipLoading ? (zipProgress ?? "Memproses…") : "Kartu QR (.ZIP)"}
+            </Button>
+            <Button variant="sticker-ghost" onClick={() => document.getElementById("import-excel")?.scrollIntoView({ behavior: "smooth" })}>Import Excel</Button>
+          </div>
+        </details>
       </Toolbar>
 
       {/* Notifikasi password sementara setelah tambah siswa */}
@@ -455,18 +509,20 @@ export default function SiswaManager() {
               {createdPw.pw}
             </code>
           </div>
-          <Btn kind="ghost" onClick={() => setCreatedPw(null)}>X</Btn>
+          <Button variant="sticker-ghost" onClick={() => setCreatedPw(null)}>X</Button>
         </div>
       )}
 
-      {/* Form Tambah Siswa Baru (1 per 1) */}
-      {showAddForm && (
-        <Panel style={{ marginBottom: 20, border: "2px solid #e85e43", background: "#fffdf8" }}>
-          <h2 className="display" style={{ fontSize: 19, margin: "0 0 14px" }}>
-            Tambah Siswa Baru (1 per 1)
-          </h2>
+      {/* Sheet Tambah Siswa Baru */}
+      <Sheet open={showAddForm} onOpenChange={setShowAddForm}>
+        <SheetContent side="right" className="p-0">
+          <SheetHeader>
+            <SheetTitle>Tambah Siswa</SheetTitle>
+            <SheetDescription>Daftarkan satu siswa. Gunakan Import Excel untuk massal.</SheetDescription>
+          </SheetHeader>
+          <div className="flex-1 overflow-y-auto px-6 pb-6">
           <form onSubmit={createSingleStudent} style={{ display: "grid", gap: 14 }}>
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 12 }}>
+            <div style={{ display: "grid", gap: 12 }}>
               <label style={{ display: "grid", gap: 6, fontSize: 13, color: "#74746d" }}>
                 Nama Lengkap Siswa *:
                 <TextInput
@@ -489,18 +545,16 @@ export default function SiswaManager() {
 
               <label style={{ display: "grid", gap: 6, fontSize: 13, color: "#74746d" }}>
                 Kelas:
-                <TextSelect value={newClassId} onChange={(e) => setNewClassId(e.target.value)}>
-                  <option value="">Pilih Kelas</option>
-                  {classes?.rows.map((c) => (
-                    <option key={c.id} value={c.id}>
-                      Kelas {c.name}
-                    </option>
-                  ))}
-                </TextSelect>
+                <Select value={newClassId} onValueChange={(v) => setNewClassId(v ?? "")}>
+                  <SelectTrigger><SelectValue placeholder="Pilih Kelas" /></SelectTrigger>
+                  <SelectPositioner><SelectPopup>
+                    {classes?.rows.map((c) => (
+                      <SelectItem key={c.id} value={c.id}>Kelas {c.name}</SelectItem>
+                    ))}
+                  </SelectPopup></SelectPositioner>
+                </Select>
               </label>
-            </div>
 
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 12 }}>
               <label style={{ display: "grid", gap: 6, fontSize: 13, color: "#74746d" }}>
                 No HP WhatsApp Orang Tua (Opsional):
                 <TextInput
@@ -512,24 +566,23 @@ export default function SiswaManager() {
 
               <label style={{ display: "grid", gap: 6, fontSize: 13, color: "#74746d" }}>
                 Jenis Kelamin:
-                <TextSelect
-                  value={newGender}
-                  onChange={(e) => setNewGender(e.target.value as "L" | "P")}
-                >
-                  <option value="L">Laki-laki (L)</option>
-                  <option value="P">Perempuan (P)</option>
-                </TextSelect>
+                <Select value={newGender} onValueChange={(v) => setNewGender((v as "L" | "P") ?? "L")}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectPositioner><SelectPopup>
+                    <SelectItem value="L">Laki-laki (L)</SelectItem>
+                    <SelectItem value="P">Perempuan (P)</SelectItem>
+                  </SelectPopup></SelectPositioner>
+                </Select>
               </label>
 
-              <div style={{ display: "flex", alignItems: "flex-end" }}>
-                <Btn type="submit" disabled={submittingStudent} style={{ width: "100%", minHeight: 44 }}>
-                  {submittingStudent ? "Mendaftarkan…" : "+ Daftarkan Siswa & Buat QR"}
-                </Btn>
-              </div>
+              <Button variant="sticker" type="submit" disabled={submittingStudent} style={{ width: "100%", minHeight: 44 }}>
+                {submittingStudent ? "Mendaftarkan…" : "Daftarkan Siswa"}
+              </Button>
             </div>
           </form>
-        </Panel>
-      )}
+          </div>
+        </SheetContent>
+      </Sheet>
 
       {/* Tabel Siswa */}
       <Panel style={{ marginTop: 16 }}>
@@ -543,16 +596,14 @@ export default function SiswaManager() {
           filters={(
             <label style={{ display: "grid", gap: 6, fontSize: 13, color: "#74746d" }}>
               Kelas:
-              <TextSelect
-                value={classId}
-                onChange={(e) => { setClassId(e.target.value); setPage(1); }}
-                style={{ minHeight: 44 }}
-              >
-                <option value="">Semua kelas</option>
-                {classes?.rows.map((c) => (
-                  <option key={c.id} value={c.id}>Kelas {c.name}</option>
-                ))}
-              </TextSelect>
+              <Select value={classId} onValueChange={(v) => { setClassId(v ?? ""); setPage(1); }}>
+                <SelectTrigger style={{ minHeight: 44 }}><SelectValue placeholder="Semua kelas" /></SelectTrigger>
+                <SelectPositioner><SelectPopup>
+                  {classes?.rows.map((c) => (
+                    <SelectItem key={c.id} value={c.id}>Kelas {c.name}</SelectItem>
+                  ))}
+                </SelectPopup></SelectPositioner>
+              </Select>
             </label>
           )}
           bulkActions={[
@@ -563,61 +614,71 @@ export default function SiswaManager() {
         />
 
             <Toolbar>
-              <Btn kind="ghost" disabled={page <= 1} onClick={() => setPage((p) => p - 1)}>
+              <Button variant="sticker-ghost" disabled={page <= 1} onClick={() => setPage((p) => p - 1)}>
                 ‹ Sebelumnya
-              </Btn>
+              </Button>
               <span style={{ fontSize: 13, color: "#74746d" }}>
                 Halaman {page}/{totalPages}
               </span>
-              <Btn kind="ghost" disabled={page >= totalPages} onClick={() => setPage((p) => p + 1)}>
+              <Button variant="sticker-ghost" disabled={page >= totalPages} onClick={() => setPage((p) => p + 1)}>
                 Berikutnya ›
-              </Btn>
+              </Button>
             </Toolbar>
       </Panel>
 
-      {/* Modal Edit Siswa */}
-      {editing && (
-        <div
-          role="dialog"
-          aria-label="Edit siswa"
-          style={{
-            position: "fixed",
-            inset: 0,
-            background: "rgba(23,23,22,.45)",
-            display: "grid",
-            placeItems: "center",
-            padding: 16,
-            zIndex: 50,
-          }}
-        >
-          <div
-            style={{
-              background: "#fffdf8",
-              borderRadius: 20,
-              padding: 22,
-              minWidth: 320,
-              display: "grid",
-              gap: 12,
-              border: "2px solid #171716",
-            }}
-          >
-            <h2 className="display" style={{ margin: 0, fontSize: 20 }}>
-              Edit Siswa: {editing.user.name}
-            </h2>
+      {/* Import Excel */}
+      <div id="import-excel" style={{ scrollMarginTop: 80 }}>
+      <Panel style={{ marginTop: 16 }}>
+        <h2 className="display" style={{ fontSize: 18, margin: "0 0 8px" }}>Import Excel</h2>
+        <Note>Header persis: Nama | JK (L/P) | NISN | Tgl Lahir (YYYY-MM-DD) | Kelas | No Ortu. Maks 10MB, format .xlsx. <a href="/api/students/import/template">Unduh contoh .xlsx</a></Note>
+        <Toolbar>
+          <div style={{ flex: "1 1 280px", minWidth: 240 }}>
+            <UploadPopup label="Pilih file .xlsx" hint="Maks 10MB · format .xlsx" maxMb={10} accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" onFile={(f) => { if (f) previewImport(f); }} />
+          </div>
+          <Button variant="sticker" onClick={uploadImport} disabled={!impPreview}>Proses</Button>
+        </Toolbar>
+        {impMsg && <p style={{ fontWeight: 700 }}>{impMsg}</p>}
+        {impPreview && (
+          <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12.5, marginTop: 8 }}>
+            <thead><tr style={{ background: "#eeeadd" }}>{impPreview.cols.map((h, i) => (
+              <th key={i} style={{ border: "1px solid rgba(23,23,22,.2)", padding: "6px 8px", textAlign: "left" }}>{h}</th>
+            ))}</tr></thead>
+            <tbody>{impPreview.rows.map((r, i) => (
+              <tr key={i}>{impPreview.cols.map((_, j) => (
+                <td key={j} style={{ border: "1px solid rgba(23,23,22,.15)", padding: "6px 8px" }}>{r[j] ?? ""}</td>
+              ))}</tr>
+            ))}</tbody>
+          </table>
+        )}
+        {impBatch && (
+          <p>Status: {impBatch.processedRows}/{impBatch.totalRows} diproses, {impBatch.okRows} berhasil, {impBatch.errRows} gagal ({impBatch.status})
+            {impBatch.status === "DONE" && (<> — <a href={`/api/students/import/${impBatch.id}/errors`}>Laporan error</a> · <a href={`/api/students/import/${impBatch.id}/credentials`}>Kredensial</a></>)}
+          </p>
+        )}
+      </Panel>
+      </div>
+      <Sheet open={editing !== null} onOpenChange={(o) => { if (!o) setEditing(null); }}>
+        <SheetContent side="right" className="p-0">
+          <SheetHeader>
+            <SheetTitle>Edit Siswa: {editing?.user.name}</SheetTitle>
+            <SheetDescription>Ubah nama, kelas, dan nomor WhatsApp orang tua.</SheetDescription>
+          </SheetHeader>
+          {editing && (
+          <div className="flex-1 space-y-4 overflow-y-auto px-6 pb-6">
             <label style={{ display: "grid", gap: 6, fontSize: 13, color: "#74746d" }}>
               Nama Lengkap:
               <TextInput value={editName} onChange={(e) => setEditName(e.target.value)} />
             </label>
             <label style={{ display: "grid", gap: 6, fontSize: 13, color: "#74746d" }}>
               Kelas:
-              <TextSelect value={editClass} onChange={(e) => setEditClass(e.target.value)}>
-                <option value="">Tanpa kelas</option>
-                {classes?.rows.map((c) => (
-                  <option key={c.id} value={c.id}>
-                    Kelas {c.name}
-                  </option>
-                ))}
-              </TextSelect>
+              <Select value={editClass} onValueChange={(v) => setEditClass(v ?? "")}>
+                <SelectTrigger><SelectValue placeholder="Tanpa kelas" /></SelectTrigger>
+                <SelectPositioner><SelectPopup>
+                  {classes?.rows.map((c) => (
+                    <SelectItem key={c.id} value={c.id}>Kelas {c.name}</SelectItem>
+                  ))}
+                </SelectPopup></SelectPositioner>
+              </Select>
             </label>
             <label style={{ display: "grid", gap: 6, fontSize: 13, color: "#74746d" }}>
               Nomor WhatsApp Ortu:
@@ -628,14 +689,15 @@ export default function SiswaManager() {
               />
             </label>
             <Toolbar>
-              <Btn onClick={saveEdit}>Simpan Perubahan</Btn>
-              <Btn kind="ghost" onClick={() => setEditing(null)}>
+              <Button variant="sticker" onClick={saveEdit}>Simpan</Button>
+              <Button variant="sticker-ghost" onClick={() => setEditing(null)}>
                 Batal
-              </Btn>
+              </Button>
             </Toolbar>
           </div>
-        </div>
-      )}
+          )}
+        </SheetContent>
+      </Sheet>
       <ConfirmDialog
         open={pending !== null}
         title={pending?.title ?? ""}

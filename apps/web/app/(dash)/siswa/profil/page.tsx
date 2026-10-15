@@ -1,11 +1,24 @@
 "use client";
 
+import { useState } from "react";
 import { useFetch } from "@/app/lib/api";
-import { PageHead, Panel, Note, Err, LinkBtn } from "@/components/DashUI";
+import { PageHead, Panel, Note, Err } from "@/components/DashUI";
+import { buttonVariants } from "@/components/ui/button";
 import KartuSection from "@/components/siswa/KartuSection";
+import UploadPopup from "@/components/UploadPopup";
+
+type Profile = {
+  user: {
+    name: string; nisn: string | null; email: string | null;
+    studentProfile: { bio: string | null; avatarUrl: string | null; class: { name: string } | null } | null;
+  };
+};
 
 export default function SiswaProfilPage() {
-  const { data, loading, error } = useFetch<{ user: { name: string; nisn: string | null; email: string | null; studentProfile: { bio: string | null; class: { name: string } | null } | null } }>(`/api/profile`);
+  const { data, loading, error, reload } = useFetch<Profile>(`/api/profile`);
+  const [msg, setMsg] = useState<string | null>(null);
+
+  const avatar = data?.user.studentProfile?.avatarUrl ?? null;
 
   return (
     <>
@@ -13,7 +26,7 @@ export default function SiswaProfilPage() {
         kicker="Akun"
         title="Profil saya"
         desc="Data dirimu tercatat di sekolah. Minta admin bila ada yang salah."
-        right={<LinkBtn href="/change-password">Ganti kata sandi</LinkBtn>}
+        right={<a className={buttonVariants({ variant: "sticker-ghost" })} style={{ textDecoration: "none" }} href="/change-password">Ganti kata sandi</a>}
       />
       <div style={{ display: "grid", gap: 14 }}>
         <KartuSection />
@@ -21,6 +34,36 @@ export default function SiswaProfilPage() {
         {error && <Err>Gagal: {error}</Err>}
         {data && (
           <Panel style={{ maxWidth: 520 }}>
+            <div style={{ display: "flex", gap: 14, alignItems: "center", marginBottom: 12 }}>
+              {avatar ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={avatar} alt="Avatar" width={64} height={64} style={{ borderRadius: "50%", objectFit: "cover" }} />
+              ) : (
+                <div style={{ width: 64, height: 64, borderRadius: "50%", background: "#eee", display: "grid", placeItems: "center", fontWeight: 700 }}>
+                  {data.user.name.slice(0, 1).toUpperCase()}
+                </div>
+              )}
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <UploadPopup
+                  accept="image/png,image/jpeg,image/webp"
+                  maxMb={2}
+                  label="Ganti foto profil"
+                  onUpload={async (f, onProgress) => {
+                    setMsg(null);
+                    onProgress(10);
+                    const fd = new FormData();
+                    fd.append("file", f);
+                    const r = await fetch("/api/profile/avatar", { method: "POST", body: fd });
+                    onProgress(90);
+                    if (!r.ok) throw new Error((await r.json().catch(() => null))?.error ?? "Upload gagal");
+                    onProgress(100);
+                    setMsg("Foto profil diperbarui.");
+                    await reload();
+                  }}
+                />
+                {msg && <Note>{msg}</Note>}
+              </div>
+            </div>
             <div style={{ display: "grid", gap: 10, fontSize: 14 }}>
               {[
                 ["Nama", data.user.name],

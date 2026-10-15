@@ -3,7 +3,8 @@
 // Admin: viewer audit log (pagination cursor).
 import { useState } from "react";
 import { api } from "@/app/lib/api";
-import { PageHead, Panel, Toolbar, TextInput, Btn, WarmTable, warmCell, Note, Err } from "@/components/DashUI";
+import { PageHead, Panel, Toolbar, TextInput, WarmTable, warmCell, Note, Err } from "@/components/DashUI";
+import { Button } from "@/components/ui/button";
 
 interface Row {
   id: string; action: string; actor: string; role: string;
@@ -33,7 +34,7 @@ export default function AuditPage() {
       <Panel>
         <Toolbar>
           <TextInput value={action} onChange={(e) => setAction(e.target.value)} placeholder="Filter aksi, mis. LEAVE.REVIEW" style={{ maxWidth: 300 }} />
-          <Btn type="button" onClick={() => muat(true)}>Muat</Btn>
+          <Button variant="sticker" type="button" onClick={() => muat(true)}>Muat</Button>
         </Toolbar>
         {msg && <Err>{msg}</Err>}
         {rows.length === 0 && <Note>Belum ada baris. Tekan Muat untuk menampilkan.</Note>}
@@ -50,7 +51,7 @@ export default function AuditPage() {
             ))}
           </WarmTable>
         )}
-        {cursor && <Toolbar><Btn kind="ghost" type="button" onClick={() => muat(false)}>Muat lagi</Btn></Toolbar>}
+        {cursor && <Toolbar><Button variant="sticker-ghost" type="button" onClick={() => muat(false)}>Muat lagi</Button></Toolbar>}
       </Panel>
     </>
   );

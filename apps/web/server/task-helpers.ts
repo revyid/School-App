@@ -9,12 +9,12 @@ export async function canManageTask(
   schoolId: string,
   userId: string,
   role: string,
-  task: { classId: string; authorId: string },
+  task: { classId: string; authorId: string; targets?: { classId: string }[] },
 ): Promise<boolean> {
   if (role === "ADMIN") return true;
   if (role !== "GURU") return false;
   const mine = await guruClassIds(schoolId, userId);
-  return mine.has(task.classId) || task.authorId === userId;
+  return mine.has(task.classId) || (task.targets?.some((x) => mine.has(x.classId)) ?? false) || task.authorId === userId;
 }
 
 // T8: EXP pengumpulan — tepat waktu / terlambat, dedupe per (tugas, siswa).

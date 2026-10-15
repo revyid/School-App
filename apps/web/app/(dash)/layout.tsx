@@ -3,7 +3,7 @@ import { getPageAuth } from "@/app/lib/require-page";
 import DashShell, { type MenuItem } from "@/components/DashShell";
 
 // U1: menu per peran — maks 7 item utama, ikon via string key MENU_ICONS (bukan komponen langsung).
-const MENUS: Record<string, { utama: MenuItem[]; lainnya: MenuItem[] }> = {
+const MENUS: Record<string, { utama: MenuItem[]; lainnya: MenuItem[]; groups?: { label: string; items: MenuItem[] }[] }> = {
   SISWA: {
     utama: [
       { href: "/siswa", label: "Dasbor", icon: "dasbor" },
@@ -35,18 +35,29 @@ const MENUS: Record<string, { utama: MenuItem[]; lainnya: MenuItem[] }> = {
   ADMIN: {
     utama: [
       { href: "/admin", label: "Dasbor", icon: "dasbor" },
-      { href: "/admin/pengguna", label: "Pengguna", icon: "siswa" },
-      { href: "/admin/jadwal", label: "Jadwal", icon: "jadwal" },
-      { href: "/admin/kehadiran", label: "Kehadiran", icon: "kehadiran" },
-      { href: "/admin/pengumuman", label: "Pengumuman", icon: "pengumuman" },
     ],
-    lainnya: [
-      { href: "/admin/notifikasi", label: "Notifikasi", icon: "notifikasi" },
-      { href: "/admin/kelas", label: "Kelas", icon: "kelas" },
-      { href: "/admin/inbox", label: "Pesan", icon: "inbox" },
-      { href: "/admin/pengaturan", label: "Pengaturan", icon: "pengaturan" },
-      { href: "/admin/audit", label: "Audit", icon: "audit" },
-      { href: "/admin/wa", label: "WhatsApp", icon: "whatsapp" },
+    lainnya: [],
+    groups: [
+      { label: "Data", items: [
+        { href: "/admin/pengguna", label: "Pengguna", icon: "siswa" },
+        { href: "/admin/kelas", label: "Kelas", icon: "kelas" },
+        { href: "/admin/mapel", label: "Mapel", icon: "materi" },
+      ]},
+      { label: "Akademik", items: [
+        { href: "/admin/jadwal", label: "Jadwal", icon: "jadwal" },
+        { href: "/admin/kehadiran", label: "Kehadiran", icon: "kehadiran" },
+      ]},
+      { label: "Komunikasi", items: [
+        { href: "/admin/pengumuman", label: "Pengumuman", icon: "pengumuman" },
+        { href: "/admin/notifikasi", label: "Notifikasi", icon: "notifikasi" },
+        { href: "/admin/inbox", label: "Inbox", icon: "inbox" },
+        { href: "/admin/wa", label: "WA", icon: "whatsapp" },
+      ]},
+      { label: "Sistem", items: [
+        { href: "/admin/pengaturan", label: "Pengaturan", icon: "pengaturan" },
+        { href: "/admin/privasi", label: "Privasi", icon: "privasi" },
+        { href: "/admin/audit", label: "Audit", icon: "audit" },
+      ]},
     ],
   },
 };

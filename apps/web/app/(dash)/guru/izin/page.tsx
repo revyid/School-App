@@ -3,7 +3,10 @@
 // Guru: persetujuan izin siswa kelasnya (APPROVED mengecualikan auto-alpha).
 import { useState } from "react";
 import { api, useFetch } from "@/app/lib/api";
-import { PageHead, Panel, Toolbar, TextInput, TextSelect, Btn, Badge, WarmTable, warmCell, Note, Err } from "@/components/DashUI";
+import { PageHead, Panel, Toolbar, TextInput, WarmTable, warmCell, Note, Err } from "@/components/DashUI";
+import { Select, SelectTrigger, SelectValue, SelectPositioner, SelectPopup, SelectItem } from "@/components/ui/select";
+import { Button } from "@/components/ui/button";
+import { Badge, statusVariant } from "@/components/ui/badge";
 
 interface Row {
   id: string;
@@ -42,11 +45,14 @@ export default function IzinGuruPage() {
         <Toolbar>
           <label style={{ display: "flex", gap: 8, alignItems: "center", fontSize: 13, color: "#74746d" }}>
             Status:
-            <TextSelect value={status} onChange={(e) => setStatus(e.target.value)}>
-              <option value="PENDING">PENDING</option>
-              <option value="APPROVED">APPROVED</option>
-              <option value="REJECTED">REJECTED</option>
-            </TextSelect>
+            <Select value={status} onValueChange={(v) => setStatus(v ?? "PENDING")}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectPositioner><SelectPopup>
+                <SelectItem value="PENDING">PENDING</SelectItem>
+                <SelectItem value="APPROVED">APPROVED</SelectItem>
+                <SelectItem value="REJECTED">REJECTED</SelectItem>
+              </SelectPopup></SelectPositioner>
+            </Select>
           </label>
         </Toolbar>
         {loading && <Note>Memuat...</Note>}
@@ -59,7 +65,7 @@ export default function IzinGuruPage() {
               <tr key={r.id}>
                 <td style={warmCell({ whiteSpace: "nowrap" })}>{r.date.slice(0, 10)}</td>
                 <td style={warmCell({ fontWeight: 700 })}>{r.student.name}</td>
-                <td style={warmCell()}><Badge status={r.kind} /></td>
+                <td style={warmCell()}><Badge variant={statusVariant(r.kind)}>{r.kind}</Badge></td>
                 <td style={warmCell()}>{r.description}</td>
                 <td style={warmCell()}>
                   {r.hasPhoto ? (
@@ -84,10 +90,10 @@ export default function IzinGuruPage() {
                 <td style={warmCell()}>
                   {r.status === "PENDING" ? (
                     <span style={{ display: "flex", gap: 6 }}>
-                      <Btn type="button" onClick={() => review(r.id, "APPROVED")}>Setujui</Btn>
-                      <Btn kind="ghost" type="button" onClick={() => review(r.id, "REJECTED")}>Tolak</Btn>
+                      <Button variant="sticker" type="button" onClick={() => review(r.id, "APPROVED")}>Setujui</Button>
+                      <Button variant="sticker-ghost" type="button" onClick={() => review(r.id, "REJECTED")}>Tolak</Button>
                     </span>
-                  ) : <Badge status={r.status} />}
+                  ) : <Badge variant={statusVariant(r.status)}>{r.status}</Badge>}
                 </td>
               </tr>
             ))}

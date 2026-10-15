@@ -116,7 +116,7 @@ export async function authorize(o: GateInput) {
 // Overload agar pemanggil tenant (tanpa SUPER_ADMIN) tetap melihat school non-null
 // tanpa mengubah 100+ route: runtime menolak SUPER_ADMIN bila tak diminta,
 // lalu tipe menyempit via cast yang dijamin check di bawah.
-type TenantAuth = {
+export type TenantAuth = {
   ok: true;
   school: { id: string; slug: string; name: string };
   userId: string;
@@ -125,7 +125,7 @@ type TenantAuth = {
   csrf: string;
   mustChangePassword: boolean;
 };
-type SuperAuth = {
+export type SuperAuth = {
   ok: true;
   school: null;
   userId: string;

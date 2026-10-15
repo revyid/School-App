@@ -7,7 +7,8 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { Suspense, useState } from "react";
 import { useFetch } from "@/app/lib/api";
-import { PageHead, Panel, TextSelect, Note, Err } from "@/components/DashUI";
+import { PageHead, Panel, Note, Err } from "@/components/DashUI";
+import { Select, SelectTrigger, SelectValue, SelectPositioner, SelectPopup, SelectItem } from "@/components/ui/select";
 import { PlusIcon } from "lucide-react";
 import { TASK_TYPE_LABEL } from "@sms/shared/lms";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -68,12 +69,9 @@ function Inner() {
   const params = new URLSearchParams({ status: statusF });
   if (classId) params.set("classId", classId);
   const tasks = useFetch<{ rows: TaskRow[] }>(jenis === "tugas" ? `/api/tasks?${params}` : null);
-  const assesses = useFetch<{ rows: AssessRow[] }>(jenis === "asesmen" ? "/api/assessments" : null);
-  const assessRows = (assesses.data?.rows ?? []).filter((r) => {
-    if (!classId) return true;
-    if (r.class && (r.class as { id: string }).id === classId) return true;
-    return (r.targets ?? []).some((x) => x.classId === classId);
-  });
+  const assessParams = classId ? `?classId=${encodeURIComponent(classId)}` : "";
+  const assesses = useFetch<{ rows: AssessRow[] }>(jenis === "asesmen" ? `/api/assessments${assessParams}` : null);
+  const assessRows = assesses.data?.rows ?? [];
 
   return (
     <>
@@ -96,21 +94,26 @@ function Inner() {
         <div className="flex flex-wrap items-center gap-3">
           <label className="flex items-center gap-2 text-[13px] text-muted-strong">
             Kelas:
-            <TextSelect value={classId} onChange={(e) => setClassId(e.target.value)}>
-              <option value="">Semua kelas saya</option>
-              {kelasUnik.map((r) => (
-                <option key={r.class.id} value={r.class.id}>{r.class.name}</option>
-              ))}
-            </TextSelect>
+            <Select value={classId} onValueChange={(v) => setClassId(v ?? "")}>
+              <SelectTrigger><SelectValue placeholder="Semua kelas saya" /></SelectTrigger>
+              <SelectPositioner><SelectPopup>
+                {kelasUnik.map((r) => (
+                  <SelectItem key={r.class.id} value={r.class.id}>{r.class.name}</SelectItem>
+                ))}
+              </SelectPopup></SelectPositioner>
+            </Select>
           </label>
           {jenis === "tugas" && (
             <label className="flex items-center gap-2 text-[13px] text-muted-strong">
               Status:
-              <TextSelect value={statusF} onChange={(e) => setStatusF(e.target.value)}>
-                <option value="semua">Semua</option>
-                <option value="aktif">Aktif</option>
-                <option value="draf">Draf</option>
-              </TextSelect>
+              <Select value={statusF} onValueChange={(v) => setStatusF(v ?? "semua")}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectPositioner><SelectPopup>
+                  <SelectItem value="semua">Semua</SelectItem>
+                  <SelectItem value="aktif">Aktif</SelectItem>
+                  <SelectItem value="draf">Draf</SelectItem>
+                </SelectPopup></SelectPositioner>
+              </Select>
             </label>
           )}
         </div>
@@ -118,7 +121,7 @@ function Inner() {
           href={jenis === "tugas" ? "/guru/tugas/new" : "/guru/asesmen/new"}
           className="btn-sticker flex items-center gap-2 rounded-2xl border border-ink bg-ink px-4 py-2 text-[13px] font-bold text-cream no-underline hover:opacity-80"
         >
-          <PlusIcon size={14} /> {jenis === "tugas" ? "Buat tugas" : "Buat asesmen"}
+          <PlusIcon size={14} /> {jenis === "tugas" ? "Tambah tugas" : "Tambah asesmen"}
         </Link>
       </div>
 

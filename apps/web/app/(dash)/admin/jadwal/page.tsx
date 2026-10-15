@@ -1,11 +1,15 @@
 "use client";
 
-import { useMemo, useRef, useState } from "react";
+import { useMemo, useState } from "react";
 import { type ColumnDef } from "@tanstack/react-table";
 import { api, useFetch } from "@/app/lib/api";
-import { PageHead, Panel, Toolbar, TextInput, TextSelect, Btn, WarmTable, warmCell, Note, Err } from "@/components/DashUI";
+import { PageHead, Panel, Toolbar, TextInput, WarmTable, warmCell, Note, Err } from "@/components/DashUI";
+import { Select, SelectTrigger, SelectValue, SelectPositioner, SelectPopup, SelectItem } from "@/components/ui/select";
+import { Button } from "@/components/ui/button";
 import ConfirmDialog from "@/components/ConfirmDialog";
+import UploadPopup from "@/components/UploadPopup";
 import { DataTable, selectColumn } from "@/components/ui/data-table";
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
 const DAYS = ["Min", "Sen", "Sel", "Rab", "Kam", "Jum", "Sab"];
 const DAY_FULL = ["Minggu", "Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu"];
@@ -15,6 +19,11 @@ interface SlotRow {
   subjectName: string | null; subjectId: string | null;
   subjectRef: { id: string; name: string } | null;
   teacher: { id: string; name: string } | null; teacherId: string | null;
+}
+
+interface AllRow {
+  id: string; classId: string; className: string; dayOfWeek: number;
+  startTime: string; endTime: string; subjectName: string | null; teacherName: string | null;
 }
 
 interface LiburRow {
@@ -31,13 +40,16 @@ export default function TimetablePage() {
   const [dari] = useState(() =>
     typeof window !== "undefined" ? new URLSearchParams(window.location.search).get("dari") : null,
   );
-  const fileRef = useRef<HTMLInputElement>(null);
+  const [impFile, setImpFile] = useState<File | null>(null);
   const { data: classes } = useFetch<{ rows: { id: string; name: string; gradeLevel: string | null }[] }>(`/api/classes?page=1&perPage=100`);
   const { data: teachers } = useFetch<{ rows: { id: string; name: string }[] }>(`/api/teachers?page=1&perPage=200`);
   const [classId, setClassId] = useState("");
   const [refresh, setRefresh] = useState(0);
   const { data, loading, error, reload } = useFetch<{ rows: SlotRow[] }>(
     classId ? `/api/timetable?classId=${classId}&r=${refresh}` : null,
+  );
+  const { data: allData, loading: allLoading } = useFetch<{ rows: AllRow[] }>(
+    !classId ? `/api/timetable?scope=all&r=${refresh}` : null,
   );
   // Daftar mapel kelas ini dari jadwal (auto-mapping), fallback ke global bila kelas belum punya slot.
   const { data: mapelKelas } = useFetch<{ subjects: { id: string | null; name: string }[] }>(
@@ -53,6 +65,7 @@ export default function TimetablePage() {
   const [subjectId, setSubjectId] = useState("");
   const [teacherId, setTeacherId] = useState("");
   const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
+  const [liburPending, setLiburPending] = useState<string[] | null>(null);
   const [edit, setEdit] = useState<EditState | null>(null);
   const [editMsg, setEditMsg] = useState<string | null>(null);
   const [impMsg, setImpMsg] = useState<string | null>(null);
@@ -120,7 +133,7 @@ export default function TimetablePage() {
   }
 
   async function upload() {
-    const f = fileRef.current?.files?.[0];
+    const f = impFile;
     if (!f) { setImpMsg("Pilih file .xlsx dulu"); return; }
     if (!impIsAll && !classId) { setImpMsg("Pilih kelas dulu (atau centang mode semua-kelas)"); return; }
     setImpMsg("Mengunggah…");
@@ -137,7 +150,7 @@ export default function TimetablePage() {
     }
     setImpMsg(`Import selesai: ${d.ok} ditambah, ${d.gagal} gagal`);
     setImpErrors(d.errors ?? []);
-    if (fileRef.current) fileRef.current.value = "";
+    setImpFile(null);
     bump();
   }
 
@@ -173,7 +186,13 @@ export default function TimetablePage() {
 
   async function hapusLiburBulk(ids: string[]) {
     if (ids.length === 0) return;
-    if (!confirm(`Hapus ${ids.length} hari libur terpilih?`)) return;
+    setLiburPending(ids);
+  }
+
+  async function doHapusLiburBulk() {
+    const ids = liburPending;
+    setLiburPending(null);
+    if (!ids || ids.length === 0) return;
     const res = await api("/api/attendance/calendar/batch", {
       method: "DELETE", headers: { "content-type": "application/json" },
       body: JSON.stringify({ ids }),
@@ -220,10 +239,12 @@ export default function TimetablePage() {
       )}
       <Panel style={{ marginBottom: 16 }}>
         <Toolbar>
-          <TextSelect value={classId} onChange={(e) => setClassId(e.target.value)}>
-            <option value="">Pilih kelas</option>
-            {classes?.rows.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
-          </TextSelect>
+          <Select value={classId} onValueChange={(v) => setClassId(v ?? "")}>
+            <SelectTrigger><SelectValue placeholder="Pilih kelas" /></SelectTrigger>
+            <SelectPositioner><SelectPopup>
+              {classes?.rows.map((c) => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
+            </SelectPopup></SelectPositioner>
+          </Select>
           {classId && (
             <>
               <a className="btn-sticker btn-ghost" style={{ textDecoration: "none" }} href={`/api/timetable/export?classId=${classId}`}>Unduh Excel</a>
@@ -233,6 +254,25 @@ export default function TimetablePage() {
         </Toolbar>
         {loading && <Note>Memuat…</Note>}
         {error && <Err>Error: {error}</Err>}
+        {!classId && (
+          <>
+            {allLoading && <Note>Memuat rekap…</Note>}
+            {allData && allData.rows.length === 0 && <Note>Belum ada slot jadwal. Pilih kelas lalu tambah slot.</Note>}
+            {allData && allData.rows.length > 0 && (
+              <WarmTable head={["Hari", "Kelas", "Jam", "Mapel", "Guru"]}>
+                {allData.rows.map((s) => (
+                  <tr key={s.id}>
+                    <td style={warmCell({ fontWeight: 700 })}>{DAY_FULL[s.dayOfWeek]}</td>
+                    <td style={warmCell()}>{s.className}</td>
+                    <td style={warmCell({ whiteSpace: "nowrap" })}>{s.startTime}–{s.endTime}</td>
+                    <td style={warmCell()}>{s.subjectName ?? "-"}</td>
+                    <td style={warmCell()}>{s.teacherName ?? "-"}</td>
+                  </tr>
+                ))}
+              </WarmTable>
+            )}
+          </>
+        )}
         {data && data.rows.length === 0 && <Note>Belum ada slot jadwal untuk kelas ini.</Note>}
         {data && data.rows.length > 0 && (
           <WarmTable head={["Hari", "Jam", "Mapel", "Guru", "Aksi"]}>
@@ -244,8 +284,8 @@ export default function TimetablePage() {
                 <td style={warmCell()}>{s.teacher?.name ?? "-"}</td>
                 <td style={warmCell()}>
                   <span style={{ display: "inline-flex", gap: 8 }}>
-                    <Btn kind="ghost" onClick={() => openEdit(s)}>Edit</Btn>
-                    <Btn kind="ghost" onClick={() => setDeleteTarget(s.id)}>Hapus</Btn>
+                    <Button variant="sticker-ghost" onClick={() => openEdit(s)}>Edit</Button>
+                    <Button variant="sticker-ghost" onClick={() => setDeleteTarget(s.id)}>Hapus</Button>
                   </span>
                 </td>
               </tr>
@@ -258,24 +298,31 @@ export default function TimetablePage() {
           <Panel style={{ marginBottom: 16 }}>
             <h2 className="display" style={{ fontSize: 18, margin: "0 0 12px" }}>Tambah slot</h2>
             <Toolbar>
-              <TextSelect value={day} onChange={(e) => setDay(e.target.value)}>
-                {DAYS.map((d, i) => <option key={i} value={i}>{d}</option>)}
-              </TextSelect>
+              <Select value={day} onValueChange={(v) => setDay(v ?? "1")}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectPositioner><SelectPopup>
+                  {DAYS.map((d, i) => <SelectItem key={i} value={String(i)}>{d}</SelectItem>)}
+                </SelectPopup></SelectPositioner>
+              </Select>
               <TextInput type="time" value={start} onChange={(e) => setStart(e.target.value)} style={{ width: "auto" }} />
               <TextInput type="time" value={end} onChange={(e) => setEnd(e.target.value)} style={{ width: "auto" }} />
-              <TextSelect value={subjectId} onChange={(e) => setSubjectId(e.target.value)}>
-                <option value="">Pilih mapel</option>
-                {mapelOpts.map((s) => (
-                  <option key={s.id ?? `nama:${s.name}`} value={s.id ?? ""}>
-                    {s.name}{s.id ? "" : " (baru)"}
-                  </option>
-                ))}
-              </TextSelect>
-              <TextSelect value={teacherId} onChange={(e) => setTeacherId(e.target.value)}>
-                <option value="">Pilih guru</option>
-                {teachers?.rows.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
-              </TextSelect>
-              <Btn onClick={add}>Tambah</Btn>
+              <Select value={subjectId} onValueChange={(v) => setSubjectId(v ?? "")}>
+                <SelectTrigger><SelectValue placeholder="Pilih mapel" /></SelectTrigger>
+                <SelectPositioner><SelectPopup>
+                  {mapelOpts.map((s) => (
+                    <SelectItem key={s.id ?? `nama:${s.name}`} value={s.id ?? ""}>
+                      {s.name}{s.id ? "" : " (baru)"}
+                    </SelectItem>
+                  ))}
+                </SelectPopup></SelectPositioner>
+              </Select>
+              <Select value={teacherId} onValueChange={(v) => setTeacherId(v ?? "")}>
+                <SelectTrigger><SelectValue placeholder="Pilih guru" /></SelectTrigger>
+                <SelectPositioner><SelectPopup>
+                  {teachers?.rows.map((t) => <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>)}
+                </SelectPopup></SelectPositioner>
+              </Select>
+              <Button variant="sticker" onClick={add}>Tambah</Button>
             </Toolbar>
             <Note>Mapel kelas ini ({mapelKelas?.subjects.length ?? 0}) diambil dari jadwal; bila kelas belum punya slot, daftar global dipakai.</Note>
           </Panel>
@@ -289,12 +336,17 @@ export default function TimetablePage() {
             <input type="checkbox" checked={impIsAll} onChange={(e) => setImpIsAll(e.target.checked)} />
             Semua kelas
           </label>
-          <TextSelect value={impMode} onChange={(e) => setImpMode(e.target.value as "replace" | "merge")} title="Replace: hapus slot lama kelas di file. Merge: hanya tambah.">
-            <option value="replace">Replace (hapus lama)</option>
-            <option value="merge">Merge (tambah saja)</option>
-          </TextSelect>
-          <input ref={fileRef} type="file" accept=".xlsx" />
-          <Btn onClick={upload}>Upload</Btn>
+          <Select value={impMode} onValueChange={(v) => setImpMode((v as "replace" | "merge") ?? "replace")}>
+            <SelectTrigger title="Replace: hapus slot lama kelas di file. Merge: hanya tambah."><SelectValue /></SelectTrigger>
+            <SelectPositioner><SelectPopup>
+              <SelectItem value="replace">Replace (hapus lama)</SelectItem>
+              <SelectItem value="merge">Merge (tambah saja)</SelectItem>
+            </SelectPopup></SelectPositioner>
+          </Select>
+          <div style={{ flex: "1 1 280px", minWidth: 240 }}>
+            <UploadPopup key={impMsg} label="Pilih file .xlsx" hint="Maks 10MB · format .xlsx" maxMb={10} accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" onFile={setImpFile} />
+          </div>
+          <Button variant="sticker" onClick={upload}>Upload</Button>
           <a className="btn-sticker btn-ghost" style={{ textDecoration: "none" }} href={impIsAll ? "/api/timetable/template?mode=all" : "/api/timetable/template"}>Unduh template</a>
         </Toolbar>
         {impMsg && <Note>{impMsg}</Note>}
@@ -324,22 +376,25 @@ export default function TimetablePage() {
           </label>
           <label style={{ display: "grid", gap: 6, fontSize: 13, color: "#74746d" }}>
             Berlaku untuk:
-            <TextSelect value={liburScope} onChange={(e) => { setLiburScope(e.target.value); setLiburRefresh((r) => r + 1); }} style={{ minWidth: 180 }}>
-              <option value="semua">Semua kelas</option>
-              {[...new Set((classes?.rows ?? []).map((c) => c.gradeLevel).filter(Boolean))].map((g) => (
-                <option key={g as string} value={`tingkat:${g as string}`}>Tingkatan {g as string}</option>
-              ))}
-              {(classes?.rows ?? []).map((c) => (
-                <option key={c.id} value={`kelas:${c.id}`}>Kelas {c.name}</option>
-              ))}
-            </TextSelect>
+            <Select value={liburScope} onValueChange={(v) => { setLiburScope(v ?? "semua"); setLiburRefresh((r) => r + 1); }}>
+              <SelectTrigger style={{ minWidth: 180 }}><SelectValue placeholder="Semua kelas" /></SelectTrigger>
+              <SelectPositioner><SelectPopup>
+                <SelectItem value="semua">Semua kelas</SelectItem>
+                {[...new Set((classes?.rows ?? []).map((c) => c.gradeLevel).filter(Boolean))].map((g) => (
+                  <SelectItem key={g as string} value={`tingkat:${g as string}`}>Tingkatan {g as string}</SelectItem>
+                ))}
+                {(classes?.rows ?? []).map((c) => (
+                  <SelectItem key={c.id} value={`kelas:${c.id}`}>Kelas {c.name}</SelectItem>
+                ))}
+              </SelectPopup></SelectPositioner>
+          </Select>
           </label>
           <label style={{ display: "grid", gap: 6, fontSize: 13, color: "#74746d" }}>
             Keterangan:
             <TextInput placeholder="mis. Libur semester" value={liburNote} onChange={(e) => setLiburNote(e.target.value)} style={{ minWidth: 180 }} />
           </label>
           <div style={{ display: "flex", alignItems: "flex-end" }}>
-            <Btn onClick={tambahLibur}>Tambah Libur</Btn>
+            <Button variant="sticker" onClick={tambahLibur}>Tambah Libur</Button>
           </div>
         </Toolbar>
         {liburMsg && <Note>{liburMsg}</Note>}
@@ -353,39 +408,48 @@ export default function TimetablePage() {
           emptyText="Belum ada hari libur mendatang untuk cakupan ini."
         />
       </Panel>
-      {edit && (
-        <div role="dialog" aria-modal="true" aria-label="Edit slot jadwal" onClick={() => setEdit(null)}
-          style={{ position: "fixed", inset: 0, background: "rgba(23,23,22,.55)", zIndex: 9999, display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }}>
-          <div onClick={(e) => e.stopPropagation()}
-            style={{ width: "min(100%, 480px)", background: "#f7f4ec", color: "#171716", border: "2px solid #171716", borderRadius: 24, padding: "24px 28px", display: "flex", flexDirection: "column", gap: 14 }}>
-            <h3 className="display" style={{ fontSize: 20, margin: 0 }}>Edit slot</h3>
-            <Toolbar>
-              <TextSelect value={edit.day} onChange={(e) => setEdit({ ...edit, day: e.target.value })}>
-                {DAY_FULL.map((d, i) => <option key={i} value={i}>{d}</option>)}
-              </TextSelect>
+      <Dialog open={edit !== null} onOpenChange={(o) => { if (!o) setEdit(null); }}>
+        <DialogContent aria-label="Edit slot jadwal">
+          <DialogHeader>
+            <DialogTitle>Edit slot</DialogTitle>
+          </DialogHeader>
+          {edit && (
+          <>
+          <Toolbar>
+              <Select value={edit.day} onValueChange={(v) => setEdit({ ...edit, day: v ?? "1" })}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectPositioner><SelectPopup>
+                  {DAY_FULL.map((d, i) => <SelectItem key={i} value={String(i)}>{d}</SelectItem>)}
+                </SelectPopup></SelectPositioner>
+              </Select>
               <TextInput type="time" value={edit.start} onChange={(e) => setEdit({ ...edit, start: e.target.value })} style={{ width: "auto" }} />
               <TextInput type="time" value={edit.end} onChange={(e) => setEdit({ ...edit, end: e.target.value })} style={{ width: "auto" }} />
             </Toolbar>
             <Toolbar>
-              <TextSelect value={edit.subjectId} onChange={(e) => setEdit({ ...edit, subjectId: e.target.value })}>
-                <option value="">Pilih mapel</option>
-                {mapelOpts.map((s) => (
-                  <option key={s.id ?? `nama:${s.name}`} value={s.id ?? ""}>{s.name}</option>
-                ))}
-              </TextSelect>
-              <TextSelect value={edit.teacherId} onChange={(e) => setEdit({ ...edit, teacherId: e.target.value })}>
-                <option value="">Pilih guru</option>
-                {teachers?.rows.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
-              </TextSelect>
+              <Select value={edit.subjectId} onValueChange={(v) => setEdit({ ...edit, subjectId: v ?? "" })}>
+                <SelectTrigger><SelectValue placeholder="Pilih mapel" /></SelectTrigger>
+                <SelectPositioner><SelectPopup>
+                  {mapelOpts.map((s) => (
+                    <SelectItem key={s.id ?? `nama:${s.name}`} value={s.id ?? ""}>{s.name}</SelectItem>
+                  ))}
+                </SelectPopup></SelectPositioner>
+              </Select>
+              <Select value={edit.teacherId} onValueChange={(v) => setEdit({ ...edit, teacherId: v ?? "" })}>
+                <SelectTrigger><SelectValue placeholder="Pilih guru" /></SelectTrigger>
+                <SelectPositioner><SelectPopup>
+                  {teachers?.rows.map((t) => <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>)}
+                </SelectPopup></SelectPositioner>
+              </Select>
             </Toolbar>
             {editMsg && <Err>{editMsg}</Err>}
-            <div style={{ display: "flex", gap: 10, justifyContent: "flex-end", flexWrap: "wrap" }}>
-              <Btn kind="ghost" onClick={() => setEdit(null)}>Batal</Btn>
-              <Btn onClick={saveEdit}>Simpan</Btn>
-            </div>
-          </div>
-        </div>
-      )}
+            <DialogFooter>
+              <Button variant="sticker-ghost" onClick={() => setEdit(null)}>Batal</Button>
+              <Button variant="sticker" onClick={saveEdit}>Simpan</Button>
+            </DialogFooter>
+          </>
+          )}
+        </DialogContent>
+      </Dialog>
       <ConfirmDialog
         open={deleteTarget !== null}
         title="Hapus Slot Jadwal"
@@ -393,6 +457,14 @@ export default function TimetablePage() {
         confirmLabel="Ya, hapus"
         onConfirm={doRemove}
         onCancel={() => setDeleteTarget(null)}
+      />
+      <ConfirmDialog
+        open={liburPending !== null}
+        title="Hapus Hari Libur"
+        message={liburPending ? `Hapus ${liburPending.length} hari libur terpilih?` : ""}
+        confirmLabel="Ya, hapus"
+        onConfirm={doHapusLiburBulk}
+        onCancel={() => setLiburPending(null)}
       />
     </>
   );

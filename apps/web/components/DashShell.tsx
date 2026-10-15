@@ -31,10 +31,8 @@ export const MENU_ICONS = {
   dasbor: LayoutGrid,
   kelas: School,
   siswa: Users,
-  guru: User,
   jadwal: Calendar,
   tugas: ClipboardList,
-  penugasan: ClipboardList,
   kehadiran: Check,
   nilai: Star,
   rapor: BarChart3,
@@ -43,7 +41,6 @@ export const MENU_ICONS = {
   inbox: MessageSquare,
   notifikasi: BellIcon,
   pengumuman: Megaphone,
-  kalender: Calendar,
   pengaturan: Settings,
   privasi: Lock,
   audit: FileText,
@@ -67,7 +64,7 @@ export default function DashShell({
   role: "ADMIN" | "GURU" | "SISWA";
   userName: string;
   schoolName: string;
-  menus: { utama: MenuItem[]; lainnya: MenuItem[] };
+  menus: { utama: MenuItem[]; lainnya: MenuItem[]; groups?: { label: string; items: MenuItem[] }[] };
   children: React.ReactNode;
 }) {
   const [open, setOpen] = useState(false);
@@ -118,8 +115,18 @@ export default function DashShell({
       </div>
       <p className="kicker px-2 pb-1">Menu utama</p>
       {nav(menus.utama)}
-      <p className="kicker mt-3 px-2 pb-1">Lainnya</p>
-      {nav(menus.lainnya)}
+      {menus.groups?.map((g) => (
+        <div key={g.label}>
+          <p className="kicker mt-3 px-2 pb-1">{g.label}</p>
+          {nav(g.items)}
+        </div>
+      ))}
+      {!menus.groups && (
+        <>
+          <p className="kicker mt-3 px-2 pb-1">Lainnya</p>
+          {nav(menus.lainnya)}
+        </>
+      )}
     </>
   );
 

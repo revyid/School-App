@@ -30,20 +30,20 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
   const t = await runAsSchool(db, a.school.id, (tx) =>
     tx.task.findUnique({
       where: { id: id.slice(0, 64) },
-      select: { id: true, classId: true, publishAt: true, status: true },
+      select: { id: true, classId: true, publishAt: true, status: true, targets: { select: { classId: true } } },
     }));
   if (!t) return NextResponse.json({ error: "tugas tidak ditemukan" }, { status: 404 });
   const now = new Date();
   if (a.role === "SISWA") {
     const p = await runAsSchool(db, a.school.id, (tx) =>
       tx.studentProfile.findUnique({ where: { userId: a.userId }, select: { classId: true } }));
-    if (t.classId !== p?.classId) return NextResponse.json({ error: "bukan tugas kelas Anda" }, { status: 403 });
+    if (t.classId !== p?.classId && !t.targets.some((x) => x.classId === p?.classId)) return NextResponse.json({ error: "bukan tugas kelas Anda" }, { status: 403 });
     if (t.status !== "PUBLISHED" || t.publishAt.getTime() > now.getTime()) {
       return NextResponse.json({ error: "belum dipublikasikan" }, { status: 404 });
     }
   } else if (a.role === "GURU") {
     const mine = await guruClassIds(a.school.id, a.userId);
-    if (!mine.has(t.classId)) return NextResponse.json({ error: "bukan tugas kelas Anda" }, { status: 403 });
+    if (!mine.has(t.classId) && !t.targets.some((x) => mine.has(x.classId))) return NextResponse.json({ error: "bukan tugas kelas Anda" }, { status: 403 });
   }
   const rows = await runAsSchool(db, a.school.id, (tx) =>
     tx.taskMaterial.findMany({ where: { taskId: t.id }, orderBy: { createdAt: "asc" }, take: 100 }));
@@ -60,7 +60,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   const { id } = await params;
   const taskId = id.slice(0, 64);
   const t = await runAsSchool(db, a.school.id, (tx) =>
-    tx.task.findUnique({ where: { id: taskId }, select: { id: true, classId: true, authorId: true } }));
+    tx.task.findUnique({ where: { id: taskId }, select: { id: true, classId: true, authorId: true, targets: { select: { classId: true } } } }));
   if (!t) return NextResponse.json({ error: "tugas tidak ditemukan" }, { status: 404 });
   if (!(await canManageTask(a.school.id, a.userId, a.role, t))) {
     return NextResponse.json({ error: "bukan tugas kelas Anda" }, { status: 403 });

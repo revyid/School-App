@@ -5,7 +5,8 @@ import { use, useState } from "react";
 import Link from "next/link";
 import AssessChart from "@/components/AssessChart";
 import { api, useFetch } from "@/app/lib/api";
-import { PageHead, Panel, Toolbar, Btn, Note, Err } from "@/components/DashUI";
+import { PageHead, Panel, Toolbar, Note, Err } from "@/components/DashUI";
+import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import ConfirmDialog from "@/components/ConfirmDialog";
 import { Glyph } from "@/components/Glyph";
@@ -115,7 +116,7 @@ export default function AsesmenKerjakanPage({ params }: { params: Promise<{ id: 
         <Panel>
           <Toolbar>
             <h2 className="display" style={{ fontSize: 20, margin: 0, flex: 1 }}>{attempt.data.assessment.title}</h2>
-            {attempt.data.attempt.submittedAt && <Btn kind="dark" type="button" onClick={() => window.print()}>Cetak PDF</Btn>}
+            {attempt.data.attempt.submittedAt && <Button variant="sticker" style={{ background: "#171716", color: "#fffdf8" }} type="button" onClick={() => window.print()}>Cetak PDF</Button>}
           </Toolbar>
           {attempt.data.attempt.submittedAt ? (
             <>
@@ -204,8 +205,8 @@ export default function AsesmenKerjakanPage({ params }: { params: Promise<{ id: 
                       {(sort[q.id] ?? q.options).map((o, i) => (
                         <li key={`${o}-${i}`} style={{ display: "flex", gap: 8, alignItems: "center" }}>
                           <span style={{ flex: 1 }}>{o}{" "}</span>
-                          <Btn type="button" kind="ghost" onClick={() => move(q.id, q.options, i, -1)}><Glyph name="arrowUp" size={14} /></Btn>
-                          <Btn type="button" kind="ghost" onClick={() => move(q.id, q.options, i, 1)}><Glyph name="arrowDown" size={14} /></Btn>
+                          <Button variant="sticker-ghost" type="button" onClick={() => move(q.id, q.options, i, -1)}><Glyph name="arrowUp" size={14} /></Button>
+                          <Button variant="sticker-ghost" type="button" onClick={() => move(q.id, q.options, i, 1)}><Glyph name="arrowDown" size={14} /></Button>
                         </li>
                       ))}
                     </ol>
@@ -213,7 +214,7 @@ export default function AsesmenKerjakanPage({ params }: { params: Promise<{ id: 
                 </div>
               ))}
               <Toolbar>
-                <Btn type="button" onClick={kumpul} disabled={submitting}>{submitting ? "Mengumpulkan…" : "Kumpulkan jawaban"}</Btn>
+                <Button variant="sticker" type="button" onClick={kumpul} disabled={submitting}>{submitting ? "Mengumpulkan…" : "Kumpulkan jawaban"}</Button>
               </Toolbar>
             </>
           )}

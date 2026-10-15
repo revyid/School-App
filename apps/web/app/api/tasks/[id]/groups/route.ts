@@ -27,12 +27,12 @@ async function checkTask(schoolId: string, taskId: string, userId: string, role:
   const t = await runAsSchool(db, schoolId, (tx) =>
     tx.task.findUnique({
       where: { id: taskId },
-      select: { id: true, classId: true, isGroup: true, groupMin: true, groupMax: true, deadline: true, authorId: true },
+      select: { id: true, classId: true, isGroup: true, groupMin: true, groupMax: true, deadline: true, authorId: true, targets: { select: { classId: true } } },
     }));
   if (!t) return null;
   if (role === "GURU") {
     const mine = await guruClassIds(schoolId, userId);
-    if (!mine.has(t.classId)) return null;
+    if (!mine.has(t.classId) && !t.targets.some((x) => mine.has(x.classId))) return null;
   }
   return t;
 }
@@ -51,7 +51,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
   if (a.role === "SISWA") {
     if (!t.isGroup) return NextResponse.json({ error: "bukan tugas kelompok" }, { status: 404 });
     const cid = await siswaClassId(a.school.id, a.userId);
-    if (t.classId !== cid) return NextResponse.json({ error: "bukan tugas kelas Anda" }, { status: 403 });
+    if (t.classId !== cid && !t.targets.some((x) => x.classId === cid)) return NextResponse.json({ error: "bukan tugas kelas Anda" }, { status: 403 });
     const lock = await groupLockState(a.school.id, t.id, t.deadline);
     const groups = await runAsSchool(db, a.school.id, (tx) =>
       tx.taskGroup.findMany({
@@ -144,7 +144,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   // ---- Siswa ----
   if (!t.isGroup) return NextResponse.json({ error: "bukan tugas kelompok" }, { status: 400 });
   const cid = await siswaClassId(a.school.id, a.userId);
-  if (t.classId !== cid) return NextResponse.json({ error: "bukan tugas kelas Anda" }, { status: 403 });
+  if (t.classId !== cid && !t.targets.some((x) => x.classId === cid)) return NextResponse.json({ error: "bukan tugas kelas Anda" }, { status: 403 });
   const lock = await groupLockState(a.school.id, t.id, t.deadline);
   if (lock.locked) return NextResponse.json({ error: `kelompok terkunci: ${lock.reason}` }, { status: 409 });
 

@@ -2,7 +2,8 @@
 
 import { useState } from "react";
 import { api, useFetch } from "@/app/lib/api";
-import { PageHead, Panel, TextInput, Btn, Note } from "@/components/DashUI";
+import { PageHead, Panel, TextInput, Note } from "@/components/DashUI";
+import { Button } from "@/components/ui/button";
 
 interface KelasRow {
   id: string;
@@ -189,9 +190,9 @@ export default function NotifikasiAdminPage() {
           </label>
 
           <div style={{ display: "grid" }}>
-            <Btn type="submit" disabled={pushBusy} style={{ justifyContent: "center", width: "100%" }}>
+            <Button variant="sticker" type="submit" disabled={pushBusy} style={{ justifyContent: "center", width: "100%" }}>
               {pushBusy ? "Mengirim…" : "Kirim Push"}
-            </Btn>
+            </Button>
           </div>
         </form>
         {pushMsg && (
@@ -252,9 +253,9 @@ export default function NotifikasiAdminPage() {
           )}
 
           <div style={{ display: "grid" }}>
-            <Btn type="submit" disabled={waBusy} style={{ justifyContent: "center", width: "100%" }}>
+            <Button variant="sticker" type="submit" disabled={waBusy} style={{ justifyContent: "center", width: "100%" }}>
               {waBusy ? "Mengantrekan…" : "Kirim WA"}
-            </Btn>
+            </Button>
           </div>
         </form>
         {waMsg && (

@@ -28,7 +28,7 @@ async function loadAssessment(schoolId: string, id: string) {
   return runAsSchool(db, schoolId, (tx) =>
     tx.assessment.findUnique({
       where: { id: id.slice(0, 64) },
-      include: { questions: { orderBy: { position: "asc" } } },
+      include: { questions: { orderBy: { position: "asc" } }, targets: { select: { classId: true } } },
     }));
 }
 
@@ -45,7 +45,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
   }
   const prof = await runAsSchool(db, a.school.id, (tx) =>
     tx.studentProfile.findUnique({ where: { userId: a.userId }, select: { classId: true } }));
-  if (!prof?.classId || prof.classId !== as.classId) {
+  if (!prof?.classId || (prof.classId !== as.classId && !as.targets.some((x) => x.classId === prof.classId))) {
     return NextResponse.json({ error: "bukan kelas Anda" }, { status: 403 });
   }
   if (as.deadline && as.deadline.getTime() < Date.now()) {
@@ -114,7 +114,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   if (!as) return NextResponse.json({ error: "asesmen tidak ditemukan" }, { status: 404 });
   const prof = await runAsSchool(db, a.school.id, (tx) =>
     tx.studentProfile.findUnique({ where: { userId: a.userId }, select: { classId: true } }));
-  if (!prof?.classId || prof.classId !== as.classId) {
+  if (!prof?.classId || (prof.classId !== as.classId && !as.targets.some((x) => x.classId === prof.classId))) {
     return NextResponse.json({ error: "bukan kelas Anda" }, { status: 403 });
   }
   if (as.deadline && as.deadline.getTime() < Date.now()) {

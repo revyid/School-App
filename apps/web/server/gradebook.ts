@@ -1,6 +1,6 @@
 import { db } from "@sms/db/client";
 import { runAsSchool } from "@sms/db/tenant";
-import { guruClassIds } from "./lms-scope";
+import { assertClassAccess } from "./lms-scope";
 
 export type Gradebook = {
   tasks: { id: string; title: string }[];
@@ -18,8 +18,8 @@ export async function buildGradebook(
 ): Promise<Gradebook | { error: string; status: number }> {
   if (!classId) return { error: "classId wajib diisi", status: 400 };
   if (role === "GURU") {
-    const mine = await guruClassIds(schoolId, userId);
-    if (!mine.has(classId)) return { error: "bukan kelas Anda", status: 403 };
+    const chk = await assertClassAccess(schoolId, role, userId, classId);
+    if (!chk.ok) return { error: chk.error, status: chk.status };
   } else {
     const cls = await runAsSchool(db, schoolId, (tx) =>
       tx.class.findFirst({ where: { id: classId }, select: { id: true } }));

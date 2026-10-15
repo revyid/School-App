@@ -4,7 +4,9 @@
 import { useEffect, useState } from "react";
 import QRCode from "qrcode";
 import { api, useFetch } from "@/app/lib/api";
-import { PageHead, Panel, Toolbar, TextInput, Btn, Badge, WarmTable, warmCell, SegStat, Note, Err } from "@/components/DashUI";
+import { PageHead, Panel, Toolbar, TextInput, WarmTable, warmCell, SegStat, Note, Err } from "@/components/DashUI";
+import { Button } from "@/components/ui/button";
+import { Badge, statusVariant } from "@/components/ui/badge";
 
 export default function WaAdminPage() {
   const st = useFetch<{ connected: boolean; detail?: string; qr?: string | null }>("/api/wa/status");
@@ -58,7 +60,7 @@ export default function WaAdminPage() {
         {st.data && (
           <>
             <p style={{ display: "flex", gap: 8, alignItems: "center" }}>
-              Status: <Badge status={st.data.connected ? "AKTIF" : "ALPHA"}>{st.data.connected ? "Terhubung" : `Putus (${st.data.detail ?? "?"})`}</Badge>
+              Status: <Badge variant={statusVariant(st.data.connected ? "AKTIF" : "ALPHA")}>{st.data.connected ? "Terhubung" : `Putus (${st.data.detail ?? "?"})`}</Badge>
             </p>
             {!st.data.connected && st.data.qr && (
               <div>
@@ -72,7 +74,7 @@ export default function WaAdminPage() {
               </div>
             )}
             {!st.data.connected && !st.data.qr && <Note>QR belum tersedia — tunggu beberapa detik lalu muat ulang.</Note>}
-            <Toolbar><Btn kind="ghost" type="button" onClick={() => st.reload()}>Muat ulang status</Btn></Toolbar>
+            <Toolbar><Button variant="sticker-ghost" type="button" onClick={() => st.reload()}>Muat ulang status</Button></Toolbar>
           </>
         )}
       </Panel>
@@ -87,7 +89,7 @@ export default function WaAdminPage() {
               Isi pesan:
               <TextInput value={text} onChange={(e) => setText(e.target.value)} placeholder="Tulis pesan…" required />
             </label>
-            <Toolbar><Btn type="submit">Masukkan antrean</Btn></Toolbar>
+            <Toolbar><Button variant="sticker" type="submit">Masukkan antrean</Button></Toolbar>
             {sendMsg && <Note>{sendMsg}</Note>}
           </form>
       </Panel>
@@ -107,7 +109,7 @@ export default function WaAdminPage() {
                 <tr key={r.id}>
                   <td style={warmCell({ whiteSpace: "nowrap" })}>{r.to}</td>
                   <td style={warmCell()}>{r.text}</td>
-                  <td style={warmCell()}><Badge status={r.status.toUpperCase()}>{r.status}</Badge></td>
+                  <td style={warmCell()}><Badge variant={statusVariant(r.status.toUpperCase())}>{r.status}</Badge></td>
                   <td style={warmCell()}>{r.attempts}</td>
                   <td style={warmCell()}>{r.lastError ?? "-"}</td>
                 </tr>

@@ -1,20 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
-import { SESSION_COOKIE } from "@sms/shared/auth";
-import { requireRole } from "@/server/auth-gate";
+import { apiGate } from "@/server/api-gate";
 import { buildGradebook } from "@/server/gradebook";
 
 // GET /api/gradebook/export?classId=&subjectId= — .xlsx (ADMIN/GURU kelasnya).
 export async function GET(req: NextRequest): Promise<NextResponse> {
-  const a = await requireRole({
-    host: req.headers.get("host") ?? "",
-    token: req.cookies.get(SESSION_COOKIE)?.value,
-    pathname: new URL(req.url).pathname,
-    mutation: req.method !== "GET",
-    origin: req.headers.get("origin"),
-    referer: req.headers.get("referer"),
-    csrf: req.headers.get("x-csrf-token"),
-    roles: ["ADMIN", "GURU"],
-  });
+  const a = await apiGate(req, ["ADMIN", "GURU"]);
   if (!a.ok) return NextResponse.json({ error: a.error }, { status: a.status });
   const url = new URL(req.url);
   const classId = (url.searchParams.get("classId") ?? "").slice(0, 64);

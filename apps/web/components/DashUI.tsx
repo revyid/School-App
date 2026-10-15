@@ -4,7 +4,6 @@
 // icon rotate, metric-bars, streak dots, badge warna cerah.
 import * as React from "react";
 
-import ClickSpark from "./ClickSpark";
 import { IconStar } from "./Icons";
 
 // ---------- PageHead ----------
@@ -145,59 +144,6 @@ const fieldStyle: React.CSSProperties = {
 
 export function TextInput(props: React.InputHTMLAttributes<HTMLInputElement>) {
   return <input {...props} style={{ ...fieldStyle, ...(props.style as object ?? {}) }} />;
-}
-
-export function TextSelect(props: React.SelectHTMLAttributes<HTMLSelectElement>) {
-  return <select {...props} style={{ ...fieldStyle, width: "auto", ...(props.style as object ?? {}) }} />;
-}
-
-// ---------- Buttons ----------
-export function Btn({ kind = "primary", ...props }: React.ButtonHTMLAttributes<HTMLButtonElement> & { kind?: "primary" | "ghost" | "dark" }) {
-  const cls = kind === "primary" ? "btn-sticker btn-primary" : kind === "dark" ? "btn-sticker" : "btn-sticker btn-ghost";
-  const dark = kind === "dark" ? { background: "#171716", color: "#fffdf8" } : {};
-  
-  // Micro-interaction spark hanya untuk tombol primer atau dark (action utama)
-  if (kind === "primary" || kind === "dark") {
-    return (
-      <ClickSpark sparkColor="#e85e43" sparkSize={6} sparkRadius={20} sparkCount={6} duration={400}>
-        <button {...props} className={`${cls} ${props.className ?? ""}`} style={{ textDecoration: "none", ...dark, ...(props.style as object ?? {}) }} />
-      </ClickSpark>
-    );
-  }
-  
-  return <button {...props} className={`${cls} ${props.className ?? ""}`} style={{ textDecoration: "none", ...dark, ...(props.style as object ?? {}) }} />;
-}
-
-export function LinkBtn({ kind = "ghost", ...props }: React.AnchorHTMLAttributes<HTMLAnchorElement> & { kind?: "primary" | "ghost" | "dark" }) {
-  const cls = kind === "primary" ? "btn-sticker btn-primary" : kind === "dark" ? "btn-sticker" : "btn-sticker btn-ghost";
-  const dark = kind === "dark" ? { background: "#171716", color: "#fffdf8" } : {};
-  return <a {...props} className={`${cls} ${props.className ?? ""}`} style={{ textDecoration: "none", ...dark, ...(props.style as object ?? {}) }} />;
-}
-
-// ---------- Badge ----------
-const BADGE: Record<string, { bg: string; fg: string }> = {
-  HADIR:    { bg: "#aec6a4", fg: "#171716" },
-  SUDAH:    { bg: "#aec6a4", fg: "#171716" },
-  AKTIF:    { bg: "#aec6a4", fg: "#171716" },
-  IZIN:     { bg: "#97c4db", fg: "#171716" },
-  SAKIT:    { bg: "#f5c94a", fg: "#171716" },
-  BELUM:    { bg: "#eeeadd", fg: "#74746d" },
-  ALPHA:    { bg: "#e85e43", fg: "#fffdf8" },
-  TERLAMBAT:{ bg: "#f5c94a", fg: "#171716" },
-  TUTUP:    { bg: "#eeeadd", fg: "#74746d" },
-  PENDING:  { bg: "#f5c94a", fg: "#171716" },
-  APPROVED: { bg: "#aec6a4", fg: "#171716" },
-  REJECTED: { bg: "#e85e43", fg: "#fffdf8" },
-  NONAKTIF: { bg: "#eeeadd", fg: "#74746d" },
-};
-
-export function Badge({ status, children }: { status: string; children?: React.ReactNode }) {
-  const b = BADGE[status.toUpperCase()] ?? { bg: "#eeeadd", fg: "#74746d" };
-  return (
-    <span style={{ display: "inline-block", background: b.bg, color: b.fg, borderRadius: 999, padding: "3px 12px", fontSize: 12, fontWeight: 700, whiteSpace: "nowrap" }}>
-      {children ?? status}
-    </span>
-  );
 }
 
 // ---------- Toolbar / Note / Err ----------

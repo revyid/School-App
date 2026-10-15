@@ -70,8 +70,8 @@ export default function GuruDashboard() {
               <Link href="/guru/scanner" className="btn-sticker" style={{ background: "#f5c94a", color: "#171716", borderColor: "#171716" }}>
                 Pindai kehadiran
               </Link>
-              <Link href="/guru/tugas" className="btn-sticker btn-ghost">
-                Kelola tugas
+              <Link href="/guru/tugas/new" className="btn-sticker btn-ghost">
+                Buat tugas
               </Link>
             </div>
           </div>
@@ -179,12 +179,20 @@ export default function GuruDashboard() {
         </Reveal>
         <Reveal delay={100}>
           <div className="card" style={{ padding: 20, background: "#aec6a4" }}>
-            <h2 style={{ fontSize: 17, fontWeight: 800, margin: "0 0 12px" }}>Jalan pintas</h2>
-            <ul style={{ listStyle: "none", margin: 0, padding: 0, display: "grid", gap: 10, fontSize: 14 }}>
-              <li><Link href="/guru/scanner" style={{ fontWeight: 700, color: "#171716" }}>Pindai QR kehadiran</Link></li>
-              <li><Link href="/guru/kehadiran" style={{ fontWeight: 700, color: "#171716" }}>Rekap kehadiran</Link></li>
-              <li><Link href="/guru/asesmen" style={{ fontWeight: 700, color: "#171716" }}>Asesmen</Link></li>
-              <li><Link href="/guru/rapor" style={{ fontWeight: 700, color: "#171716" }}>Rapor</Link></li>
+            <h2 style={{ fontSize: 17, fontWeight: 800, margin: "0 0 12px" }}>Tautan</h2>
+            <ul style={{ listStyle: "none", margin: 0, padding: 0, display: "grid", gap: 8, fontSize: 14 }}>
+              {[
+                { href: "/guru/scanner", label: "Pindai QR kehadiran" },
+                { href: "/guru/kehadiran", label: "Rekap kehadiran" },
+                { href: "/guru/tugas?jenis=asesmen", label: "Asesmen" },
+                { href: "/guru/rapor", label: "Rapor" },
+              ].map((l) => (
+                <li key={l.href}>
+                  <Link href={l.href} className="card" style={{ display: "block", padding: "10px 14px", fontWeight: 700, color: "#171716", background: "#fffdf8" }}>
+                    {l.label}
+                  </Link>
+                </li>
+              ))}
             </ul>
           </div>
         </Reveal>

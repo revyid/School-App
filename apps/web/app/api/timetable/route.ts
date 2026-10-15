@@ -1,33 +1,21 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
-import { SESSION_COOKIE } from "@sms/shared/auth";
-import { requireRole } from "@/server/auth-gate";
+import { apiGate } from "@/server/api-gate";
 import { db } from "@sms/db/client";
 import { runAsSchool } from "@sms/db/tenant";
 import { logAuth } from "@/server/audit";
 import { timetableSlotSchema } from "@sms/shared/master";
 import { siswaClassId } from "@/server/lms-scope";
-
-async function gate(req: NextRequest, roles: ("ADMIN" | "GURU" | "SISWA")[]) {
-  return requireRole({
-    host: req.headers.get("host") ?? "",
-    token: req.cookies.get(SESSION_COOKIE)?.value,
-    pathname: new URL(req.url).pathname,
-    mutation: req.method !== "GET",
-    origin: req.headers.get("origin"),
-    referer: req.headers.get("referer"),
-    csrf: req.headers.get("x-csrf-token"),
-    roles,
-  });
-}
+import { validateSlotRefs } from "@/server/timetable-subjects";
 
 // GET /api/timetable?classId= — ADMIN/GURU bebas; SISWA hanya kelasnya sendiri
 // (tanpa classId = default kelas sendiri; classId lain → 403).
 export async function GET(req: NextRequest) {
-  const a = await gate(req, ["ADMIN", "GURU", "SISWA"]);
+  const a = await apiGate(req, ["ADMIN", "GURU", "SISWA"]);
   if (!a.ok) return NextResponse.json({ error: a.error }, { status: a.status });
   const classParam = (new URL(req.url).searchParams.get("classId") ?? "").slice(0, 64);
   const teacherParam = (new URL(req.url).searchParams.get("teacherId") ?? "").slice(0, 64);
+  const scope = (new URL(req.url).searchParams.get("scope") ?? "").slice(0, 16);
 
   if (a.role === "SISWA") {
     const mine = await siswaClassId(a.school.id, a.userId);
@@ -51,7 +39,29 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ rows });
   }
 
-  // GURU / ADMIN
+  // GURU / ADMIN — scope=all hanya ADMIN.
+  if (scope === "all") {
+    if (a.role !== "ADMIN") return NextResponse.json({ error: "forbidden" }, { status: 403 });
+    const rows = await runAsSchool(db, a.school.id, (tx) =>
+      tx.timetableSlot.findMany({
+        include: {
+          subjectRef: { select: { id: true, name: true } },
+          teacher: { select: { id: true, name: true } },
+          class: { select: { id: true, name: true } },
+        },
+        orderBy: [{ dayOfWeek: "asc" }, { class: { name: "asc" } }, { startTime: "asc" }],
+        take: 2000,
+      }),
+    );
+    return NextResponse.json({
+      rows: rows.map((s) => ({
+        id: s.id, classId: s.classId, className: s.class.name,
+        dayOfWeek: s.dayOfWeek, startTime: s.startTime, endTime: s.endTime,
+        subjectName: s.subjectRef?.name ?? s.subjectName ?? null,
+        teacherName: s.teacher?.name ?? null,
+      })),
+    });
+  }
   const where: { classId?: string; teacherId?: string } = {};
   if (classParam) where.classId = classParam;
   if (teacherParam === "me") {
@@ -81,23 +91,13 @@ export async function GET(req: NextRequest) {
 
 // POST /api/timetable — ADMIN: tambah slot (validasi relasi se-sekolah).
 export async function POST(req: NextRequest) {
-  const a = await gate(req, ["ADMIN"]);
+  const a = await apiGate(req, ["ADMIN"]);
   if (!a.ok) return NextResponse.json({ error: a.error }, { status: a.status });
   const body = timetableSlotSchema.safeParse(await req.json().catch(() => null));
   if (!body.success) return NextResponse.json({ error: "input tidak valid", detail: body.error.issues }, { status: 400 });
   const d = body.data;
-  const cls = await runAsSchool(db, a.school.id, (tx) => tx.class.findUnique({ where: { id: d.classId } }));
-  if (!cls) return NextResponse.json({ error: "kelas tidak ditemukan" }, { status: 400 });
-  if (d.subjectId) {
-    const s = await runAsSchool(db, a.school.id, (tx) => tx.subject.findUnique({ where: { id: d.subjectId! } }));
-    if (!s) return NextResponse.json({ error: "mapel tidak ditemukan" }, { status: 400 });
-  }
-  if (d.teacherId) {
-    const t = await runAsSchool(db, a.school.id, (tx) =>
-      tx.user.findFirst({ where: { id: d.teacherId!, role: "GURU" } }),
-    );
-    if (!t) return NextResponse.json({ error: "guru tidak ditemukan" }, { status: 400 });
-  }
+  const v = await validateSlotRefs(a.school.id, d);
+  if (!v.ok) return NextResponse.json({ error: v.error }, { status: v.status });
   const row = await runAsSchool(db, a.school.id, (tx) =>
     tx.timetableSlot.create({
       data: {
@@ -118,7 +118,7 @@ export async function POST(req: NextRequest) {
 
 // DELETE /api/timetable?id= — ADMIN.
 export async function DELETE(req: NextRequest) {
-  const a = await gate(req, ["ADMIN"]);
+  const a = await apiGate(req, ["ADMIN"]);
   if (!a.ok) return NextResponse.json({ error: a.error }, { status: a.status });
   const id = (new URL(req.url).searchParams.get("id") ?? "").slice(0, 64);
   if (!id) return NextResponse.json({ error: "id wajib diisi" }, { status: 400 });
@@ -140,7 +140,7 @@ export const bulkSchema = z.object({
 
 // PUT /api/timetable — ADMIN: ganti seluruh jadwal satu kelas (idempotent).
 export async function PUT(req: NextRequest) {
-  const a = await gate(req, ["ADMIN"]);
+  const a = await apiGate(req, ["ADMIN"]);
   if (!a.ok) return NextResponse.json({ error: a.error }, { status: a.status });
   const body = bulkSchema.safeParse(await req.json().catch(() => null));
   if (!body.success) return NextResponse.json({ error: "input tidak valid" }, { status: 400 });
@@ -177,25 +177,15 @@ const patchSchema = timetableSlotSchema.extend({ id: z.string().min(1).max(64) }
 
 // PATCH /api/timetable — ADMIN: ubah satu slot (validasi relasi sama dengan POST).
 export async function PATCH(req: NextRequest) {
-  const a = await gate(req, ["ADMIN"]);
+  const a = await apiGate(req, ["ADMIN"]);
   if (!a.ok) return NextResponse.json({ error: a.error }, { status: a.status });
   const body = patchSchema.safeParse(await req.json().catch(() => null));
   if (!body.success) return NextResponse.json({ error: "input tidak valid", detail: body.error.issues }, { status: 400 });
   const d = body.data;
   const cur = await runAsSchool(db, a.school.id, (tx) => tx.timetableSlot.findUnique({ where: { id: d.id } }));
   if (!cur) return NextResponse.json({ error: "slot tidak ditemukan" }, { status: 404 });
-  const cls = await runAsSchool(db, a.school.id, (tx) => tx.class.findUnique({ where: { id: d.classId } }));
-  if (!cls) return NextResponse.json({ error: "kelas tidak ditemukan" }, { status: 400 });
-  if (d.subjectId) {
-    const s = await runAsSchool(db, a.school.id, (tx) => tx.subject.findUnique({ where: { id: d.subjectId! } }));
-    if (!s) return NextResponse.json({ error: "mapel tidak ditemukan" }, { status: 400 });
-  }
-  if (d.teacherId) {
-    const t = await runAsSchool(db, a.school.id, (tx) =>
-      tx.user.findFirst({ where: { id: d.teacherId!, role: "GURU" } }),
-    );
-    if (!t) return NextResponse.json({ error: "guru tidak ditemukan" }, { status: 400 });
-  }
+  const v = await validateSlotRefs(a.school.id, d);
+  if (!v.ok) return NextResponse.json({ error: v.error }, { status: v.status });
   const row = await runAsSchool(db, a.school.id, (tx) =>
     tx.timetableSlot.update({
       where: { id: d.id },

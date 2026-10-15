@@ -2,7 +2,10 @@
 
 import { useEffect, useState } from "react";
 import { api, useFetch } from "@/app/lib/api";
-import { PageHead, Panel, Toolbar, TextInput, TextSelect, Btn, Note, Err } from "@/components/DashUI";
+import { PageHead, Panel, Toolbar, TextInput, Note, Err } from "@/components/DashUI";
+import { Select, SelectTrigger, SelectValue, SelectPositioner, SelectPopup, SelectItem } from "@/components/ui/select";
+import { Button } from "@/components/ui/button";
+import UploadPopup from "@/components/UploadPopup";
 
 export default function SettingsPage() {
   const { data } = useFetch<{ settings: Record<string, unknown> }>(`/api/settings`);
@@ -10,10 +13,11 @@ export default function SettingsPage() {
   const [msg, setMsg] = useState<string | null>(null);
   const [logoMsg, setLogoMsg] = useState<string | null>(null);
   const [logoVer, setLogoVer] = useState(0);
+  const [logoPreview, setLogoPreview] = useState<string | null>(null);
 
-  async function uploadLogo(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
+  async function uploadLogoFile(file: File | null) {
     if (!file) return;
+    setLogoPreview(URL.createObjectURL(file));
     setLogoMsg("Mengunggah…");
     try {
       const form = new FormData();
@@ -98,8 +102,12 @@ export default function SettingsPage() {
         />
         <label style={{ display: "grid", gap: 6, fontSize: 13, color: "#74746d", marginTop: 10 }}>
           Unggah logo baru (PNG/JPG/WEBP, maks 2MB):
-          <input type="file" accept="image/png,image/jpeg,image/webp" onChange={uploadLogo} />
+          <UploadPopup label="Pilih logo" maxMb={2} accept="image/png,image/jpeg,image/webp" onFile={uploadLogoFile} />
         </label>
+        {logoPreview && (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={logoPreview} alt="Pratinjau logo baru" width={56} height={56} style={{ borderRadius: 12, objectFit: "cover", border: "1px solid rgba(23,23,22,.14)", marginTop: 8 }} />
+        )}
         {logoMsg && <Note>{logoMsg}</Note>}
       </Panel>
       <Panel style={{ maxWidth: 680 }}>
@@ -121,18 +129,24 @@ export default function SettingsPage() {
             <label style={{ display: "grid", gap: 6, fontSize: 13, color: "#74746d", flex: "1 1 220px" }}>Retensi foto (hari) <TextInput type="number" value={f.photoRetentionDays ?? ""} onChange={set("photoRetentionDays")} style={{ width: "100%" }} /></label>
           </div>
           <label style={{ display: "grid", gap: 6, fontSize: 13, color: "#74746d" }}>Mode password awal{" "}
-            <TextSelect value={f.defaultPasswordMode ?? "random"} onChange={set("defaultPasswordMode")} style={{ width: "100%" }}>
-              <option value="random">Acak</option>
-              <option value="nisn">NISN (minta ganti saat login pertama)</option>
-            </TextSelect>
+            <Select value={f.defaultPasswordMode ?? "random"} onValueChange={(v) => setF((p) => ({ ...p, defaultPasswordMode: v ?? "random" }))}>
+              <SelectTrigger style={{ width: "100%" }}><SelectValue /></SelectTrigger>
+              <SelectPositioner><SelectPopup>
+                <SelectItem value="random">Acak</SelectItem>
+                <SelectItem value="nisn">NISN (minta ganti saat login pertama)</SelectItem>
+              </SelectPopup></SelectPositioner>
+            </Select>
           </label>
           <section aria-labelledby="ai-settings-title" style={{ display: "grid", gap: 8, border: "1px solid rgba(23,23,22,.14)", borderRadius: 12, padding: 14, background: "#fffdf8" }}>
             <h2 id="ai-settings-title" style={{ fontSize: 16, margin: 0, color: "#171716" }}>Asisten AI & privasi</h2>
             <label style={{ display: "grid", gap: 6, fontSize: 13, color: "#74746d" }}>Chat AI
-              <TextSelect value={f.aiChatEnabled ?? "false"} onChange={set("aiChatEnabled")} style={{ width: "100%" }}>
-                <option value="false">Nonaktif</option>
-                <option value="true">Aktif (jika diizinkan konfigurasi server)</option>
-              </TextSelect>
+              <Select value={f.aiChatEnabled ?? "false"} onValueChange={(v) => setF((p) => ({ ...p, aiChatEnabled: v ?? "false" }))}>
+                <SelectTrigger style={{ width: "100%" }}><SelectValue /></SelectTrigger>
+                <SelectPositioner><SelectPopup>
+                  <SelectItem value="false">Nonaktif</SelectItem>
+                  <SelectItem value="true">Aktif (jika diizinkan konfigurasi server)</SelectItem>
+                </SelectPopup></SelectPositioner>
+              </Select>
             </label>
             <Note>AI hanya tahu panduan website dan info publik sekolah — tidak pernah membaca data pribadi siapa pun (tanpa nama, nilai, absensi, atau tugas individual).</Note>
           </section>
@@ -151,7 +165,7 @@ export default function SettingsPage() {
             </label>
           </div>
           <Note>Koordinat ini menentukan titik lokasi sekolah pada Peta Digital di halaman depan.</Note>
-          <Toolbar><Btn onClick={save}>Simpan</Btn></Toolbar>
+          <Toolbar><Button variant="sticker" onClick={save}>Simpan</Button></Toolbar>
           {msg && <p style={{ fontWeight: 700 }}>{msg}</p>}
         </div>
       </Panel>

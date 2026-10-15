@@ -60,11 +60,11 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   const t = await runAsSchool(db, a.school.id, (tx) =>
     tx.task.findUnique({
       where: { id: taskId },
-      include: { categories: { orderBy: { position: "asc" } } },
+      include: { categories: { orderBy: { position: "asc" } }, targets: { select: { classId: true } } },
     }));
   if (!t) return NextResponse.json({ error: "tugas tidak ditemukan" }, { status: 404 });
   const cid = await siswaClassId(a.school.id, a.userId);
-  if (t.classId !== cid) return NextResponse.json({ error: "bukan tugas kelas Anda" }, { status: 403 });
+  if (t.classId !== cid && !t.targets.some((x) => x.classId === cid)) return NextResponse.json({ error: "bukan tugas kelas Anda" }, { status: 403 });
   const now = new Date();
   if (t.status !== "PUBLISHED" || t.publishAt.getTime() > now.getTime()) {
     return NextResponse.json({ error: "tugas belum dipublikasikan" }, { status: 404 });

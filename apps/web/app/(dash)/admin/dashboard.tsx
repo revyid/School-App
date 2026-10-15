@@ -34,7 +34,7 @@ export default function AdminDashboard() {
             {wa.data && wa.data.connected === false ? "Sesi WhatsApp putus — sambungkan ulang di halaman WA." : ""}
           </p>
           <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
-            <Link href="/admin/import" className="btn-sticker" style={{ background: "#f5c94a", color: "#171716", borderColor: "#f5c94a" }}>
+            <Link href="/admin/pengguna?tab=siswa" className="btn-sticker" style={{ background: "#f5c94a", color: "#171716", borderColor: "#f5c94a" }}>
               Impor data
             </Link>
             <Link href="/admin/wa" className="btn-sticker" style={{ background: "#fffdf8", color: "#171716", borderColor: "#fffdf8" }}>
@@ -63,7 +63,7 @@ export default function AdminDashboard() {
               {students.loading ? "…" : metric(students)}
             </p>
             <p style={{ fontSize: 12, color: "#74746d", margin: 0 }}>
-              <Link href="/admin/siswa" style={{ fontWeight: 700, color: "#171716" }}>Kelola siswa</Link>
+              <Link href="/admin/pengguna?tab=siswa" style={{ fontWeight: 700, color: "#171716" }}>Kelola siswa</Link>
             </p>
           </div>
         </Reveal>
@@ -74,7 +74,7 @@ export default function AdminDashboard() {
               {teachers.loading ? "…" : metric(teachers)}
             </p>
             <p style={{ fontSize: 12, color: "#74746d", margin: 0 }}>
-              <Link href="/admin/guru" style={{ fontWeight: 700, color: "#171716" }}>Kelola guru</Link>
+              <Link href="/admin/pengguna?tab=guru" style={{ fontWeight: 700, color: "#171716" }}>Kelola guru</Link>
             </p>
           </div>
         </Reveal>

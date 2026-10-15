@@ -2,7 +2,9 @@
 
 import { useState } from "react";
 import { api, useFetch } from "@/app/lib/api";
-import { PageHead, Panel, Toolbar, TextInput, TextSelect, Btn, WarmTable, warmCell, Note, Err } from "@/components/DashUI";
+import { PageHead, Panel, Toolbar, TextInput, WarmTable, warmCell, Note, Err } from "@/components/DashUI";
+import { Select, SelectTrigger, SelectValue, SelectPositioner, SelectPopup, SelectItem } from "@/components/ui/select";
+import { Button } from "@/components/ui/button";
 import ConfirmDialog from "@/components/ConfirmDialog";
 
 interface ClassRow {
@@ -57,7 +59,7 @@ export default function ClassesPage() {
                 <td style={warmCell({ fontWeight: 700 })}>{c.name}</td>
                 <td style={warmCell()}>{c.homeroomTeacher?.name ?? "-"}</td>
                 <td style={warmCell()}>{c._count.students}</td>
-                <td style={warmCell()}><Btn kind="ghost" onClick={() => remove(c.id, c.name)}>Hapus</Btn></td>
+                <td style={warmCell()}><Button variant="sticker-ghost" onClick={() => remove(c.id, c.name)}>Hapus</Button></td>
               </tr>
             ))}
           </WarmTable>
@@ -67,13 +69,15 @@ export default function ClassesPage() {
         <h2 className="display" style={{ fontSize: 18, margin: "0 0 12px" }}>Tambah kelas</h2>
         <Toolbar>
           <TextInput placeholder="Nama kelas (mis. VII-A)" value={name} onChange={(e) => setName(e.target.value)} style={{ maxWidth: 220 }} />
-          <TextSelect value={homeroom} onChange={(e) => setHomeroom(e.target.value)}>
-            <option value="">Tanpa wali kelas</option>
-            {teachers?.rows.map((t) => (
-              <option key={t.id} value={t.id}>{t.name}</option>
-            ))}
-          </TextSelect>
-          <Btn onClick={create}>Tambah</Btn>
+          <Select value={homeroom} onValueChange={(v) => setHomeroom(v ?? "")}>
+            <SelectTrigger><SelectValue placeholder="Tanpa wali kelas" /></SelectTrigger>
+            <SelectPositioner><SelectPopup>
+              {teachers?.rows.map((t) => (
+                <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>
+              ))}
+            </SelectPopup></SelectPositioner>
+          </Select>
+          <Button variant="sticker" onClick={create}>Tambah</Button>
         </Toolbar>
       </Panel>
       <ConfirmDialog

@@ -14,6 +14,7 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { TASK_TYPE_LABEL, SUBMIT_STATE_LABEL, UPLOAD_ACCEPT_LABEL } from "@sms/shared/lms";
+import UploadPopup from "@/components/UploadPopup";
 import { ArrowLeftIcon, FileTextIcon, ImageIcon, FileUpIcon, UsersIcon, CheckCircle2Icon, XCircleIcon } from "lucide-react";
 
 interface Mat { id: string; kind: string; text?: string; fileName: string | null; mime: string | null; size?: number | null; isMain: boolean; isExample: boolean; categoryId?: string | null }
@@ -190,7 +191,7 @@ export default function SiswaTugasDetail({ params }: { params: Promise<{ id: str
       {/* 4. Kumpulkan / Kirim ulang (tetap terbuka selama belum TUTUP) */}
       {!closed && (
         <section className="space-y-3">
-          <h2 className="text-sm font-extrabold uppercase tracking-wide text-muted-strong">{submitted ? "Kirim ulang" : "Kumpulkan"}</h2>
+          <h2 className="text-sm font-extrabold uppercase tracking-wide text-muted-strong">{submitted ? "Kumpulkan ulang" : "Kumpulkan"}</h2>
           {needGroup ? (
             <div className="card border-dashed p-5 text-center">
               <p className="text-sm font-bold">Bentuk kelompok dulu</p>
@@ -222,19 +223,15 @@ export default function SiswaTugasDetail({ params }: { params: Promise<{ id: str
                     ))}
                   </div>
                 )}
-                <label className="mt-3 flex cursor-pointer flex-col items-center gap-1.5 rounded-2xl border border-dashed border-line bg-paper/50 px-4 py-6 text-center hover:bg-paper">
-                  <FileUpIcon className="size-6 text-muted-strong" />
-                  <span className="text-sm font-bold">{catFiles[c.id] ? catFiles[c.id]!.name : "Klik atau seret file ke sini"}</span>
-                  <span className="text-xs text-muted-foreground">
-                    {catFiles[c.id] ? `${fmtSize(catFiles[c.id]!.size)} · klik untuk ganti` : `Maks 1 file (${c.accept.map((a) => UPLOAD_ACCEPT_LABEL[a] ?? a).join("/")})`}
-                  </span>
-                  <input
-                    type="file"
-                    className="sr-only"
+                <div className="mt-3">
+                  <UploadPopup
+                    label={catFiles[c.id] ? catFiles[c.id]!.name : "Klik atau seret file ke sini"}
+                    hint={`Maks 1 file (${c.accept.map((a) => UPLOAD_ACCEPT_LABEL[a] ?? a).join("/")})`}
+                    maxMb={50}
                     accept={c.accept.map((a) => ({ PDF: ".pdf", IMAGE: "image/*", VIDEO: "video/mp4,video/webm", DOC: ".zip,.docx,.xlsx,.pptx" })[a] ?? "*/*").join(",")}
-                    onChange={(e) => setCatFiles((prev) => ({ ...prev, [c.id]: e.target.files?.[0] ?? null }))}
+                    onFile={(f) => setCatFiles((prev) => ({ ...prev, [c.id]: f }))}
                   />
-                </label>
+                </div>
               </div>
             ))
           ) : (
@@ -249,9 +246,8 @@ export default function SiswaTugasDetail({ params }: { params: Promise<{ id: str
                 <Input id="jawaban-link" value={link} onChange={(e) => setLink(e.target.value)} placeholder="https://…" inputMode="url" />
               </div>
               <div className="grid gap-1.5">
-                <Label htmlFor="jawaban-file">File (opsional, maks 10MB)</Label>
-                <input id="jawaban-file" type="file" className="text-sm" onChange={(e) => setFile(e.target.files?.[0] ?? null)} />
-                {file && <p className="text-xs text-muted-foreground">{file.name} · {fmtSize(file.size)}</p>}
+                <Label>File (opsional, maks 10MB)</Label>
+                <UploadPopup label="Pilih file jawaban" maxMb={10} onFile={setFile} />
               </div>
               <div className="grid gap-1.5">
                 <Label htmlFor="jawaban-catatan">Catatan untuk guru (opsional)</Label>
@@ -272,7 +268,7 @@ export default function SiswaTugasDetail({ params }: { params: Promise<{ id: str
             disabled={busy || (hasCategories ? missingRequired.length > 0 : (!text.trim() && !link.trim() && !file)) || needGroup}
             onClick={() => void kirim()}
           >
-            {busy ? "Mengirim…" : "Kirim"}
+            {busy ? "Mengumpulkan…" : submitted ? "Kumpulkan ulang" : "Kumpulkan"}
           </Button>
         </section>
       )}
@@ -289,11 +285,11 @@ export default function SiswaTugasDetail({ params }: { params: Promise<{ id: str
           <div className="flex items-center gap-2">
             <CheckCircle2Icon className="size-5 text-olive-deep" />
             <h2 className="text-sm font-extrabold uppercase tracking-wide text-muted-strong">
-              Terkirim {detail.data.mySubmission.isLate ? "(terlambat)" : "✓"}
+              Terkumpulkan {detail.data.mySubmission.isLate ? "(terlambat)" : "✓"}
             </h2>
           </div>
           <p className="mt-2 text-sm">
-            Dikirim: {new Date(detail.data.mySubmission.submittedAt).toLocaleString("id-ID")} · Nilai:{" "}
+            Dikumpulkan: {new Date(detail.data.mySubmission.submittedAt).toLocaleString("id-ID")} · Nilai:{" "}
             <strong>{detail.data.mySubmission.score ?? "belum dinilai"}</strong>
           </p>
           {detail.data.mySubmission.feedback && (
@@ -302,12 +298,12 @@ export default function SiswaTugasDetail({ params }: { params: Promise<{ id: str
           <div className="mt-2 flex flex-wrap gap-2">
             {(detail.data.mySubmission.files ?? []).map((f) => (
               <a key={f.fileName} href={fileUrl(t.id, f.fileName)} className="rounded-full border border-line bg-cream px-3 py-1 text-xs font-bold text-ink hover:bg-paper">
-                File terkirim
+                File terkumpulkan
               </a>
             ))}
           </div>
           {!closed && (
-            <p className="mt-3 text-xs text-muted-foreground">Kirim ulang masih mungkin sampai batas waktu — formulir di atas tetap terbuka.</p>
+            <p className="mt-3 text-xs text-muted-foreground">Kumpulkan ulang masih mungkin sampai batas waktu — formulir di atas tetap terbuka.</p>
           )}
         </section>
       )}

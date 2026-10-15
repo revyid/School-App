@@ -1,25 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
-import { SESSION_COOKIE } from "@sms/shared/auth";
-import { requireRole } from "@/server/auth-gate";
+import { apiGate } from "@/server/api-gate";
 import { hit } from "@/server/rate-limit";
 import { db } from "@sms/db/client";
 import { runAsSchool } from "@sms/db/tenant";
 import { logAuth } from "@/server/audit";
 import { assessmentInputSchema } from "@sms/shared/assess";
-import { guruClassIds } from "@/server/lms-scope";
-
-async function gate(req: NextRequest, roles: ("ADMIN" | "GURU" | "SISWA")[]) {
-  return requireRole({
-    host: req.headers.get("host") ?? "",
-    token: req.cookies.get(SESSION_COOKIE)?.value,
-    pathname: new URL(req.url).pathname,
-    mutation: req.method !== "GET",
-    origin: req.headers.get("origin"),
-    referer: req.headers.get("referer"),
-    csrf: req.headers.get("x-csrf-token"),
-    roles,
-  });
-}
+import { assertClassAccess } from "@/server/lms-scope";
 
 function stripKeys<T extends { correctIndex?: unknown; correctOrder?: unknown }>(q: T): Omit<T, "correctIndex" | "correctOrder"> {
   const { correctIndex: _a, correctOrder: _b, ...rest } = q;
@@ -28,7 +14,7 @@ function stripKeys<T extends { correctIndex?: unknown; correctOrder?: unknown }>
 
 // GET /api/assessments — GURU: miliknya (+ADMIN semua). SISWA: yang publishAt lewat & kelasnya.
 export async function GET(req: NextRequest) {
-  const a = await gate(req, ["ADMIN", "GURU", "SISWA"]);
+  const a = await apiGate(req, ["ADMIN", "GURU", "SISWA"]);
   if (!a.ok) return NextResponse.json({ error: a.error }, { status: a.status });
   const now = new Date();
   if (a.role === "SISWA") {
@@ -38,7 +24,7 @@ export async function GET(req: NextRequest) {
     const classId: string = prof.classId;
     const rows = await runAsSchool(db, a.school.id, (tx) =>
       tx.assessment.findMany({
-        where: { classId, publishAt: { lte: now } },
+        where: { OR: [{ classId }, { targets: { some: { classId } } }], publishAt: { lte: now } },
         select: {
           id: true, title: true, deadline: true, durationMin: true, createdAt: true, showChart: true,
           subjectId: true, subject: { select: { name: true } },
@@ -56,8 +42,15 @@ export async function GET(req: NextRequest) {
       })),
     });
   }
-  const where: { authorId?: string } = {};
+  const url = new URL(req.url);
+  const classFilter = (url.searchParams.get("classId") ?? "").slice(0, 64) || null;
+  const where: { authorId?: string; OR?: object[] } = {};
   if (a.role === "GURU") where.authorId = a.userId;
+  if (classFilter) {
+    const chk = await assertClassAccess(a.school.id, a.role, a.userId, classFilter);
+    if (!chk.ok) return NextResponse.json({ error: chk.error }, { status: chk.status });
+    where.OR = [{ classId: classFilter }, { targets: { some: { classId: classFilter } } }];
+  }
   const rows = await runAsSchool(db, a.school.id, (tx) =>
     tx.assessment.findMany({
       where,
@@ -75,7 +68,7 @@ export async function GET(req: NextRequest) {
 
 // POST /api/assessments — GURU/ADMIN buat asesmen (snapshot soal dari bank + inline).
 export async function POST(req: NextRequest) {
-  const a = await gate(req, ["ADMIN", "GURU"]);
+  const a = await apiGate(req, ["ADMIN", "GURU"]);
   if (!a.ok) return NextResponse.json({ error: a.error }, { status: a.status });
   const rl = await hit(`rl:assess:${a.school.id}:${a.userId}`, 30, 3600);
   if (!rl.ok) return NextResponse.json({ error: "Terlalu sering, coba lagi nanti" }, { status: 429 });
@@ -93,10 +86,9 @@ export async function POST(req: NextRequest) {
     }]);
   const assessClassIds = [...new Set(assessTargets.map((t) => t.classId))];
   if (a.role === "GURU") {
-    const mine = await guruClassIds(a.school.id, a.userId);
-    const outside = assessClassIds.filter((c) => !mine.has(c));
-    if (outside.length > 0) {
-      return NextResponse.json({ error: "bukan kelas Anda" }, { status: 403 });
+    const chk = await assertClassAccess(a.school.id, a.role, a.userId, assessClassIds);
+    if (!chk.ok) {
+      return NextResponse.json({ error: chk.error }, { status: chk.status });
     }
   } else {
     const cls = await runAsSchool(db, a.school.id, (tx) =>

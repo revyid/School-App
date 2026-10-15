@@ -1,31 +1,17 @@
 import { NextRequest, NextResponse } from "next/server";
-import { SESSION_COOKIE } from "@sms/shared/auth";
-import { requireRole } from "@/server/auth-gate";
+import { apiGate } from "@/server/api-gate";
 import { hit } from "@/server/rate-limit";
 import { db } from "@sms/db/client";
 import { runAsSchool } from "@sms/db/tenant";
 import { logAuth } from "@/server/audit";
 import { taskInputSchema, isVisibleToStudent, submitState } from "@sms/shared/lms";
-import { guruClassIds, siswaClassId } from "@/server/lms-scope";
+import { assertClassAccess, guruClassIds, siswaClassId } from "@/server/lms-scope";
 import { notifyTaskChange } from "@/server/task-helpers";
-
-async function gate(req: NextRequest, roles: ("ADMIN" | "GURU" | "SISWA")[]) {
-  return requireRole({
-    host: req.headers.get("host") ?? "",
-    token: req.cookies.get(SESSION_COOKIE)?.value,
-    pathname: new URL(req.url).pathname,
-    mutation: req.method !== "GET",
-    origin: req.headers.get("origin"),
-    referer: req.headers.get("referer"),
-    csrf: req.headers.get("x-csrf-token"),
-    roles,
-  });
-}
 
 // GET /api/tasks?classId=&status=semua/belum/sudah/terlambat/draf — daftar tugas.
 // Guru: hanya kelasnya. Siswa: hanya kelasnya + PUBLISHED + publishAt lewat.
 export async function GET(req: NextRequest) {
-  const a = await gate(req, ["ADMIN", "GURU", "SISWA"]);
+  const a = await apiGate(req, ["ADMIN", "GURU", "SISWA"]);
   if (!a.ok) return NextResponse.json({ error: a.error }, { status: a.status });
   const url = new URL(req.url);
   const classId = (url.searchParams.get("classId") ?? "").slice(0, 64) || null;
@@ -38,7 +24,7 @@ export async function GET(req: NextRequest) {
     if (classId && classId !== cid) return NextResponse.json({ error: "bukan kelas Anda" }, { status: 403 });
     const tasks = await runAsSchool(db, a.school.id, (tx) =>
       tx.task.findMany({
-        where: { classId: cid, status: "PUBLISHED", publishAt: { lte: now } },
+        where: { OR: [{ classId: cid }, { targets: { some: { classId: cid } } }], status: "PUBLISHED", publishAt: { lte: now } },
         include: {
           subject: { select: { name: true } },
           submissions: { where: { studentId: a.userId }, select: { submittedAt: true, score: true } },
@@ -120,7 +106,7 @@ export async function GET(req: NextRequest) {
 // POST /api/tasks — GURU/ADMIN buat tugas (D4: judul, kelas, instruksi wajib; lainnya opsional).
 // T2: mendukung status DRAFT (wizard) + kategori unggahan + kelompok min/max.
 export async function POST(req: NextRequest) {
-  const a = await gate(req, ["ADMIN", "GURU"]);
+  const a = await apiGate(req, ["ADMIN", "GURU"]);
   if (!a.ok) return NextResponse.json({ error: a.error }, { status: a.status });
   const rl = await hit(`rl:task:${a.school.id}:${a.userId}`, 60, 60);
   if (!rl.ok) return NextResponse.json({ error: "Terlalu sering, coba lagi nanti" }, { status: 429 });
@@ -137,9 +123,8 @@ export async function POST(req: NextRequest) {
     }]);
   const targetClassIds = [...new Set(targets.map((t) => t.classId))];
   if (a.role === "GURU") {
-    const mine = await guruClassIds(a.school.id, a.userId);
-    const outside = targetClassIds.filter((c) => !mine.has(c));
-    if (outside.length > 0) return NextResponse.json({ error: "bukan kelas Anda" }, { status: 403 });
+    const chk = await assertClassAccess(a.school.id, a.role, a.userId, targetClassIds);
+    if (!chk.ok) return NextResponse.json({ error: chk.error }, { status: chk.status });
   } else {
     for (const cid of targetClassIds) {
       const c = await runAsSchool(db, a.school.id, (tx) => tx.class.findUnique({ where: { id: cid } }));

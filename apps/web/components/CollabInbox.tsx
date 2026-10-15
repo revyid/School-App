@@ -3,7 +3,13 @@
 // Inbox kolaborasi: kirim ke multi-guru via dropdown multiselect + toggle anonim + lampiran.
 import { useRef, useState } from "react";
 import { api, useFetch } from "@/app/lib/api";
-import { PageHead, Panel, Toolbar, TextInput, Btn, Badge, Note } from "@/components/DashUI";
+import { PageHead, Panel, Toolbar, TextInput, Note } from "@/components/DashUI";
+import { Badge, statusVariant } from "@/components/ui/badge";
+import {
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription,
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import UploadPopup from "@/components/UploadPopup";
 import { ChevronDownIcon, XIcon, CheckIcon } from "lucide-react";
 
 interface Msg { id: string; authorId: string; body: string; fileName: string | null; fileMime?: string | null; createdAt: string }
@@ -77,6 +83,7 @@ export default function CollabPage({ role }: { role: "GURU" | "SISWA" }) {
   const [file, setFile] = useState<File | null>(null);
   const [replies, setReplies] = useState<Record<string, string>>({});
   const [msg, setMsg] = useState<string | null>(null);
+  const [newOpen, setNewOpen] = useState(false);
 
   async function kirim(e: React.FormEvent) {
     e.preventDefault();
@@ -90,7 +97,7 @@ export default function CollabPage({ role }: { role: "GURU" | "SISWA" }) {
     const res = await api("/api/collab", { method: "POST", body: form });
     const d = await res.json().catch(() => ({}));
     if (!res.ok) setMsg(d.error || `Gagal (${res.status})`);
-    else { setMsg("Terkirim ✓"); setSubject(""); setSelectedGurus([]); setBody(""); setFile(null); reload(); }
+    else { setMsg("Terkirim ✓"); setSubject(""); setSelectedGurus([]); setBody(""); setFile(null); setNewOpen(false); reload(); }
   }
 
   async function balas(id: string) {
@@ -107,9 +114,15 @@ export default function CollabPage({ role }: { role: "GURU" | "SISWA" }) {
   return (
     <>
       <PageHead kicker="Komunikasi" title="Inbox kolaborasi" desc="Kirim pesan ke guru dan lanjutkan percakapan dalam thread." />
-      <Panel style={{ marginBottom: 16 }}>
-        <h2 className="display" style={{ fontSize: 18, margin: "0 0 12px" }}>Kirim baru</h2>
-        <form onSubmit={kirim} className="grid gap-3.5 max-w-xl">
+      <Toolbar><Button variant="sticker" onClick={() => setNewOpen(true)}>+ Pesan baru</Button></Toolbar>
+      {msg && <p className="mb-3 text-[13px] font-bold" style={{ color: msg.startsWith("Terkirim") ? "#50643e" : "#c94b35" }}>{msg}</p>}
+      <Dialog open={newOpen} onOpenChange={setNewOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Pesan baru</DialogTitle>
+            <DialogDescription>Kirim pesan ke guru dan lanjutkan percakapan dalam thread.</DialogDescription>
+          </DialogHeader>
+        <form onSubmit={kirim} className="grid gap-3.5">
           <label className="grid gap-1.5 text-[12px] font-bold uppercase tracking-wide text-muted-strong">
             Guru tujuan
             <GuruDropdown gurus={gurus.data?.rows ?? []} selected={selectedGurus} onChange={setSelectedGurus} loading={gurus.loading} />
@@ -138,14 +151,12 @@ export default function CollabPage({ role }: { role: "GURU" | "SISWA" }) {
           )}
           <label className="grid gap-1.5 text-[12px] font-bold uppercase tracking-wide text-muted-strong">
             Lampiran (opsional)
-            <input type="file" onChange={(e) => setFile(e.target.files?.[0] ?? null)} className="text-[13px]" />
           </label>
-          <Toolbar><Btn type="submit">Kirim</Btn></Toolbar>
-          {msg && (
-            <p className="text-[13px] font-bold" style={{ color: msg.startsWith("Terkirim") ? "#50643e" : "#c94b35" }}>{msg}</p>
-          )}
+          <UploadPopup label="Lampirkan file" onFile={setFile} />
+          <Toolbar><Button variant="sticker" type="submit">Kirim</Button></Toolbar>
         </form>
-      </Panel>
+        </DialogContent>
+      </Dialog>
 
       <Panel>
         <h2 className="display" style={{ fontSize: 18, margin: "0 0 12px" }}>Thread</h2>
@@ -158,7 +169,7 @@ export default function CollabPage({ role }: { role: "GURU" | "SISWA" }) {
                 <p style={{ margin: "0 0 4px", display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
                   <strong>{t.subject}</strong>
                   <span style={{ fontSize: 12.5, color: "#74746d" }}>dari {t.sender}</span>
-                  {t.anonymous && !t.revealed && <Badge status="PENDING">anonim</Badge>}
+                  {t.anonymous && !t.revealed && <Badge variant={statusVariant("PENDING")}>anonim</Badge>}
                 </p>
                 <ul style={{ margin: "8px 0", paddingLeft: 18, display: "grid", gap: 4, fontSize: 14 }}>
                   {t.messages.map((m) => (
@@ -182,7 +193,7 @@ export default function CollabPage({ role }: { role: "GURU" | "SISWA" }) {
                     placeholder="balas…"
                     style={{ flex: 1 }}
                   />
-                  <Btn kind="ghost" type="button" onClick={() => balas(t.id)}>Balas</Btn>
+                  <Button variant="sticker-ghost" type="button" onClick={() => balas(t.id)}>Balas</Button>
                 </span>
               </li>
             ))}

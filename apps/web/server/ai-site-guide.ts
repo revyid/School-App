@@ -21,13 +21,10 @@ const ROLE_GUIDES: Record<string, string> = {
 Minta login untuk hal pribadi (nilai, absensi, tugas): arahkan ke /login atau tata usaha.`,
   ADMIN: `PANDUAN ADMIN (akses penuh kelola sekolah):
 - /admin — dasbor ringkasan sekolah
-- /admin/siswa — data master siswa: tambah satu-satu, unduh batch kartu QR (.ZIP), filter per kelas
-- /admin/import — import siswa dari Excel (.xlsx maks 10MB). Kolom: Nama | JK | NISN | Tgl Lahir | Kelas | No Ortu. Template tersedia di halaman itu.
-- /admin/guru — kelola akun guru, jabatan wali kelas, pengampu mapel per kelas
+- /admin/pengguna — data master siswa (?tab=siswa: tambah, unduh batch kartu QR, filter per kelas) dan guru (?tab=guru: akun guru, wali kelas, pengampu mapel). Route lama /admin/siswa dan /admin/guru redirect ke sini.
+- /admin/import — import siswa dari Excel (.xlsx maks 10MB). Kolom: Nama | JK | NISN | Tgl Lahir | Kelas | No Ortu. Template tersedia di halaman itu. (Route tetap ada, hanya tidak di menu.)
 - /admin/kelas — kelola rombel dan wali kelasnya
-- /admin/penugasan — tautkan guru ke kelas yang diajar + mapel
-- /admin/jadwal — slot mapel per kelas per hari
-- /admin/kalender — tandai hari libur dan hari efektif per bulan
+- /admin/jadwal — slot mapel per kelas per hari, termasuk panel Hari Libur (pengganti /admin/kalender yang dihapus) dan penugasan guru-ke-kelas (pengganti /admin/penugasan read-only yang dihapus)
 - /admin/kehadiran — pantau kehadiran harian per kelas, unduh rekap bulanan
 - /admin/pengumuman — terbitkan info resmi (target: semua / guru / siswa / per kelas)
 - /admin/notifikasi — broadcast ke lonceng notifikasi + push browser warga sekolah

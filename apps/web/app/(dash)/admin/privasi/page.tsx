@@ -3,7 +3,10 @@
 // Admin: flag persetujuan ortu + teks kebijakan privasi.
 import { useState } from "react";
 import { api, useFetch } from "@/app/lib/api";
-import { PageHead, Panel, Toolbar, TextSelect, Btn, Badge, Note } from "@/components/DashUI";
+import { PageHead, Panel, Toolbar, Note } from "@/components/DashUI";
+import { Select, SelectTrigger, SelectValue, SelectPositioner, SelectPopup, SelectItem } from "@/components/ui/select";
+import { Button } from "@/components/ui/button";
+import { Badge, statusVariant } from "@/components/ui/badge";
 
 export default function PrivasiAdminPage() {
   const [studentId, setStudentId] = useState("");
@@ -50,20 +53,22 @@ export default function PrivasiAdminPage() {
       <Panel style={{ marginBottom: 16 }}>
         <h2 className="display" style={{ fontSize: 18, margin: "0 0 12px" }}>Flag persetujuan</h2>
         <Toolbar>
-          <TextSelect value={studentId} onChange={(e) => setStudentId(e.target.value)}>
-            <option value="">— pilih siswa —</option>
-            {(students.data?.rows ?? []).map((r) => (
-              <option key={r.user.id} value={r.user.id}>
-                {r.user.name}{r.user.nisn ? ` (${r.user.nisn})` : ""}{r.class ? ` — ${r.class.name}` : ""}
-              </option>
-            ))}
-          </TextSelect>
+          <Select value={studentId} onValueChange={(v) => setStudentId(v ?? "")}>
+            <SelectTrigger><SelectValue placeholder="— pilih siswa —" /></SelectTrigger>
+            <SelectPositioner><SelectPopup>
+              {(students.data?.rows ?? []).map((r) => (
+                <SelectItem key={r.user.id} value={r.user.id}>
+                  {r.user.name}{r.user.nisn ? ` (${r.user.nisn})` : ""}{r.class ? ` — ${r.class.name}` : ""}
+                </SelectItem>
+              ))}
+            </SelectPopup></SelectPositioner>
+          </Select>
         </Toolbar>
         {consent.data && (
           <p style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
-            Status: <Badge status={consent.data.consent.consented ? "AKTIF" : "PENDING"}>{consent.data.consent.consented ? "Disetujui" : "Belum"}</Badge>
-            <Btn type="button" onClick={() => tandai(true)}>Tandai setuju</Btn>
-            <Btn kind="ghost" type="button" onClick={() => tandai(false)}>Tandai belum</Btn>
+            Status: <Badge variant={statusVariant(consent.data.consent.consented ? "AKTIF" : "PENDING")}>{consent.data.consent.consented ? "Disetujui" : "Belum"}</Badge>
+            <Button variant="sticker" type="button" onClick={() => tandai(true)}>Tandai setuju</Button>
+            <Button variant="sticker-ghost" type="button" onClick={() => tandai(false)}>Tandai belum</Button>
           </p>
         )}
       </Panel>
@@ -75,7 +80,7 @@ export default function PrivasiAdminPage() {
             Teks kebijakan:
             <textarea value={text} onChange={(e) => setText(e.target.value)} rows={6} style={{ borderRadius: 14, border: "1px solid rgba(23,23,22,.25)", background: "#fffdf8", padding: "9px 14px", fontSize: 14 }} />
           </label>
-          <Toolbar><Btn type="submit">Simpan</Btn></Toolbar>
+          <Toolbar><Button variant="sticker" type="submit">Simpan</Button></Toolbar>
         </form>
         {msg && <p style={{ fontWeight: 700 }}>{msg}</p>}
       </Panel>

@@ -79,12 +79,6 @@ export const submitSchema = z.object({
   link: z.string().trim().url().max(2048).optional().nullable(),
 });
 
-export const gradeSchema = z.object({
-  score: z.number().int().min(0).max(100),
-  feedback: z.string().trim().max(2000).optional().nullable(),
-});
-
-// T2: bulk grading — applyToMembers untuk tugas kelompok (D1).
 export const gradeBulkSchema = z.object({
   grades: z
     .array(

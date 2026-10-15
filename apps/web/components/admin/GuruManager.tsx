@@ -6,15 +6,19 @@ import { api, useFetch } from "@/app/lib/api";
 import {
   Panel,
   TextInput,
-  TextSelect,
-  Btn,
-  Badge,
   Note,
   Err,
-  LinkBtn,
+  Toolbar,
 } from "@/components/DashUI";
+import { Select, SelectTrigger, SelectValue, SelectPositioner, SelectPopup, SelectItem } from "@/components/ui/select";
+import { Button } from "@/components/ui/button";
+import { buttonVariants } from "@/components/ui/button";
+import { Badge, statusVariant } from "@/components/ui/badge";
 import ConfirmDialog from "@/components/ConfirmDialog";
 import { DataTable, selectColumn, actionsColumn } from "@/components/ui/data-table";
+import {
+  Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription,
+} from "@/components/ui/sheet";
 
 interface TeacherRow {
   id: string;
@@ -45,7 +49,8 @@ export default function GuruManager() {
   const [homeroomClassId, setHomeroomClassId] = useState("");
   const [lastPw, setLastPw] = useState<string | null>(null);
 
-  // Modal / form edit penugasan guru
+  // Sheet tambah/edit guru
+  const [addOpen, setAddOpen] = useState(false);
   const [editingTeacher, setEditingTeacher] = useState<TeacherRow | null>(null);
   const [editName, setEditName] = useState("");
   const [editEmail, setEditEmail] = useState("");
@@ -90,6 +95,7 @@ export default function GuruManager() {
     setName("");
     setEmail("");
     setHomeroomClassId("");
+    setAddOpen(false);
     reload();
     reloadClasses();
   }
@@ -228,7 +234,7 @@ export default function GuruManager() {
       accessorKey: "isActive",
       header: "Status",
       cell: ({ row }) => (
-        <Badge status={row.original.isActive ? "AKTIF" : "NONAKTIF"}>
+        <Badge variant={statusVariant(row.original.isActive ? "AKTIF" : "NONAKTIF")}>
           {row.original.isActive ? "Aktif" : "Nonaktif"}
         </Badge>
       ),
@@ -242,6 +248,9 @@ export default function GuruManager() {
 
   return (
     <>
+      <Toolbar>
+        <Button variant="sticker" onClick={() => setAddOpen(true)}>+ Tambah Guru</Button>
+      </Toolbar>
       {lastPw && (
         <div
           style={{
@@ -261,17 +270,15 @@ export default function GuruManager() {
         </div>
       )}
 
-      {/* Modal / Panel Edit Guru & Penugasan */}
-      {editingTeacher && (
-        <Panel style={{ marginBottom: 20, border: "2px solid #e85e43", background: "#fffdf8" }}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
-            <h2 className="display" style={{ fontSize: 19, margin: 0 }}>
-              Edit Penugasan: <span style={{ color: "#e85e43" }}>{editingTeacher.name}</span>
-            </h2>
-            <Btn kind="ghost" onClick={() => setEditingTeacher(null)}>Tutup</Btn>
-          </div>
-
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: 14, marginBottom: 14 }}>
+      {/* Sheet Edit Guru & Penugasan */}
+      <Sheet open={editingTeacher !== null} onOpenChange={(o) => { if (!o) setEditingTeacher(null); }}>
+        <SheetContent side="right" className="p-0">
+          <SheetHeader>
+            <SheetTitle>Edit Guru{editingTeacher ? `: ${editingTeacher.name}` : ""}</SheetTitle>
+            <SheetDescription>Ubah identitas dan wali kelas. Penugasan mapel diatur lewat Jadwal.</SheetDescription>
+          </SheetHeader>
+          {editingTeacher && (
+          <div className="flex-1 space-y-4 overflow-y-auto px-6 pb-6">
             <label style={{ display: "grid", gap: 6, fontSize: 13, color: "#74746d" }}>
               Nama Guru:
               <TextInput value={editName} onChange={(e) => setEditName(e.target.value)} required />
@@ -282,54 +289,49 @@ export default function GuruManager() {
             </label>
             <label style={{ display: "grid", gap: 6, fontSize: 13, color: "#74746d" }}>
               Wali Kelas:
-              <TextSelect value={editHomeroom} onChange={(e) => setEditHomeroom(e.target.value)}>
-                <option value="">Bukan Wali Kelas</option>
-                {classes.map((c) => (
-                  <option key={c.id} value={c.id}>
-                    Kelas {c.name}
-                  </option>
-                ))}
-              </TextSelect>
+              <Select value={editHomeroom} onValueChange={(v) => setEditHomeroom(v ?? "")}>
+                <SelectTrigger><SelectValue placeholder="Bukan Wali Kelas" /></SelectTrigger>
+                <SelectPositioner><SelectPopup>
+                  {classes.map((c) => (
+                    <SelectItem key={c.id} value={c.id}>Kelas {c.name}</SelectItem>
+                  ))}
+                </SelectPopup></SelectPositioner>
+              </Select>
             </label>
+            <Button variant="sticker" onClick={saveTeacherEdit} disabled={submitting} style={{ width: "100%" }}>
+              {submitting ? "Menyimpan…" : "Simpan"}
+            </Button>
+            <div style={{ borderTop: "1px solid rgba(23,23,22,.14)", paddingTop: 14 }}>
+              <h3 style={{ fontSize: 15, fontWeight: 700, margin: "0 0 10px" }}>Mata Pelajaran yang Diampu Guru Ini:</h3>
+              {(!editingTeacher.taughtFromSlots || editingTeacher.taughtFromSlots.length === 0) ? (
+                <p style={{ color: "#74746d", fontSize: 13 }}>Belum mengampu mata pelajaran di kelas manapun. Atur lewat <a className={buttonVariants({ variant: "sticker-ghost" })} style={{ textDecoration: "none" }} href="/admin/jadwal">Jadwal</a>.</p>
+              ) : (
+                <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 14 }}>
+                  {editingTeacher.taughtFromSlots.map((tc) => (
+                    <span
+                      key={`${tc.teacherId}:${tc.classId}:${tc.subject ?? "-"}`}
+                      style={{
+                        background: "#eeeadd",
+                        border: "1px solid rgba(23,23,22,.2)",
+                        borderRadius: 99,
+                        padding: "4px 12px",
+                        fontSize: 13,
+                        display: "inline-flex",
+                        alignItems: "center",
+                        gap: 8,
+                      }}
+                    >
+                      <strong>{tc.subject ?? "Mapel"}</strong> (Kelas {tc.class.name})
+                    </span>
+                  ))}
+                </div>
+              )}
+              <p style={{ color: "#74746d", fontSize: 12, margin: 0 }}>Penugasan mapel diatur lewat jadwal, bukan di sini.</p>
+            </div>
           </div>
-
-          <div style={{ display: "flex", gap: 10, marginBottom: 20 }}>
-            <Btn onClick={saveTeacherEdit} disabled={submitting}>
-              {submitting ? "Menyimpan…" : "Simpan Perubahan Identitas & Wali Kelas"}
-            </Btn>
-          </div>
-
-          {/* Mapel yang diampu guru ini — dibaca LIVE dari jadwal (read-only).
-              Untuk mengubah, atur slot di /admin/jadwal. */}
-          <div style={{ borderTop: "1px solid rgba(23,23,22,.14)", paddingTop: 14 }}>
-            <h3 style={{ fontSize: 15, fontWeight: 700, margin: "0 0 10px" }}>Mata Pelajaran yang Diampu Guru Ini:</h3>
-            {(!editingTeacher.taughtFromSlots || editingTeacher.taughtFromSlots.length === 0) ? (
-              <p style={{ color: "#74746d", fontSize: 13 }}>Belum mengampu mata pelajaran di kelas manapun. Atur lewat <LinkBtn href="/admin/jadwal">Jadwal</LinkBtn>.</p>
-            ) : (
-              <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 14 }}>
-                {editingTeacher.taughtFromSlots.map((tc) => (
-                  <span
-                    key={`${tc.teacherId}:${tc.classId}:${tc.subject ?? "-"}`}
-                    style={{
-                      background: "#eeeadd",
-                      border: "1px solid rgba(23,23,22,.2)",
-                      borderRadius: 99,
-                      padding: "4px 12px",
-                      fontSize: 13,
-                      display: "inline-flex",
-                      alignItems: "center",
-                      gap: 8,
-                    }}
-                  >
-                    <strong>{tc.subject ?? "Mapel"}</strong> (Kelas {tc.class.name})
-                  </span>
-                ))}
-              </div>
-            )}
-            <p style={{ color: "#74746d", fontSize: 12, margin: 0 }}>Penugasan mapel diatur lewat jadwal, bukan di sini.</p>
-          </div>
-        </Panel>
-      )}
+          )}
+        </SheetContent>
+      </Sheet>
 
       {/* Tabel Data Guru */}
       <Panel style={{ marginBottom: 20 }}>
@@ -343,11 +345,14 @@ export default function GuruManager() {
           filters={(
             <label style={{ display: "grid", gap: 6, fontSize: 13, color: "#74746d" }}>
               Wali kelas:
-              <TextSelect value={filterWali} onChange={(e) => setFilterWali(e.target.value as typeof filterWali)} style={{ minHeight: 44 }}>
-                <option value="semua">Semua</option>
-                <option value="wali">Wali kelas saja</option>
-                <option value="nonwali">Bukan wali kelas</option>
-              </TextSelect>
+              <Select value={filterWali} onValueChange={(v) => setFilterWali((v as typeof filterWali) ?? "semua")}>
+                <SelectTrigger style={{ minHeight: 44 }}><SelectValue /></SelectTrigger>
+                <SelectPositioner><SelectPopup>
+                  <SelectItem value="semua">Semua</SelectItem>
+                  <SelectItem value="wali">Wali kelas saja</SelectItem>
+                  <SelectItem value="nonwali">Bukan wali kelas</SelectItem>
+                </SelectPopup></SelectPositioner>
+              </Select>
             </label>
           )}
           bulkActions={[
@@ -358,56 +363,39 @@ export default function GuruManager() {
         />
       </Panel>
 
-      {/* Form Tambah Guru Baru */}
-      <Panel>
-        <h2 className="display" style={{ fontSize: 18, margin: "0 0 14px" }}>
-          Tambah Guru Baru
-        </h2>
-        <form onSubmit={create} style={{ display: "grid", gap: 14 }}>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 12 }}>
-            <label style={{ display: "grid", gap: 6, fontSize: 13, color: "#74746d" }}>
-              Nama Lengkap Guru *:
-              <TextInput
-                placeholder="Contoh: Budi Santoso, S.Pd."
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                required
-              />
-            </label>
-            <label style={{ display: "grid", gap: 6, fontSize: 13, color: "#74746d" }}>
-              Alamat Email *:
-              <TextInput
-                type="email"
-                placeholder="budi@sekolah.sch.id"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-              />
-            </label>
-            <label style={{ display: "grid", gap: 6, fontSize: 13, color: "#74746d" }}>
-              Wali Kelas (Opsional):
-              <TextSelect value={homeroomClassId} onChange={(e) => setHomeroomClassId(e.target.value)}>
-                <option value="">Bukan Wali Kelas</option>
-                {classes.map((c) => (
-                  <option key={c.id} value={c.id}>
-                    Kelas {c.name}
-                  </option>
-                ))}
-              </TextSelect>
-            </label>
+      {/* Sheet Tambah Guru Baru */}
+      <Sheet open={addOpen} onOpenChange={setAddOpen}>
+        <SheetContent side="right" className="p-0">
+          <SheetHeader>
+            <SheetTitle>Tambah Guru</SheetTitle>
+            <SheetDescription>Daftarkan satu guru. Penugasan mapel diatur lewat Jadwal.</SheetDescription>
+          </SheetHeader>
+          <div className="flex-1 overflow-y-auto px-6 pb-6">
+            <form onSubmit={create} style={{ display: "grid", gap: 14 }}>
+              <label style={{ display: "grid", gap: 6, fontSize: 13, color: "#74746d" }}>
+                Nama Lengkap Guru *:
+                <TextInput placeholder="Contoh: Budi Santoso, S.Pd." value={name} onChange={(e) => setName(e.target.value)} required />
+              </label>
+              <label style={{ display: "grid", gap: 6, fontSize: 13, color: "#74746d" }}>
+                Alamat Email *:
+                <TextInput type="email" placeholder="budi@sekolah.sch.id" value={email} onChange={(e) => setEmail(e.target.value)} required />
+              </label>
+              <label style={{ display: "grid", gap: 6, fontSize: 13, color: "#74746d" }}>
+                Wali Kelas (Opsional):
+                <Select value={homeroomClassId} onValueChange={(v) => setHomeroomClassId(v ?? "")}>
+                  <SelectTrigger><SelectValue placeholder="Bukan Wali Kelas" /></SelectTrigger>
+                  <SelectPositioner><SelectPopup>
+                    {classes.map((c) => (
+                      <SelectItem key={c.id} value={c.id}>Kelas {c.name}</SelectItem>
+                    ))}
+                  </SelectPopup></SelectPositioner>
+                </Select>
+              </label>
+              <Button variant="sticker" type="submit" style={{ minHeight: 44 }}>Daftarkan Guru</Button>
+            </form>
           </div>
-
-          <p style={{ color: "#74746d", fontSize: 12, margin: "12px 0 0" }}>
-            Penugasan mata pelajaran diatur lewat <LinkBtn href="/admin/jadwal">Jadwal</LinkBtn> —
-            buat slot dengan guru ini, otomatis tampil di profilnya.
-          </p>
-          <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 12 }}>
-            <Btn type="submit" style={{ minHeight: 44 }}>
-              + Daftarkan Guru
-            </Btn>
-          </div>
-        </form>
-      </Panel>
+        </SheetContent>
+      </Sheet>
       <ConfirmDialog
         open={pending !== null}
         title={pending?.title ?? ""}
