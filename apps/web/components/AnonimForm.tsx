@@ -1,13 +1,16 @@
 'use client';
 
-// Form CTA anonim publik — tanpa login (masyarakat umum)
+// Form CTA anonim publik — tanpa login (masyarakat umum).
+// Basis: shadcn/Base UI (Input, Textarea, Button) + token edukids.
 import { useState } from "react";
 import SwipeToast from "./SwipeToast";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Button } from "@/components/ui/button";
 
 export default function AnonimForm() {
   const [subject, setSubject] = useState("");
   const [message, setMessage] = useState("");
-  const [alias, setAlias] = useState("");
   const [loading, setLoading] = useState(false);
   const [toast, setToast] = useState<{ title: string; body: string } | null>(null);
 
@@ -19,7 +22,7 @@ export default function AnonimForm() {
     const res = await fetch("/api/anonim", {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ subject, message, senderAlias: alias || undefined }),
+      body: JSON.stringify({ subject, message }),
     }).catch(() => null);
 
     const d = (await res?.json().catch(() => ({}))) as { success?: boolean; error?: string; message?: string };
@@ -28,86 +31,43 @@ export default function AnonimForm() {
       setToast({ title: "Terkirim", body: d.message ?? "Pesan anonim Anda sudah diteruskan ke sekolah." });
       setSubject("");
       setMessage("");
-      setAlias("");
     } else {
       setToast({ title: "Gagal terkirim", body: d.error ?? `Gagal (${res?.status ?? "jaringan"})` });
     }
     setLoading(false);
   }
 
-  const inputStyle: React.CSSProperties = {
-    width: "100%",
-    borderRadius: 14,
-    border: "1px solid rgba(23,23,22,.25)",
-    background: "#fffdf8",
-    padding: "10px 14px",
-    fontSize: 14,
-    color: "#171716",
-  };
-
   return (
     <>
       <form
         onSubmit={kirim}
-        style={{
-          display: "grid",
-          gap: 14,
-          background: "#faf8f2",
-          border: "1px solid rgba(23,23,22,.14)",
-          borderRadius: 20,
-          padding: "24px 22px",
-        }}
+        className="grid gap-3.5 rounded-[20px] border border-line bg-paper px-[22px] py-6"
       >
-        <label style={{ display: "grid", gap: 6, fontSize: 13, color: "#74746d" }}>
-          Nama panggilan (opsional):
-          <input
-            value={alias}
-            onChange={(e) => setAlias(e.target.value)}
-            placeholder="mis. Warga Peduli"
-            maxLength={60}
-            style={inputStyle}
-          />
-        </label>
-        <label style={{ display: "grid", gap: 6, fontSize: 13, color: "#74746d" }}>
+        <label className="grid gap-1.5 text-[13px] text-muted">
           Subjek:
-          <input
+          <Input
             value={subject}
             onChange={(e) => setSubject(e.target.value)}
             placeholder="mis. Usulan kantin sehat"
             required
             maxLength={120}
-            style={inputStyle}
           />
         </label>
-        <label style={{ display: "grid", gap: 6, fontSize: 13, color: "#74746d" }}>
+        <label className="grid gap-1.5 text-[13px] text-muted">
           Isi pesan:
-          <textarea
+          <Textarea
             value={message}
             onChange={(e) => setMessage(e.target.value)}
             placeholder="Tulis aspirasi, laporan, atau saran Anda…"
             required
             rows={5}
             maxLength={2000}
-            style={{ ...inputStyle, resize: "vertical" }}
+            className="resize-y"
           />
         </label>
-        <button
-          type="submit"
-          disabled={loading}
-          style={{
-            background: loading ? "#a0a096" : "#171716",
-            color: "#fffdf8",
-            padding: "12px 20px",
-            borderRadius: 99,
-            fontWeight: 700,
-            fontSize: 14,
-            border: "none",
-            cursor: loading ? "wait" : "pointer",
-            transition: "background .2s",
-          }}
-        >
+        <Button variant="sticker" type="submit" disabled={loading} className="h-11 w-full justify-center text-sm">
           {loading ? "Mengirim…" : "Kirim Anonim"}
-        </button>
+        </Button>
       </form>
 
       {/* Toast notifikasi status kirim (tema terang) */}

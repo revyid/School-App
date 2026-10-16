@@ -23,8 +23,13 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     tx.collabThread.findUnique({ where: { id: id.slice(0, 64) } }));
   if (!t) return NextResponse.json({ error: "thread tidak ditemukan" }, { status: 404 });
   if (!t.anonymous) return NextResponse.json({ error: "thread tidak anonim" }, { status: 400 });
+  if (!t.senderId) {
+    // Pesan anonim publik (tanpa login) memang tidak punya pengirim untuk dibuka.
+    return NextResponse.json({ error: "pengirim anonim tidak diketahui" }, { status: 400 });
+  }
+  const senderId = t.senderId;
   const sender = await runAsSchool(db, a.school.id, (tx) =>
-    tx.user.findUnique({ where: { id: t.senderId }, select: { id: true, name: true } }));
+    tx.user.findUnique({ where: { id: senderId }, select: { id: true, name: true } }));
   await runAsSchool(db, a.school.id, (tx) =>
     tx.collabThread.update({
       where: { id: t.id },

@@ -171,6 +171,7 @@ model User {
   notifications      Notification[]
   leaveRequests      LeaveRequest[] @relation("LeaveStudent")
   reviewedLeaves     LeaveRequest[] @relation("LeaveReviewer")
+  collabMessages     CollabMessage[] @relation("CollabMessageAuthor")
   consents           ParentalConsent[]
   markedConsents     ParentalConsent[] @relation("ConsentMarker")
   assessAttempts     AssessAttempt[]  @relation("AssessStudent")
@@ -860,14 +861,16 @@ model Announcement {
   @@index([schoolId, target])
 }
 
-// Inbox kolaborasi: pengirim selalu disimpan (senderId); anonim hanya disembunyikan
-// di UI guru. Admin boleh reveal (wajib audit COLLAB.REVEAL). Lampiran via TaskFiles-like.
+// Inbox kolaborasi. senderId:null = pesan anonim publik (tanpa login) sehingga
+// tidak ada pengirim untuk di-reveal; senderId non-null + anonymous:true = kiriman
+// pengguna login yang identitasnya disembunyikan dari guru (admin boleh reveal,
+// wajib audit COLLAB.REVEAL). Lampiran via TaskFiles-like.
 model CollabThread {
   id        String   @id @default(cuid())
   schoolId  String
   school    School   @relation(fields: [schoolId], references: [id], onDelete: Cascade)
-  senderId  String
-  sender    User     @relation("CollabSender", fields: [senderId], references: [id], onDelete: Restrict)
+  senderId  String?
+  sender    User?    @relation("CollabSender", fields: [senderId], references: [id], onDelete: Restrict)
   subject   String   @db.VarChar(200)
   anonymous Boolean  @default(false)
   // Guru tujuan (multi-select disimpan sebagai baris recipient).
@@ -886,7 +889,8 @@ model CollabMessage {
   school    School       @relation(fields: [schoolId], references: [id], onDelete: Cascade)
   threadId  String
   thread    CollabThread @relation(fields: [threadId], references: [id], onDelete: Cascade)
-  authorId  String
+  authorId  String?
+  author    User?        @relation("CollabMessageAuthor", fields: [authorId], references: [id], onDelete: SetNull)
   body      String       @db.Text
   fileName  String?      @db.VarChar(255)
   createdAt DateTime     @default(now())

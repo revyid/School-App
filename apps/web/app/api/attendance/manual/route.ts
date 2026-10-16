@@ -39,6 +39,18 @@ export async function POST(req: NextRequest) {
   if (liburManual) {
     return NextResponse.json({ error: "Hari libur — absensi nonaktif", holiday: true, note: liburManual.note }, { status: 403 });
   }
+  // Izin yang sudah disetujui tidak boleh ditimpa jadi ALPHA (absensi berbohong).
+  if (body.data.status === "ALPHA") {
+    const approved = await runAsSchool(db, a.school.id, (tx) =>
+      tx.leaveRequest.findFirst({
+        where: { studentId: target.id, date: day, status: "APPROVED" },
+        select: { id: true },
+      }),
+    );
+    if (approved) {
+      return NextResponse.json({ error: "Siswa punya izin disetujui pada tanggal ini" }, { status: 409 });
+    }
+  }
 
   const row = await runAsSchool(db, a.school.id, (tx) =>
     tx.attendanceRecord.upsert({
