@@ -23,7 +23,7 @@ async function loadThread(schoolId: string, id: string) {
     tx.collabThread.findUnique({ where: { id: id.slice(0, 64) } }));
 }
 
-function canAccess(t: { senderId: string; recipients: string[] }, role: string, userId: string): boolean {
+function canAccess(t: { senderId: string | null; recipients: string[] }, role: string, userId: string): boolean {
   if (role === "ADMIN") return true;
   if (t.senderId === userId) return true;
   if (role === "GURU" && t.recipients.includes(userId)) return true;

@@ -61,6 +61,37 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
         reviewNote: body.data.note ?? null, reviewedAt: now,
       },
     }));
+  // Tulis ulang rekap absensi: setujui -> IZIN (bukan ALPHA yang masih terbongkar).
+  // Menghapus baris ALPHA yang masih terjadi (cron: upsert update:{} -> no-op).
+  // Karena DIPATUHI, tidak ada efek berbahaya.
+  // NOTE: dipicu hanya jika keputusan APPROVED; REJECTED -> tidak ada absensi
+  // yang ditulis (siswa tetap diatur scan/manual/cron).
+  if (body.data.decision === "APPROVED") {
+    const classId = lr.student.studentProfile?.classId ?? null;
+    await runAsSchool(db, a.school.id, (tx) =>
+      tx.attendanceRecord.upsert({
+        where: { schoolId_studentId_date: { schoolId: a.school.id, studentId: lr.studentId, date: lr.date } },
+        update: { status: "IZIN", source: "MANUAL" },
+        create: {
+          schoolId: a.school.id, studentId: lr.studentId, classId, date: lr.date,
+          status: "IZIN", source: "MANUAL",
+        },
+      }),
+    );
+  } else if (body.data.decision === "REJECTED") {
+    // Re-review APPROVED → REJECTED: hapus IZIN yang dibuat oleh approval ini
+    // agar rekap tidak berbohong. Hanya baris IZIN/MANUAL tanpa editedById —
+    // IZIN yang di-set guru manual selalu punya editedById dan dibiarkan.
+    await runAsSchool(db, a.school.id, (tx) =>
+      tx.attendanceRecord.deleteMany({
+        where: {
+          schoolId: a.school.id, studentId: lr.studentId, date: lr.date,
+          status: "IZIN", source: "MANUAL", editedById: null,
+        },
+      }),
+    );
+  }
+
   await logAuth(a.school.id, "LEAVE.REVIEW", {
     actorId: a.userId, meta: { id: lr.id, decision: body.data.decision },
   });

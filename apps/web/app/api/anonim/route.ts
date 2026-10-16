@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { schoolSlugFromHost } from "@sms/shared/school";
 import { db } from "@sms/db/client";
 import { runAsSchool } from "@sms/db/tenant";
+import { logAuth } from "@/server/audit";
 
 const apex = () => process.env.APEX_DOMAIN ?? "localtest.me";
 
@@ -42,45 +43,46 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Payload tidak valid" }, { status: 400 });
   }
 
-  const { subject, message, senderAlias } = body as {
-    subject?: string;
-    message?: string;
-    senderAlias?: string;
-  };
+  const { subject, message } = body as { subject?: string; message?: string };
 
   if (!subject?.trim() || !message?.trim()) {
     return NextResponse.json({ error: "Subjek dan isi pesan wajib diisi" }, { status: 400 });
   }
 
-  return runAsSchool(db, school.id, async (tx) => {
-    // Cari admin atau guru utama sekolah untuk menerima notifikasi pesan publik
-    const targetAdmins = await tx.user.findMany({
-      where: { schoolId: school.id, role: { in: ["ADMIN", "GURU"] }, isActive: true },
-      take: 5,
+  const created = await runAsSchool(db, school.id, async (tx) => {
+    // Penerima: semua guru aktif di sekolah ini, diteruskan lewat collabThread.
+    // Tidak memakai notification.createMany (tidak memicu notifikasi/WS/push).
+    const teachers = await tx.user.findMany({
+      where: { schoolId: school.id, role: "GURU", isActive: true },
+      select: { id: true, name: true },
     });
 
-    if (targetAdmins.length === 0) {
-      return NextResponse.json({ error: "Tidak ada penerima pesan di sekolah ini" }, { status: 404 });
-    }
+    if (teachers.length === 0) return null;
 
-    const alias = senderAlias?.trim() || "Masyarakat Umum";
-    const title = `[CTA Anonim] ${subject.trim()}`;
-    const notifBody = `Pesan publik dari ${alias}:\n\n${message.trim()}`;
-
-    // Buat notifikasi ke seluruh admin/guru penerima
-    await tx.notification.createMany({
-      data: targetAdmins.map((u) => ({
+    const thread = await tx.collabThread.create({
+      data: {
         schoolId: school.id,
-        userId: u.id,
-        title,
-        body: notifBody,
-      })),
-      skipDuplicates: true,
+        senderId: null,
+        subject: subject.trim(),
+        anonymous: true,
+        recipients: teachers.map((t) => t.id),
+        messages: {
+          create: { schoolId: school.id, authorId: null, body: message.trim() },
+        },
+      },
     });
 
-    return NextResponse.json({
-      success: true,
-      message: "Pesan anonim berhasil terkirim ke pihak sekolah.",
-    });
+    return { id: thread.id, recipients: teachers.map((t) => t.id) };
+  });
+
+  if (!created) {
+    return NextResponse.json({ error: "Tidak ada penerima pesan di sekolah ini" }, { status: 404 });
+  }
+
+  await logAuth(school.id, "ANONIM.CREATE", { meta: created });
+
+  return NextResponse.json({
+    success: true,
+    message: "Pesan anonim berhasil terkirim ke pihak sekolah.",
   });
 }

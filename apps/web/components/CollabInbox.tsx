@@ -12,7 +12,7 @@ import { Button } from "@/components/ui/button";
 import UploadPopup from "@/components/UploadPopup";
 import { ChevronDownIcon, XIcon, CheckIcon } from "lucide-react";
 
-interface Msg { id: string; authorId: string; body: string; fileName: string | null; fileMime?: string | null; createdAt: string }
+interface Msg { id: string; authorId: string | null; body: string; fileName: string | null; fileMime?: string | null; createdAt: string }
 interface Thread {
   id: string; subject: string; anonymous: boolean; sender: string; revealed: boolean;
   messages: Msg[];

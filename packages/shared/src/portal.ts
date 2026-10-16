@@ -66,7 +66,7 @@ export const collabReplySchema = z.object({
 });
 
 export function collabSenderShown(
-  t: { anonymous: boolean; senderId: string },
+  t: { anonymous: boolean; senderId: string | null },
   viewer: { role: string; userId: string; revealed: boolean },
 ): boolean {
   if (!t.anonymous) return true;

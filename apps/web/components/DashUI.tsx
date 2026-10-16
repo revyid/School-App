@@ -2,9 +2,13 @@
 
 // Primitif UI dasbor ala edukids — playful: eyebrow dot, spark dekoratif,
 // icon rotate, metric-bars, streak dots, badge warna cerah.
+// Basis: komponen shadcn/Base UI di components/ui (Input, Table) + token edukids.
 import * as React from "react";
 
 import { IconStar } from "./Icons";
+import { Input } from "@/components/ui/input";
+import { Table, TableHeader, TableBody, TableHead, TableRow } from "@/components/ui/table";
+import { cn } from "@/lib/utils";
 
 // ---------- PageHead ----------
 export function PageHead({
@@ -22,25 +26,25 @@ export function PageHead({
   spark?: string;
 }) {
   return (
-    <div style={{ display: "flex", flexWrap: "wrap", alignItems: "end", justifyContent: "space-between", gap: 14, marginBottom: 24, position: "relative" }}>
-      <div style={{ position: "relative" }}>
+    <div className="relative mb-6 flex flex-wrap items-end justify-between gap-3.5">
+      <div className="relative">
         {/* Eyebrow dengan dot hidup */}
-        <p className="kicker" style={{ margin: "0 0 10px" }}>
+        <p className="kicker mb-2.5">
           {kicker}
         </p>
-        <h1 className="display" style={{ fontSize: "clamp(28px, 3.4vw, 44px)", margin: 0, letterSpacing: "-0.05em" }}>
+        <h1 className="display m-0" style={{ fontSize: "clamp(28px, 3.4vw, 44px)", letterSpacing: "-0.05em" }}>
           {title}
           {spark && (
             <span
             aria-hidden="true"
-            className="anim-drift"
-            style={{ marginLeft: 12, display: "inline-block", verticalAlign: "middle", opacity: 0.7 }}
+            className="anim-drift ml-3 inline-block align-middle text-terracotta opacity-70"
           >
-            <IconStar size={Math.round(0.65 * 44)} color="#e85e43" />
+            {/* currentColor: atribut stroke SVG tidak mendukung var() */}
+            <IconStar size={Math.round(0.65 * 44)} />
           </span>
           )}
         </h1>
-        {desc && <p style={{ color: "#74746d", margin: "9px 0 0", maxWidth: 560, fontSize: 13.5, lineHeight: 1.7 }}>{desc}</p>}
+        {desc && <p className="mt-2.5 max-w-[560px] text-[13.5px] leading-[1.7] text-muted" style={{ margin: "9px 0 0" }}>{desc}</p>}
       </div>
       {right}
     </div>
@@ -48,46 +52,32 @@ export function PageHead({
 }
 
 // ---------- SegStat (metric cards ala edukids) ----------
-const STAT_ACCENTS = ["#aec6a4", "#f5c94a", "#97c4db", "#e85e43"];
+const STAT_ACCENTS = ["var(--color-mint)", "var(--color-sun)", "var(--color-sky)", "var(--color-terracotta)"];
+const STAT_DARK = new Set(["var(--color-terracotta)", "var(--color-olive-deep)"]);
 const STAT_ICONS = ["", "", "", ""];
 
 export function SegStat({ stats }: { stats: { label: string; value: React.ReactNode; accent?: string }[] }) {
   return (
-    <div style={{ display: "grid", gap: 12, gridTemplateColumns: "repeat(auto-fit, minmax(148px, 1fr))", marginBottom: 24 }}>
+    <div className="mb-6 grid gap-3" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(148px, 1fr))" }}>
       {stats.map((s, i) => {
         const bg = s.accent ?? STAT_ACCENTS[i % STAT_ACCENTS.length];
-        const dark = bg === "#e85e43" || bg === "#50643e";
+        const dark = STAT_DARK.has(bg);
         return (
           <div
             key={s.label}
-            className="card card-lift"
-            style={{
-              padding: "18px 16px",
-              background: bg,
-              border: "none",
-              position: "relative",
-              overflow: "hidden",
-              minHeight: 110,
-            }}
+            className="card card-lift relative min-h-[110px] overflow-hidden border-none px-4 py-[18px]"
+            style={{ background: bg }}
           >
             {/* Dekoratif glyph */}
             <span
               aria-hidden="true"
-              style={{
-                position: "absolute",
-                right: 12,
-                bottom: 10,
-                fontSize: 32,
-                opacity: 0.15,
-                fontFamily: "var(--font-display)",
-                transform: "rotate(12deg)",
-                pointerEvents: "none",
-              }}
+              className="pointer-events-none absolute bottom-2.5 right-3 rotate-12 text-[32px] opacity-[0.15]"
+              style={{ fontFamily: "var(--font-display)" }}
             >
               {STAT_ICONS[i % STAT_ICONS.length]}
             </span>
-            <p style={{ fontFamily: "var(--font-meta)", fontSize: 9, textTransform: "uppercase", letterSpacing: "0.08em", color: dark ? "rgba(255,253,248,.7)" : "#74746d", margin: "0 0 10px" }}>{s.label}</p>
-            <p className="display" style={{ fontSize: 32, margin: 0, lineHeight: 0.9, letterSpacing: "-0.1em", color: dark ? "#fffdf8" : "#171716" }}>
+            <p className="m-0 mb-2.5 text-[9px] uppercase tracking-[0.08em]" style={{ fontFamily: "var(--font-meta)", color: dark ? "rgba(255,253,248,.7)" : "var(--color-muted)" }}>{s.label}</p>
+            <p className="display m-0 text-[32px] leading-[0.9] tracking-[-0.1em]" style={{ color: dark ? "var(--color-cream)" : "var(--color-ink)" }}>
               {s.value}
             </p>
           </div>
@@ -100,62 +90,52 @@ export function SegStat({ stats }: { stats: { label: string; value: React.ReactN
 // ---------- Panel ----------
 export function Panel({ children, style, deco }: { children: React.ReactNode; style?: React.CSSProperties; deco?: boolean }) {
   return (
-    <section className="card" style={{ padding: "clamp(16px, 2.5vw, 26px)", position: "relative", overflow: deco ? "hidden" : undefined, ...style }}>
+    <section className={cn("card relative px-[clamp(16px,2.5vw,26px)] py-[clamp(16px,2.5vw,26px)]", deco && "overflow-hidden")} style={style}>
       {deco && (
-        <span aria-hidden="true" style={{ position: "absolute", right: 18, top: 18, fontSize: 38, opacity: 0.07, transform: "rotate(18deg)", pointerEvents: "none" }} />
+        <span aria-hidden="true" className="pointer-events-none absolute right-[18px] top-[18px] rotate-[18deg] text-[38px] opacity-[0.07]" />
       )}
       {children}
     </section>
   );
 }
 
-// ---------- WarmTable ----------
+// ---------- WarmTable (basis: components/ui/table) ----------
 export function WarmTable({ head, children, minW = 560, className }: { head: string[]; children: React.ReactNode; minW?: number; className?: string }) {
   return (
-    <div className={`warm-table${className ? ` ${className}` : ""}`} style={{ overflowX: "auto", border: "1px solid rgba(23,23,22,.14)", borderRadius: 16 }}>
-      <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13.5, minWidth: minW > 0 ? minW : undefined }}>
-        <thead>
-          <tr style={{ background: "#eeeadd" }}>
+    <div className={cn("warm-table overflow-x-auto rounded-2xl border border-line", className)}>
+      <Table className="text-[13.5px]" style={{ minWidth: minW > 0 ? minW : undefined }}>
+        <TableHeader>
+          <TableRow className="border-line bg-paper-deep hover:bg-paper-deep">
             {head.map((h) => (
-              <th key={h} style={{ textAlign: "left", padding: "10px 14px", fontFamily: "var(--font-meta)", fontSize: 10, textTransform: "uppercase", letterSpacing: ".09em", color: "#74746d", whiteSpace: "nowrap" }}>{h}</th>
+              <TableHead key={h} className="whitespace-nowrap text-[10px] tracking-[.09em] text-muted">{h}</TableHead>
             ))}
-          </tr>
-        </thead>
-        <tbody>{children}</tbody>
-      </table>
+          </TableRow>
+        </TableHeader>
+        <TableBody>{children}</TableBody>
+      </Table>
     </div>
   );
 }
 
 export function warmCell(extra?: React.CSSProperties): React.CSSProperties {
-  return { padding: "10px 14px", borderTop: "1px solid rgba(23,23,22,.1)", verticalAlign: "top", ...extra };
+  return { padding: "10px 14px", borderTop: "1px solid var(--color-line)", verticalAlign: "top", ...extra };
 }
 
-// ---------- Form primitives ----------
-const fieldStyle: React.CSSProperties = {
-  borderRadius: 14,
-  border: "1px solid rgba(23,23,22,.25)",
-  background: "#fffdf8",
-  padding: "9px 14px",
-  fontSize: 14,
-  color: "#171716",
-  width: "100%",
-};
-
-export function TextInput(props: React.InputHTMLAttributes<HTMLInputElement>) {
-  return <input {...props} style={{ ...fieldStyle, ...(props.style as object ?? {}) }} />;
+// ---------- Form primitives (basis: components/ui/input) ----------
+export function TextInput(props: React.ComponentProps<typeof Input>) {
+  return <Input {...props} />;
 }
 
 // ---------- Toolbar / Note / Err ----------
 export function Toolbar({ children }: { children: React.ReactNode }) {
-  return <div style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center", marginBottom: 16 }}>{children}</div>;
+  return <div className="mb-4 flex flex-wrap items-center gap-2.5">{children}</div>;
 }
 
 export function Note({ children }: { children: React.ReactNode }) {
   return (
-    <p style={{ color: "#74746d", fontSize: 13, display: "flex", alignItems: "flex-start", gap: 6 }}>
-      <span aria-hidden="true" style={{ flexShrink: 0, marginTop: 1 }}>
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#74746d" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+    <p className="flex items-start gap-1.5 text-[13px] text-muted">
+      <span aria-hidden="true" className="mt-px shrink-0">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
       </span>
       {children}
     </p>
@@ -164,9 +144,9 @@ export function Note({ children }: { children: React.ReactNode }) {
 
 export function Err({ children }: { children: React.ReactNode }) {
   return (
-    <p style={{ color: "#c94b35", fontSize: 13, fontWeight: 700, display: "flex", alignItems: "flex-start", gap: 6 }}>
-      <span aria-hidden="true" style={{ flexShrink: 0, marginTop: 1 }}>
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#c94b35" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+    <p className="flex items-start gap-1.5 text-[13px] font-bold text-terracotta-dark">
+      <span aria-hidden="true" className="mt-px shrink-0">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
       </span>
       {children}
     </p>

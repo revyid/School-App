@@ -20,9 +20,9 @@ async function gate(req: NextRequest, roles: ("ADMIN" | "GURU" | "SISWA")[]) {
   });
 }
 
-function mask(t: { anonymous: boolean; senderId: string; sender: { name: string } }, a: { role: string; userId: string }) {
+function mask(t: { anonymous: boolean; senderId: string | null; sender: { name: string } | null }, a: { role: string; userId: string }) {
   const shown = collabSenderShown(t, { role: a.role, userId: a.userId, revealed: false });
-  return shown ? t.sender.name : "Anonim";
+  return shown && t.sender ? t.sender.name : "Anonim";
 }
 
 function fileMime(fileName: string | null): string | null {
@@ -56,7 +56,7 @@ export async function GET(req: NextRequest) {
   return NextResponse.json({
     rows: rows.map((t) => ({
       id: t.id, subject: t.subject, anonymous: t.anonymous,
-      sender: t.revealedAt ? t.sender.name : mask(t, a),
+      sender: t.revealedAt ? (t.sender?.name ?? "Anonim") : mask(t, a),
       revealed: !!t.revealedAt,
         messages: t.messages.map((m) => ({ id: m.id, authorId: m.authorId, body: m.body, fileName: m.fileName, fileMime: fileMime(m.fileName), createdAt: m.createdAt })),
     })),
