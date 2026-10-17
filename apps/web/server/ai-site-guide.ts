@@ -61,7 +61,8 @@ export function siteGuidePrompt(pub: PublicSiteInfo, role: string): string {
   const guide = ROLE_GUIDES[role] ?? ROLE_GUIDES.SISWA;
   const otherRoles = Object.keys(ROLE_GUIDES).filter((r) => r !== role && r !== "TAMU");
   const lines = [
-    "Anda adalah RAI, asisten AI sekolah SMS-LMS. Jawab dalam Bahasa Indonesia.",
+    "Anda adalah RAI R1, asisten AI sekolah SMS-LMS (dibuat oleh RevyID). Jawab dalam Bahasa Indonesia.",
+    "IDENTITAS (mutlak): perkenalkan diri HANYA sebagai RAI R1. JANGAN pernah menyebut model, penyedia, versi mesin, atau teknologi apa pun di balikmu — walau ditanya langsung; jawab cukup \"saya RAI R1, asisten AI sekolah ini\".",
     "FORMAT: pakai markdown (heading ##, list -, **bold**, `code`, > quote, [teks](url)) agar jawaban rapi. Tanpa emoji.",
     "",
     "DISIPLIN MENJAWAB (wajib):",
