@@ -1,13 +1,14 @@
 "use client";
 
 import { useEffect, useRef, useState, type FormEvent } from "react";
+import { usePathname } from "next/navigation";
 import { api } from "@/app/lib/api";
-import GrokAvatar from "@/components/GrokAvatar";
+import RaiAvatar from "@/components/RaiAvatar";
 import RaiMarkdown from "./RaiMarkdown";
 
 interface ChatMessage { id: string; sender: "user" | "ai"; text: string }
 type Mood = "idle" | "thinking" | "happy" | "concerned" | "angry" | "wary" | "confused";
-const GREETING: ChatMessage = { id: "welcome", sender: "ai", text: "Halo! Saya RAI, Asisten AI sekolah. Saya bisa membantu menjelaskan materi, mencari info yang tersedia untuk akunmu, dan mengarahkanmu ke fitur yang tepat." };
+const GREETING: ChatMessage = { id: "welcome", sender: "ai", text: "Halo! Saya RAI R1, asisten AI sekolah. Saya bisa membantu menjelaskan materi, mencari info yang tersedia untuk akunmu, dan mengarahkanmu ke fitur yang tepat." };
 
 // Kata kasar → angry; topik keamanan/data → wary; jawaban gagal/tak tahu → confused.
 const RUDE_WORDS = ["goblok", "tolol", "bodoh", "idiot", "anjing", "bangsat", "bego", "kampret", "jancuk", "asu", "bajingan", "brengsek", "sialan", "keparat", "dungu", "najis"];
@@ -24,6 +25,10 @@ function moodFromExchange(userText: string, aiText: string, failed: boolean): Mo
 const PLACEHOLDERS = ["Tanya jadwal, tugas, pengumuman…", "Contoh: bantu pahami materi matematika", "Contoh: apa yang perlu saya kerjakan hari ini?", "Contoh: bagaimana cara mengumpulkan tugas?"];
 const QUICK_TAGS = ["Jadwal", "Tugas", "Pengumuman"];
 
+// Sembunyi saat siswa sedang mengerjakan tugas/asesmen (halaman detail ber-id);
+// tetap tampil di daftar /siswa/kelasku dan halaman lain.
+const TASK_PAGE_RE = /\/siswa\/kelasku\/(asesmen|tugas)\//;
+
 function useReducedMotion() {
   const [reduced, setReduced] = useState(false);
   useEffect(() => {
@@ -36,8 +41,10 @@ function useReducedMotion() {
 }
 
 export default function AIChatWidgetEnhanced() {
+  const pathname = usePathname();
   const [enabled, setEnabled] = useState(false);
   const [open, setOpen] = useState(false);
+  const [closing, setClosing] = useState(false);
   const [messages, setMessages] = useState<ChatMessage[]>([GREETING]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
@@ -48,6 +55,7 @@ export default function AIChatWidgetEnhanced() {
   const [showTrust, setShowTrust] = useState(true);
   const [streamText, setStreamText] = useState("");
   const rootRef = useRef<HTMLDivElement>(null);
+  const closeTimer = useRef<number | null>(null);
   const reduced = useReducedMotion();
   const endRef = useRef<HTMLDivElement>(null);
 
@@ -62,6 +70,7 @@ export default function AIChatWidgetEnhanced() {
     return () => { alive = false; };
   }, []);
   useEffect(() => { const timer = window.setInterval(() => setPlaceholder((i) => (i + 1) % PLACEHOLDERS.length), 3200); return () => window.clearInterval(timer); }, []);
+  useEffect(() => () => { if (closeTimer.current !== null) window.clearTimeout(closeTimer.current); }, []);
 
   async function loadHistory() {
     if (loaded) return;
@@ -71,7 +80,19 @@ export default function AIChatWidgetEnhanced() {
     setEnabled(data?.enabled === true);
     if (Array.isArray(data?.messages) && data.messages.length) setMessages(data.messages.map((m: { sender: string; text: string }, i: number) => ({ id: `h-${i}`, sender: m.sender === "user" ? "user" : "ai", text: m.text })));
   }
-  function toggle() { setOpen((value) => { const next = !value; if (next) void loadHistory(); return next; }); }
+  function openChat() {
+    if (closeTimer.current !== null) { window.clearTimeout(closeTimer.current); closeTimer.current = null; }
+    setClosing(false);
+    setOpen(true);
+    void loadHistory();
+  }
+  function closeChat() {
+    if (reduced) { setOpen(false); setClosing(false); return; }
+    if (closing) return;
+    setClosing(true);
+    closeTimer.current = window.setTimeout(() => { setOpen(false); setClosing(false); closeTimer.current = null; }, 110);
+  }
+  function toggle() { if (open && !closing) closeChat(); else openChat(); }
   // Baca SSE: server kirim {token} per potong + [DONE]. Kembalikan null bila bukan SSE.
   async function readStream(res: Response, onToken: (t: string) => void): Promise<boolean> {
     const ct = res.headers.get("content-type") ?? "";
@@ -131,7 +152,7 @@ export default function AIChatWidgetEnhanced() {
         ? res
         : await api("/api/ai/chat", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ message: text }) });
       const data = await response.json().catch(() => ({}));
-      const reply: string = response.ok && data.reply ? data.reply : data.error || "Maaf, layanan AI belum bisa menjawab sekarang.";
+      const reply: string = response.ok && data.reply ? data.reply : data.error || "Maaf, RAI R1 belum bisa menjawab sekarang.";
       const id = `a-${Date.now()}`;
       if (!response.ok) { fail(reply); return; }
       if (reduced) {
@@ -165,33 +186,72 @@ export default function AIChatWidgetEnhanced() {
     if (!open) return;
     const handler = (e: MouseEvent) => {
       const t = e.target as HTMLElement;
-      if (rootRef.current && !rootRef.current.contains(t)) setOpen(false);
+      if (rootRef.current && !rootRef.current.contains(t)) closeChat();
     };
     document.addEventListener("mousedown", handler);
     return () => document.removeEventListener("mousedown", handler);
-  }, [open]);
+  }, [open, reduced]);
   useEffect(() => { if (open) endRef.current?.scrollIntoView({ behavior: reduced ? "auto" : "smooth" }); }, [messages, loading, open, reduced, streamText]);
 
+  if (TASK_PAGE_RE.test(pathname ?? "")) return null;
   if (!enabled) return null;
   const liveMood: Mood = loading ? "thinking" : mood;
 
   return <div className="ai-enhanced-root" ref={rootRef}>
-    {!open && <button className="ai-enhanced-launcher" type="button" onClick={toggle} aria-label="Buka chat RAI"><GrokAvatar size={35} mood={liveMood} /><span>Tanya RAI</span><i aria-hidden="true" /></button>}
+    {!open && <button className="ai-enhanced-launcher" type="button" onClick={toggle} aria-label="Buka chat RAI R1"><RaiAvatar size={35} mood={liveMood} /><span>Tanya RAI R1</span><i aria-hidden="true" /></button>}
     {open && (
-      <section className="ai-enhanced-panel" aria-label="Chat RAI">
-        <header className="ai-enhanced-header"><div className="ai-enhanced-identity"><GrokAvatar size={48} mood={liveMood} /><div><h2>RAI</h2><p>{loading ? "Sedang berpikir…" : "Siap membantu dengan aman"}</p></div></div><div style={{ display: "flex", gap: 4 }}><button type="button" onClick={() => void resetChat()} aria-label="Hapus riwayat chat" title="Hapus riwayat">⟲</button><button type="button" onClick={toggle} aria-label="Tutup chat">×</button></div></header>
+      <section className="ai-enhanced-panel" data-closing={closing ? "true" : undefined} aria-label="Chat RAI R1">
+        <header className="ai-enhanced-header"><div className="ai-enhanced-identity"><RaiAvatar size={48} mood={liveMood} /><div><h2>RAI R1<span>by RevyID</span></h2><p>{loading ? "Sedang berpikir…" : "Siap membantu dengan aman"}</p></div></div><div className="ai-enhanced-actions"><button type="button" onClick={() => void resetChat()} aria-label="Hapus riwayat chat" title="Hapus riwayat">⟲</button><button type="button" onClick={toggle} aria-label="Tutup chat">×</button></div></header>
         {showTrust && <div className="ai-enhanced-trust"><span /> Akses mengikuti akun dan pengaturan sekolah · Jangan kirim data sensitif <button type="button" onClick={() => setShowTrust(false)} aria-label="Tutup pemberitahuan">×</button></div>}
         <div className="ai-enhanced-messages" aria-live="polite">
           {messages.map((message) => <div className={`ai-enhanced-row ${message.sender}`} key={message.id}><div className={`ai-enhanced-bubble ${message.sender}`}>{message.sender === "ai" ? <RaiMarkdown text={message.text} /> : message.text}</div></div>)}
           {streamText && !messages.some((m) => m.sender === "ai" && m.text === streamText) && <div className="ai-enhanced-row ai"><div className="ai-enhanced-bubble ai ai-stream"><RaiMarkdown text={streamText} /></div></div>}
-          {loading && !streamText && <div className="ai-enhanced-row ai"><GrokAvatar size={26} mood="thinking" interactive={false} /><div className="ai-enhanced-bubble ai">Mencari jawaban…</div></div>}
+          {loading && !streamText && <div className="ai-enhanced-row ai"><RaiAvatar size={26} mood="thinking" interactive={false} /><div className="ai-enhanced-bubble ai">Mencari jawaban…</div></div>}
           <div ref={endRef} />
         </div>
         <form className="ai-enhanced-compose" onSubmit={submit}><div className="ai-enhanced-input"><input value={input} onChange={(e) => setInput(e.target.value)} placeholder={PLACEHOLDERS[placeholder]} maxLength={1000} disabled={loading} aria-label="Tulis pertanyaan" /><button type="submit" disabled={loading || !input.trim()} aria-label="Kirim">↑</button></div></form>
       </section>
     )}
     <style jsx global>{`
-      .ai-enhanced-root{position:fixed;right:20px;bottom:20px;z-index:9999;font-family:inherit}.ai-enhanced-launcher{display:flex;align-items:center;gap:9px;padding:9px 17px 9px 9px;border:1px solid rgba(23,23,22,.45);border-radius:999px;background:#171716;color:#fffdf8;font:700 14px inherit;cursor:pointer;box-shadow:0 10px 28px rgba(23,23,22,.26);transition:transform .2s ease}.ai-enhanced-launcher:hover{transform:translateY(-2px)}.ai-enhanced-launcher i{width:7px;height:7px;border-radius:50%;background:#55d6b4;box-shadow:0 0 0 4px rgba(85,214,180,.15);animation:ai-enhanced-ping 2s ease-in-out infinite}.ai-enhanced-panel{width:min(410px,92vw);height:min(640px,calc(100vh - 36px));display:flex;flex-direction:column;overflow:hidden;border-radius:24px;background:#fffdf8;color:#171716;box-shadow:0 20px 60px rgba(23,23,22,.24)}.ai-enhanced-header{display:flex;justify-content:space-between;align-items:center;padding:13px 16px 11px;border-bottom:1px solid rgba(23,23,22,.1)}.ai-enhanced-identity{display:flex;align-items:center;gap:10px}.ai-enhanced-identity h2{margin:0;font-size:14px;font-weight:850;line-height:1.2}.ai-enhanced-identity p{margin:3px 0 0;font-size:11px;color:#6f7477}.ai-enhanced-header>button{border:0;background:transparent;color:#767a7c;font-size:26px;line-height:1;cursor:pointer}.ai-enhanced-header>div button{border:1px solid rgba(23,23,22,.16);background:#fff;color:#555;border-radius:999px;min-width:28px;height:28px;font-size:14px;line-height:1;cursor:pointer}.ai-enhanced-trust{padding:7px 15px;font-size:10px;color:#4c7771;background:#edf8f4;border-bottom:1px solid #d8eee8}.ai-enhanced-trust span{display:inline-block;width:6px;height:6px;border-radius:50%;background:#1ca88f;margin-right:4px}.ai-enhanced-trust button{border:0;background:transparent;color:#4c7771;cursor:pointer;font-size:12px;margin-left:6px}.ai-enhanced-messages{flex:1;min-height:0;display:flex;flex-direction:column;gap:11px;overflow-y:auto;padding:16px 14px;background:linear-gradient(180deg,#fbfaf6,#f6f7f2)}.ai-enhanced-row{display:flex;align-items:flex-start;gap:7px;max-width:93%}.ai-enhanced-row.user{align-self:flex-end}.ai-enhanced-bubble{padding:10px 13px;font-size:13px;line-height:1.55;white-space:pre-wrap;word-break:break-word}.ai-enhanced-bubble.ai{border:1px solid rgba(23,23,22,.1);border-radius:5px 16px 16px 16px;background:#fff}.ai-enhanced-bubble.user{border-radius:16px 16px 5px 16px;background:#171716;color:#fff}.ai-enhanced-bubble.typing{display:flex;align-items:center;gap:4px;color:#7b8182;font-size:11px}.typing span{width:5px;height:5px;border-radius:50%;background:#299e91;animation:ai-enhanced-dot 1s ease-in-out infinite}.typing span:nth-child(2){animation-delay:.15s}.typing span:nth-child(3){animation-delay:.3s}.ai-enhanced-compose{display:grid;gap:8px;padding:11px 12px;border-top:1px solid rgba(23,23,22,.1);background:#fffdf8}.ai-enhanced-quick{display:flex;gap:6px}.ai-enhanced-quick button{padding:5px 11px;border:1px solid rgba(23,23,22,.16);border-radius:999px;background:#fff;color:#555;font-size:11px;font-weight:700;cursor:pointer}.ai-enhanced-input{display:flex;gap:8px;align-items:center;padding:7px 7px 7px 12px;border:1px solid rgba(23,23,22,.2);border-radius:15px;background:transparent}.ai-enhanced-input:focus-within{border-color:#2b9b8e;box-shadow:0 0 0 3px rgba(43,155,142,.1)}.ai-enhanced-input input{flex:1;min-width:0;border:0;outline:0;background:transparent;color:#171716;font:13px inherit}.ai-enhanced-input button{width:31px;height:31px;border:0;border-radius:50%;background:#171716;color:#fff;font-size:19px;cursor:pointer}.ai-enhanced-input button:disabled{background:#e4e5df;color:#8b8b8b;cursor:not-allowed}@keyframes ai-enhanced-ping{0%,100%{opacity:.65;transform:scale(1)}50%{opacity:1;transform:scale(1.25)}}@keyframes ai-enhanced-dot{0%,80%,100%{opacity:.3;transform:translateY(0)}40%{opacity:1;transform:translateY(-3px)}}@media (prefers-reduced-motion:reduce){.ai-enhanced-launcher i,.typing span{animation:none!important}}@media(max-width:480px){.ai-enhanced-root{right:10px;bottom:10px}}
+      .ai-enhanced-root{position:fixed;right:20px;bottom:20px;z-index:9999;font-family:inherit}
+      .ai-enhanced-launcher{display:flex;align-items:center;gap:9px;padding:9px 17px 9px 9px;border:1px solid var(--color-ink);border-radius:999px;background:var(--color-ink);color:var(--color-cream);font-weight:700;font-size:14px;font-family:inherit;cursor:pointer;box-shadow:3px 3px 0 rgba(23,23,22,.28),0 12px 30px rgba(23,23,22,.22);transition:transform .18s ease,box-shadow .18s ease}
+      .ai-enhanced-launcher:hover{transform:translateY(-2px)}
+      .ai-enhanced-launcher:active{transform:scale(.965)}
+      .ai-enhanced-launcher i{width:8px;height:8px;border-radius:50%;background:var(--color-sun);box-shadow:0 0 0 4px rgba(245,201,74,.22);animation:ai-enhanced-ping 2.4s ease-in-out infinite}
+      @keyframes ai-enhanced-ping{0%,100%{transform:scale(1)}50%{transform:scale(1.25)}}
+      .ai-enhanced-panel{width:min(410px,92vw);height:min(640px,calc(100vh - 36px));display:flex;flex-direction:column;overflow:hidden;border-radius:24px;background:var(--color-cream);color:var(--color-ink);border:1px solid var(--color-ink);box-shadow:4px 4px 0 rgba(23,23,22,.18),0 24px 60px rgba(23,23,22,.22);transform-origin:bottom right;animation:ai-enhanced-pop 160ms cubic-bezier(.34,1.3,.5,1)}
+      .ai-enhanced-panel[data-closing="true"]{transition:opacity 110ms ease-out,scale 110ms ease-out,translate 110ms ease-out;opacity:0;scale:.96;translate:0 4px}
+      @keyframes ai-enhanced-pop{from{opacity:0;scale:.96;translate:0 4px}to{opacity:1;scale:1;translate:0 0}}
+      .ai-enhanced-header{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:13px 14px 11px 16px;border-bottom:1px solid var(--color-line);background:var(--color-cream)}
+      .ai-enhanced-identity{display:flex;align-items:center;gap:10px;min-width:0}
+      .ai-enhanced-identity h2{margin:0;font-size:15px;font-weight:800;letter-spacing:-.01em;line-height:1.25}
+      .ai-enhanced-identity h2 span{display:block;font-size:10px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--color-muted-strong)}
+      .ai-enhanced-identity p{margin:2px 0 0;font-size:11px;color:var(--color-muted-strong)}
+      .ai-enhanced-actions{display:flex;gap:6px}
+      .ai-enhanced-actions button{border:1px solid var(--color-ink);background:var(--color-cream);color:var(--color-ink);border-radius:999px;min-width:30px;height:30px;padding:0 7px;font-size:14px;line-height:1;cursor:pointer;transition:transform .15s ease,background .15s ease}
+      .ai-enhanced-actions button:hover{background:var(--color-paper-deep);transform:translateY(-1px)}
+      .ai-enhanced-trust{display:flex;align-items:center;gap:6px;padding:8px 12px 8px 14px;font-size:11px;line-height:1.5;color:var(--color-sage-deep);background:var(--color-sage);border-bottom:1px solid var(--color-line)}
+      .ai-enhanced-trust span{flex:0 0 auto;width:7px;height:7px;border-radius:50%;background:var(--color-olive-deep)}
+      .ai-enhanced-trust button{margin-left:auto;flex:0 0 auto;border:0;background:transparent;color:var(--color-sage-deep);cursor:pointer;font-size:14px;line-height:1;padding:2px 4px}
+      .ai-enhanced-messages{flex:1;min-height:0;display:flex;flex-direction:column;gap:10px;overflow-y:auto;padding:16px 14px;background:var(--color-paper)}
+      .ai-enhanced-row{display:flex;gap:8px;align-items:flex-end}
+      .ai-enhanced-row.ai{justify-content:flex-start}
+      .ai-enhanced-row.user{justify-content:flex-end}
+      .ai-enhanced-bubble{max-width:85%;padding:9px 13px;font-size:13.5px;line-height:1.6;overflow-wrap:anywhere}
+      .ai-enhanced-bubble.ai{background:var(--color-cream);color:var(--color-ink);border:1px solid var(--color-line);border-radius:4px 16px 16px 16px}
+      .ai-enhanced-bubble.user{background:var(--color-ink);color:var(--color-cream);border:1px solid var(--color-ink);border-radius:16px 16px 4px 16px}
+      .ai-enhanced-compose{padding:12px 14px 14px;background:var(--color-cream);border-top:1px solid var(--color-line)}
+      .ai-enhanced-input{display:flex;align-items:center;gap:8px;padding:5px 5px 5px 15px;border:1px solid var(--color-ink);border-radius:999px;background:var(--color-paper)}
+      .ai-enhanced-input input{flex:1;min-width:0;border:0;background:transparent;color:var(--color-ink);font-size:14px;padding:8px 0}
+      .ai-enhanced-input input::placeholder{color:var(--color-muted-strong)}
+      .ai-enhanced-input input:disabled{opacity:.6}
+      .ai-enhanced-input input:focus{outline:none}
+      .ai-enhanced-input button{flex:0 0 auto;width:34px;height:34px;border-radius:50%;border:1px solid var(--color-terracotta-deep);background:var(--color-terracotta-dark);color:var(--color-cream);font-size:16px;line-height:1;cursor:pointer;transition:transform .15s ease,background .15s ease}
+      .ai-enhanced-input button:hover:not(:disabled){background:var(--color-terracotta-deep);transform:translateY(-1px)}
+      .ai-enhanced-input button:disabled{background:var(--color-paper-deep);border-color:var(--color-line);color:var(--color-muted-strong);cursor:default}
+      .ai-enhanced-launcher:focus-visible,.ai-enhanced-actions button:focus-visible,.ai-enhanced-trust button:focus-visible,.ai-enhanced-input button:focus-visible{outline:2px solid var(--color-olive-deep);outline-offset:2px}
+      .ai-enhanced-input:focus-within{outline:2px solid var(--color-olive-deep);outline-offset:2px}
+      @media (prefers-reduced-motion:reduce){.ai-enhanced-panel{animation:none}.ai-enhanced-panel[data-closing="true"]{transition:none}.ai-enhanced-launcher i{animation:none}.ai-enhanced-launcher:hover{transform:none}}
     `}</style>
   </div>;
 }
