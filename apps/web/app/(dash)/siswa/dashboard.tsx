@@ -30,29 +30,21 @@ export default function SiswaDashboard() {
   const menunggu = rows.filter((t) => t.state === "BELUM" || t.state === "TERLAMBAT").slice(0, 4);
 
   return (
-    <div style={{ display: "grid", gap: 20 }}>
+    <div className="grid gap-5">
       {/* HERO */}
       <Reveal>
         <section
-          className="card"
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: 16,
-            padding: "clamp(20px, 3vw, 36px)",
-            overflow: "hidden",
-            position: "relative",
-          }}
+          className="card relative flex items-center gap-4 overflow-hidden p-5 md:p-9"
         >
-          <div style={{ flex: 1, minWidth: 0, position: "relative", zIndex: 2 }}>
+          <div className="relative z-[2] min-w-0 flex-1">
             <p className="kicker">
               {HARI[now.getDay()]}, {now.getDate()} {BULAN[now.getMonth()]} {now.getFullYear()}
             </p>
-            <h1 className="display" style={{ fontSize: "clamp(30px, 4.5vw, 52px)", margin: "8px 0" }}>
+            <h1 className="display text-[clamp(30px,4.5vw,52px)] my-2">
               Siap menemukan<br />
-              <span style={{ color: "#e85e43" }}>hal baru hari ini?</span>
+              <span className="text-terracotta">hal baru hari ini?</span>
             </h1>
-            <p style={{ color: "#74746d", maxWidth: 420, margin: "0 0 16px" }}>
+            <p className="text-muted mb-4 max-w-[420px]">
               Halo, {pertama}! {belum > 0 ? `${belum} tugas menunggumu — sedikit lagi.` : "Semua tugas beres. Pertahankan!"}
               {profile.data?.user.studentProfile?.class && <> Kelas {profile.data.user.studentProfile.class.name}.</>}
             </p>
@@ -60,23 +52,18 @@ export default function SiswaDashboard() {
               Lanjut belajar
             </Link>
           </div>
-          <div className="dash-hero-char" style={{ position: "relative", flexShrink: 0 }}>
+          <div className="dash-hero-char relative shrink-0">
             <div
-              style={{
-                position: "absolute",
-                inset: "8% -6%",
-                background: "#f5c94a",
-                borderRadius: "48% 52% 55% 45% / 50% 46% 54% 50%",
-                zIndex: 0,
-              }}
+              // dynamic: blob shape dekoratif maskot, bukan warna teks
+              className="absolute bg-sun z-0 inset-[8%_-6%] rounded-[48%_52%_55%_45%_/_50%_46%_54%_50%]"
+             
             />
             <Image
               src="/assets/student-hero-transparent.png"
               alt="Maskot siswa"
               width={220}
               height={260}
-              className="anim-floaty"
-              style={{ position: "relative", zIndex: 1, objectFit: "contain" }}
+              className="anim-floaty relative z-[1] object-contain"
               priority
             />
           </div>
@@ -84,46 +71,46 @@ export default function SiswaDashboard() {
       </Reveal>
 
       {/* METRIK */}
-      <section style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(148px, 1fr))", gap: 14 }} className="dash-metrics">
+      <section className="dash-metrics grid grid-cols-[repeat(auto-fit,minmax(148px,1fr))] gap-3.5">
         <Reveal delay={60}>
-          <div className="card card-lift" style={{ background: "#50643e", color: "#fffdf8", padding: 18, minHeight: 150 }}>
-            <p style={{ fontSize: 12, opacity: 0.85, margin: 0 }}>Tugas selesai</p>
-            <p className="display" style={{ fontSize: 40, margin: "6px 0" }}>{tasks.loading ? "…" : tasks.error ? "—" : `${sudah}/${rows.length}`}</p>
-            <p style={{ fontSize: 12, color: "#f5c94a", margin: 0 }}>{pct}% dari semua tugas</p>
+          <div className="card card-lift bg-olive-deep text-cream p-4.5 min-h-[150px]">
+            <p className="text-xs opacity-85 m-0">Tugas selesai</p>
+            <p className="display text-4xl my-1.5">{tasks.loading ? "…" : tasks.error ? "—" : `${sudah}/${rows.length}`}</p>
+            <p className="text-xs text-sun-soft m-0">{pct}% dari semua tugas</p>
           </div>
         </Reveal>
         <Reveal delay={180}>
-          <div className="card card-lift" style={{ background: "#f5c94a", padding: 18, minHeight: 150 }}>
-            <p style={{ fontSize: 12, margin: 0 }}>Bintang terkumpul</p>
-            <p className="display" style={{ fontSize: 40, margin: "6px 0" }}>{exp.loading ? "…" : exp.error ? "—" : points}</p>
-            <p style={{ fontSize: 12, margin: 0 }}>poin EXP</p>
+          <div className="card card-lift bg-sun p-4.5 min-h-[150px]">
+            <p className="text-xs m-0">Bintang terkumpul</p>
+            <p className="display text-4xl my-1.5">{exp.loading ? "…" : exp.error ? "—" : points}</p>
+            <p className="text-xs m-0">poin EXP</p>
           </div>
         </Reveal>
       </section>
 
       {/* BAWAH */}
-      <section style={{ display: "grid", gridTemplateColumns: "1.2fr 1fr", gap: 14 }} className="dash-bottom">
+      <section className="dash-bottom grid grid-cols-[1.2fr_1fr] gap-3.5">
         <Reveal>
-          <div className="card" style={{ padding: 20 }}>
-            <h2 style={{ fontSize: 17, fontWeight: 800, letterSpacing: "-0.02em", margin: "0 0 12px" }}>
+          <div className="card p-5">
+            <h2 className="text-[17px] font-extrabold tracking-[-0.02em] mb-3">
               Tugas menunggu
             </h2>
             {tasks.loading ? (
-              <p style={{ color: "#74746d" }}>Memuat…</p>
+              <p className="text-muted">Memuat…</p>
             ) : tasks.error ? (
-              <p role="alert" style={{ color: "#c94b35" }}>Tugas gagal dimuat. Muat ulang halaman.</p>
+              <p role="alert" className="text-terracotta-dark font-bold">Tugas gagal dimuat. Muat ulang halaman.</p>
             ) : menunggu.length === 0 ? (
-              <p style={{ color: "#74746d" }}>
+              <p className="text-muted">
                 Tidak ada tugas menunggu. {rows.length === 0 ? "Gurumu belum memberikan tugas." : "Semua sudah dikumpulkan!"}
               </p>
             ) : (
-              <ul style={{ listStyle: "none", margin: 0, padding: 0, display: "grid", gap: 10 }}>
+              <ul className="m-0 grid list-none gap-2.5 p-0">
                 {menunggu.map((t) => (
-                  <li key={t.id} style={{ borderTop: "1px solid rgba(23,23,22,.14)", paddingTop: 10 }}>
-                    <Link href={`/siswa/kelasku?tugas=${t.id}`} style={{ fontWeight: 700, color: "#171716" }}>
+                  <li key={t.id} className="border-t border-line pt-2.5">
+                    <Link href={`/siswa/kelasku?tugas=${t.id}`} className="font-bold text-ink">
                       {t.title}
                     </Link>
-                    <p style={{ fontSize: 12, color: "#74746d", margin: "2px 0 0" }}>
+                    <p className="mt-0.5 text-xs text-muted">
                       {t.state === "TERLAMBAT" ? "Terlambat" : "Belum dikumpulkan"}
                       {t.deadline ? ` · tenggat ${new Date(t.deadline).toLocaleDateString("id-ID")}` : ""}
                     </p>
@@ -134,34 +121,26 @@ export default function SiswaDashboard() {
           </div>
         </Reveal>
         <Reveal delay={100}>
-          <div className="card" style={{ padding: 20, background: "#97c4db" }}>
-            <h2 style={{ fontSize: 17, fontWeight: 800, letterSpacing: "-0.02em", margin: "0 0 12px" }}>
+          <div className="card bg-sky p-5">
+            <h2 className="text-[17px] font-extrabold tracking-[-0.02em] mb-3">
               Lencanaku
             </h2>
             {badges.length === 0 ? (
-              <p style={{ fontSize: 13 }}>Belum ada lencana. Kumpulkan EXP dari tugas, asesmen, dan kehadiran!</p>
+              <p className="text-[13px]">Belum ada lencana. Kumpulkan EXP dari tugas, asesmen, dan kehadiran!</p>
             ) : (
-              <ul style={{ listStyle: "none", margin: 0, padding: 0, display: "flex", flexWrap: "wrap", gap: 8 }}>
+              <ul className="m-0 flex list-none flex-wrap gap-2 p-0">
                 {badges.map((b) => (
                   <li
                     key={b.name}
-                    className="anim-breathe"
-                    style={{
-                      background: "#fffdf8",
-                      border: "1px solid #171716",
-                      borderRadius: 999,
-                      padding: "6px 14px",
-                      fontSize: 12.5,
-                      fontWeight: 700,
-                    }}
+                    className="anim-breathe bg-cream border border-ink rounded-full px-3.5 py-1.5 text-[12.5px] font-bold"
                   >
                     {b.name}
                   </li>
                 ))}
               </ul>
             )}
-            <p style={{ margin: "14px 0 0" }}>
-              <Link href="/siswa/leaderboard" style={{ fontWeight: 700, color: "#171716" }}>
+            <p className="mt-3.5">
+              <Link href="/siswa/leaderboard" className="font-bold text-ink">
                 Lihat papan peringkat
               </Link>
             </p>

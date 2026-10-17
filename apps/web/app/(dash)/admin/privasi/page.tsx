@@ -3,10 +3,12 @@
 // Admin: flag persetujuan ortu + teks kebijakan privasi.
 import { useState } from "react";
 import { api, useFetch } from "@/app/lib/api";
-import { PageHead, Panel, Toolbar, Note } from "@/components/DashUI";
 import { Select, SelectTrigger, SelectValue, SelectPositioner, SelectPopup, SelectItem } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { Badge, statusVariant } from "@/components/ui/badge";
+import { PageHead } from "@/components/ui/page-header";
+import { Card } from "@/components/ui/card";
+import { Alert } from "@/components/ui/alert";
 
 export default function PrivasiAdminPage() {
   const [studentId, setStudentId] = useState("");
@@ -50,9 +52,9 @@ export default function PrivasiAdminPage() {
   return (
     <>
       <PageHead kicker="Kepatuhan" title="Privasi dan persetujuan ortu" desc="Catat persetujuan orang tua dan kelola teks kebijakan privasi sekolah." />
-      <Panel style={{ marginBottom: 16 }}>
-        <h2 className="display" style={{ fontSize: 18, margin: "0 0 12px" }}>Flag persetujuan</h2>
-        <Toolbar>
+      <Card className="mb-4">
+        <h2 className="display text-[18px] mt-0 mr-0 mb-3 ml-0">Flag persetujuan</h2>
+        <div className="mb-4 flex flex-wrap items-center gap-2.5">
           <Select value={studentId} onValueChange={(v) => setStudentId(v ?? "")}>
             <SelectTrigger><SelectValue placeholder="— pilih siswa —" /></SelectTrigger>
             <SelectPositioner><SelectPopup>
@@ -63,27 +65,27 @@ export default function PrivasiAdminPage() {
               ))}
             </SelectPopup></SelectPositioner>
           </Select>
-        </Toolbar>
+        </div>
         {consent.data && (
-          <p style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+          <p className="flex gap-2 items-center flex-wrap">
             Status: <Badge variant={statusVariant(consent.data.consent.consented ? "AKTIF" : "PENDING")}>{consent.data.consent.consented ? "Disetujui" : "Belum"}</Badge>
             <Button variant="sticker" type="button" onClick={() => tandai(true)}>Tandai setuju</Button>
             <Button variant="sticker-ghost" type="button" onClick={() => tandai(false)}>Tandai belum</Button>
           </p>
         )}
-      </Panel>
-      <Panel>
-        <h2 className="display" style={{ fontSize: 18, margin: "0 0 12px" }}>Kebijakan privasi sekolah</h2>
-        {policy.data?.policy && <Note>Saat ini: {policy.data.policy.text.slice(0, 200)}…</Note>}
-        <form onSubmit={simpanPolicy} style={{ display: "grid", gap: 12, maxWidth: 560 }}>
-          <label style={{ display: "grid", gap: 6, fontSize: 13, color: "#74746d" }}>
+      </Card>
+      <Card>
+        <h2 className="display text-[18px] mt-0 mr-0 mb-3 ml-0">Kebijakan privasi sekolah</h2>
+        {policy.data?.policy && <Alert>Saat ini: {policy.data.policy.text.slice(0, 200)}…</Alert>}
+        <form className="grid gap-3 max-w-[560px]" onSubmit={simpanPolicy}>
+          <label className="grid gap-[6px] text-[13px] text-muted">
             Teks kebijakan:
-            <textarea value={text} onChange={(e) => setText(e.target.value)} rows={6} style={{ borderRadius: 14, border: "1px solid rgba(23,23,22,.25)", background: "#fffdf8", padding: "9px 14px", fontSize: 14 }} />
+            <textarea className="rounded-[14px] border border-solid border-line bg-cream pt-[9px] pr-[14px] pb-[9px] pl-[14px] text-sm" value={text} onChange={(e) => setText(e.target.value)} rows={6} />
           </label>
-          <Toolbar><Button variant="sticker" type="submit">Simpan</Button></Toolbar>
+          <div className="mb-4 flex flex-wrap items-center gap-2.5"><Button variant="sticker" type="submit">Simpan</Button></div>
         </form>
-        {msg && <p style={{ fontWeight: 700 }}>{msg}</p>}
-      </Panel>
+        {msg && <p className="font-bold">{msg}</p>}
+      </Card>
     </>
   );
 }

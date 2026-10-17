@@ -34,14 +34,9 @@ export default function AssessmentStemMarkdown({ content, imageAsButton = false 
       const isVid = m[0] === "(VID)" || /\.(mp4|webm)/i.test(m[2] ?? "");
       const alt = m[1] || (isVid ? "video" : "gambar");
       parts.push(
-        <span
+        <span className="inline-flex items-center gap-[6px] border border-solid border-line-strong rounded-full pt-[5px] pr-[11px] pb-[5px] pl-[11px] bg-sage text-sage-deep text-xs font-bold align-middle"
           key={k++}
-          style={{
-            display: "inline-flex", alignItems: "center", gap: 6,
-            border: "1px solid #c9cabb", borderRadius: 999, padding: "5px 11px",
-            background: "#eef0e6", color: "#3d4935", fontSize: 12, fontWeight: 700,
-            verticalAlign: "middle",
-          }}
+          
         >
           <span aria-hidden="true">{isVid ? "▶" : "▧"}</span>{alt}
         </span>,
@@ -49,12 +44,12 @@ export default function AssessmentStemMarkdown({ content, imageAsButton = false 
       last = m.index + m[0].length;
     }
     if (last < content.length) parts.push(<span key={k++}>{content.slice(last)}</span>);
-    return <span style={{ whiteSpace: "pre-wrap" }}>{parts}</span>;
+    return <span className="whitespace-pre-wrap">{parts}</span>;
   }
   // Mode tampil: paragraf + gambar + video beneran.
   const blocks = content.split(/\n{2,}/);
   return (
-    <span style={{ display: "grid", gap: 8 }}>
+    <span className="grid gap-2">
       {blocks.map((b, i) => {
         const nodes: React.ReactNode[] = [];
         let last = 0;
@@ -68,23 +63,23 @@ export default function AssessmentStemMarkdown({ content, imageAsButton = false 
           if (m[2] && /\.(mp4|webm)(\?|$)/i.test(m[2])) {
             nodes.push(
               // eslint-disable-next-line jsx-a11y/media-has-caption
-              <video key={k++} src={m[2]} controls preload="metadata" style={{ display: "block", maxWidth: "100%", borderRadius: 12, margin: "8px 0" }} />,
+              <video className="block max-w-full rounded-xl mt-2 mr-0 mb-2 ml-0" key={k++} src={m[2]} controls preload="metadata" />,
             );
           } else if (m[2]) {
             nodes.push(
               // eslint-disable-next-line @next/next/no-img-element
-              <img key={k++} src={m[2]} alt={esc(m[1] || "Gambar soal")} loading="lazy" style={{ display: "block", maxWidth: "100%", maxHeight: 480, objectFit: "contain", borderRadius: 12, margin: "8px 0" }} />,
+              <img className="block max-w-full max-h-[480px] object-contain rounded-xl mt-2 mr-0 mb-2 ml-0" key={k++} src={m[2]} alt={esc(m[1] || "Gambar soal")} loading="lazy" />,
             );
           } else if (m[0] === "(VID)") {
-            nodes.push(<span key={k++} style={{ fontSize: 12, color: "#8a8a82" }}>[video belum diunggah]</span>);
+            nodes.push(<span className="text-xs text-muted" key={k++}>[video belum diunggah]</span>);
           } else {
-            nodes.push(<span key={k++} style={{ fontSize: 12, color: "#8a8a82" }}>[gambar belum diunggah]</span>);
+            nodes.push(<span className="text-xs text-muted" key={k++}>[gambar belum diunggah]</span>);
           }
           last = m.index + m[0].length;
         }
         if (last < b.length) nodes.push(<span key={k++}>{b.slice(last)}</span>);
-        if (!hasMedia) return <span key={i} style={{ whiteSpace: "pre-wrap" }}>{b}</span>;
-        return <span key={i} style={{ whiteSpace: "pre-wrap" }}>{nodes}</span>;
+        if (!hasMedia) return <span className="whitespace-pre-wrap" key={i}>{b}</span>;
+        return <span className="whitespace-pre-wrap" key={i}>{nodes}</span>;
       })}
     </span>
   );

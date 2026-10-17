@@ -11,8 +11,8 @@ const buttonVariants = cva(
   {
     variants: {
       variant: {
-        default: "bg-primary text-primary-foreground shadow-[3px_3px_0_#171716] hover:bg-terracotta-dark",
-        sticker: "border border-ink bg-terracotta text-cream shadow-[3px_3px_0_#171716] hover:bg-terracotta-dark",
+        default: "bg-primary text-primary-foreground shadow-[3px_3px_0_var(--color-ink)] hover:bg-terracotta-deep",
+        sticker: "border border-ink bg-terracotta-dark text-cream shadow-[3px_3px_0_var(--color-ink)] hover:bg-terracotta-deep",
         "sticker-ghost": "border border-ink bg-cream text-ink shadow-[3px_3px_0_rgba(23,23,22,0.18)] hover:bg-paper-deep",
         secondary: "bg-secondary text-secondary-foreground hover:bg-paper-deep",
         outline: "border border-input bg-cream text-ink hover:bg-accent",

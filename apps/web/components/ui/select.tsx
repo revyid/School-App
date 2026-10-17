@@ -47,6 +47,10 @@ function SelectPositioner({ className, ...props }: SelectPrimitive.Positioner.Pr
     <SelectPrimitive.Positioner
       data-slot="select-positioner"
       className={cn("z-50 outline-none", className)}
+      // Default Base UI menaruh popup MENIMPA trigger (alignItemWithTrigger) khusus
+      // input mouse — item langsung di bawah kursor sehingga terasa "kedip buka-tutup".
+      // Untuk dasbor desktop: dropdown normal di bawah trigger.
+      alignItemWithTrigger={false}
       sideOffset={6}
       {...props}
     />
@@ -58,7 +62,7 @@ function SelectPopup({ className, children, ...props }: SelectPrimitive.Popup.Pr
     <SelectPrimitive.Popup
       data-slot="select-popup"
       className={cn(
-        "max-h-[min(24rem,var(--available-height))] min-w-[var(--trigger-width)] overflow-y-auto rounded-2xl border border-line bg-cream p-1.5 shadow-xl duration-150 data-ending-style:opacity-0 data-starting-style:opacity-0",
+        "max-h-[min(24rem,var(--available-height))] min-w-[var(--anchor-width)] overflow-y-auto rounded-2xl border border-line bg-cream p-1.5 shadow-xl menu-popup",
         className,
       )}
       {...props}
@@ -73,7 +77,7 @@ function SelectItem({ className, children, ...props }: SelectPrimitive.Item.Prop
     <SelectPrimitive.Item
       data-slot="select-item"
       className={cn(
-        "flex min-h-10 cursor-pointer items-center gap-2 rounded-xl px-3 py-2 text-sm text-ink outline-none transition-colors select-none data-[highlighted]:bg-paper data-[disabled]:pointer-events-none data-[disabled]:opacity-50",
+        "flex min-h-10 cursor-pointer items-center gap-2 rounded-xl px-3 py-2 text-sm text-ink outline-none transition-colors select-none data-[highlighted]:bg-paper-deep data-[disabled]:pointer-events-none data-[disabled]:opacity-50",
         className,
       )}
       {...props}

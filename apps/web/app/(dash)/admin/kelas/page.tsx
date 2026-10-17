@@ -2,10 +2,14 @@
 
 import { useState } from "react";
 import { api, useFetch } from "@/app/lib/api";
-import { PageHead, Panel, Toolbar, TextInput, WarmTable, warmCell, Note, Err } from "@/components/DashUI";
 import { Select, SelectTrigger, SelectValue, SelectPositioner, SelectPopup, SelectItem } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import ConfirmDialog from "@/components/ConfirmDialog";
+import { PageHead } from "@/components/ui/page-header";
+import { Card } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Alert } from "@/components/ui/alert";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 
 interface ClassRow {
   id: string; name: string; gradeLevel: string | null;
@@ -15,7 +19,7 @@ interface ClassRow {
 
 export default function ClassesPage() {
   const { data, loading, error, reload } = useFetch<{ rows: ClassRow[]; total: number }>(`/api/classes?page=1&perPage=100`);
-  const { data: teachers } = useFetch<{ rows: { id: string; name: string }[] }>(`/api/teachers?page=1&perPage=200`);
+  const { data: teachers } = useFetch<{ rows: { id: string; name: string }[] }>(`/api/teachers?page=1&perPage=100`);
   const [name, setName] = useState("");
   const [homeroom, setHomeroom] = useState("");
   const [deleteTarget, setDeleteTarget] = useState<{ id: string; name: string } | null>(null);
@@ -48,27 +52,39 @@ export default function ClassesPage() {
   return (
     <>
       <PageHead kicker="Data master" title="Kelas" desc="Kelola rombel dan wali kelasnya." />
-      <Panel style={{ marginBottom: 16 }}>
-        {loading && <Note>Memuat…</Note>}
-        {error && <Err>Error: {error}</Err>}
-        {data && data.rows.length === 0 && <Note>Belum ada kelas. Tambahkan di bawah.</Note>}
+      <Card className="mb-4">
+        {loading && <Alert>Memuat…</Alert>}
+        {error && <Alert variant="destructive">Error: {error}</Alert>}
+        {data && data.rows.length === 0 && <Alert>Belum ada kelas. Tambahkan di bawah.</Alert>}
         {data && data.rows.length > 0 && (
-          <WarmTable head={["Nama", "Wali Kelas", "Siswa", "Aksi"]}>
+                    <div className="warm-table overflow-x-auto rounded-2xl border border-line">
+            <Table className="text-[13.5px] min-w-[560px]">
+              <TableHeader>
+                <TableRow className="border-line bg-paper-deep hover:bg-paper-deep">
+                  <TableHead className="whitespace-nowrap text-[10px] tracking-[.09em]">{"Nama"}</TableHead>
+                  <TableHead className="whitespace-nowrap text-[10px] tracking-[.09em]">{"Wali Kelas"}</TableHead>
+                  <TableHead className="whitespace-nowrap text-[10px] tracking-[.09em]">{"Siswa"}</TableHead>
+                  <TableHead className="whitespace-nowrap text-[10px] tracking-[.09em]">{"Aksi"}</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
             {data.rows.map((c) => (
-              <tr key={c.id}>
-                <td style={warmCell({ fontWeight: 700 })}>{c.name}</td>
-                <td style={warmCell()}>{c.homeroomTeacher?.name ?? "-"}</td>
-                <td style={warmCell()}>{c._count.students}</td>
-                <td style={warmCell()}><Button variant="sticker-ghost" onClick={() => remove(c.id, c.name)}>Hapus</Button></td>
-              </tr>
+              <TableRow key={c.id}>
+                <TableCell className="font-bold">{c.name}</TableCell>
+                <TableCell>{c.homeroomTeacher?.name ?? "-"}</TableCell>
+                <TableCell>{c._count.students}</TableCell>
+                <TableCell><Button variant="sticker-ghost" onClick={() => remove(c.id, c.name)}>Hapus</Button></TableCell>
+              </TableRow>
             ))}
-          </WarmTable>
+              </TableBody>
+            </Table>
+          </div>
         )}
-      </Panel>
-      <Panel>
-        <h2 className="display" style={{ fontSize: 18, margin: "0 0 12px" }}>Tambah kelas</h2>
-        <Toolbar>
-          <TextInput placeholder="Nama kelas (mis. VII-A)" value={name} onChange={(e) => setName(e.target.value)} style={{ maxWidth: 220 }} />
+      </Card>
+      <Card>
+        <h2 className="display text-[18px] mt-0 mr-0 mb-3 ml-0">Tambah kelas</h2>
+        <div className="mb-4 flex flex-wrap items-center gap-2.5">
+          <Input className="max-w-[220px]" placeholder="Nama kelas (mis. VII-A)" value={name} onChange={(e) => setName(e.target.value)} />
           <Select value={homeroom} onValueChange={(v) => setHomeroom(v ?? "")}>
             <SelectTrigger><SelectValue placeholder="Tanpa wali kelas" /></SelectTrigger>
             <SelectPositioner><SelectPopup>
@@ -78,8 +94,8 @@ export default function ClassesPage() {
             </SelectPopup></SelectPositioner>
           </Select>
           <Button variant="sticker" onClick={create}>Tambah</Button>
-        </Toolbar>
-      </Panel>
+        </div>
+      </Card>
       <ConfirmDialog
         open={deleteTarget !== null}
         title="Hapus Kelas"

@@ -1,9 +1,12 @@
 "use client";
 
 import { useFetch } from "@/app/lib/api";
-import { PageHead, Panel, Note, Err } from "@/components/DashUI";
 import { buttonVariants } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { PageHead } from "@/components/ui/page-header";
+import { Card } from "@/components/ui/card";
+import { Alert } from "@/components/ui/alert";
+import { cn } from "@/lib/utils";
 
 export default function GuruHome() {
   const { data, loading, error } = useFetch<{ rows: { id: string; class: { name: string }; subject: string | null }[] }>(`/api/assignments`);
@@ -13,9 +16,9 @@ export default function GuruHome() {
         kicker="Dasbor guru"
         title="Kelas yang diampu"
         desc="Daftar kelas tempatmu mengajar semester ini."
-        right={<a className={buttonVariants({ variant: "sticker-ghost" })} style={{ textDecoration: "none" }} href="/change-password">Ganti kata sandi</a>}
+        right={<a className={cn(buttonVariants({ variant: "sticker-ghost" }), "no-underline")} href="/change-password">Ganti kata sandi</a>}
       />
-      <Panel>
+      <Card>
         {loading && !data && (
           <div className="divide-y divide-line">
             {[0, 1, 2, 3].map((i) => (
@@ -29,19 +32,19 @@ export default function GuruHome() {
             ))}
           </div>
         )}
-        {error && <Err>Gagal: {error}</Err>}
-        {data && data.rows.length === 0 && <Note>Belum ada penugasan. Hubungi admin.</Note>}
+        {error && <Alert variant="destructive">Gagal: {error}</Alert>}
+        {data && data.rows.length === 0 && <Alert>Belum ada penugasan. Hubungi admin.</Alert>}
         {data && data.rows.length > 0 && (
-          <ul style={{ listStyle: "none", margin: 0, padding: 0, display: "grid", gap: 10 }}>
+          <ul className="list-none m-0 p-0 grid gap-[10px]">
             {data.rows.map((r) => (
-              <li key={r.id} style={{ display: "flex", gap: 10, alignItems: "baseline", padding: "10px 14px", border: "1px solid rgba(23,23,22,.14)", borderRadius: 14 }}>
-                <span className="display" style={{ fontSize: 16 }}>{r.class.name}</span>
-                {r.subject && <span style={{ fontSize: 13, color: "#74746d" }}>{r.subject}</span>}
+              <li className="flex gap-[10px] items-baseline pt-[10px] pr-[14px] pb-[10px] pl-[14px] border border-solid border-line rounded-[14px]" key={r.id}>
+                <span className="display text-base">{r.class.name}</span>
+                {r.subject && <span className="text-[13px] text-muted">{r.subject}</span>}
               </li>
             ))}
           </ul>
         )}
-      </Panel>
+      </Card>
     </>
   );
 }

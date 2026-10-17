@@ -6,13 +6,6 @@ import JSZip from "jszip";
 import * as XLSX from "xlsx";
 import { type ColumnDef } from "@tanstack/react-table";
 import { api, useFetch } from "@/app/lib/api";
-import {
-  Panel,
-  Toolbar,
-  TextInput,
-  Note,
-  Err,
-} from "@/components/DashUI";
 import { Select, SelectTrigger, SelectValue, SelectPositioner, SelectPopup, SelectItem } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { Badge, statusVariant } from "@/components/ui/badge";
@@ -22,6 +15,10 @@ import { DataTable, selectColumn, actionsColumn } from "@/components/ui/data-tab
 import {
   Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription,
 } from "@/components/ui/sheet";
+import { Card } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Alert } from "@/components/ui/alert";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 
 interface StudentRow {
   userId: string;
@@ -178,9 +175,9 @@ export default function SiswaManager() {
       cell: ({ row }) => {
         const r = row.original;
         return (
-          <span style={{ fontWeight: 700 }}>
+          <span className="font-bold">
             {r.user.name}
-            <div style={{ fontWeight: 400, fontSize: 12, color: "#74746d" }}>NISN: {r.user.nisn ?? "-"}</div>
+            <div className="font-normal text-xs text-muted">NISN: {r.user.nisn ?? "-"}</div>
           </span>
         );
       },
@@ -465,47 +462,36 @@ export default function SiswaManager() {
 
   return (
     <>
-      <Toolbar>
+      <div className="mb-4 flex flex-wrap items-center gap-2.5">
         <Button variant="sticker" onClick={() => setShowAddForm(true)}>
           + Tambah Siswa
         </Button>
-        <details style={{ position: "relative" }}>
-          <summary className="btn-sticker btn-ghost" style={{ cursor: "pointer", listStyle: "none" }}>
+        <details className="relative">
+          <summary className="btn-sticker btn-ghost cursor-pointer list-none">
             Unduh ▾
           </summary>
-          <div style={{ position: "absolute", top: "calc(100% + 8px)", left: 0, zIndex: 30, display: "grid", gap: 8, minWidth: 240, background: "#fffdf8", border: "2px solid #171716", borderRadius: 14, padding: 10 }}>
-            <Button variant="sticker"
+          <div className="absolute top-[calc(100%_+_8px)] left-[0px] z-[30] grid gap-2 min-w-[240px] bg-cream border-2 border-solid border-ink rounded-[14px] p-[10px]">
+            <Button className="bg-olive-deep border-olive-deep text-cream w-full" variant="sticker"
               
               onClick={downloadAllCardsZip}
               disabled={zipLoading}
-              style={{ background: "#50643e", borderColor: "#50643e", color: "#fffdf8", width: "100%" }}
+              
             >
               {zipLoading ? (zipProgress ?? "Memproses…") : "Kartu QR (.ZIP)"}
             </Button>
             <Button variant="sticker-ghost" onClick={() => document.getElementById("import-excel")?.scrollIntoView({ behavior: "smooth" })}>Import Excel</Button>
           </div>
         </details>
-      </Toolbar>
+      </div>
 
       {/* Notifikasi password sementara setelah tambah siswa */}
       {createdPw && (
-        <div
-          style={{
-            background: "#f5c94a",
-            color: "#171716",
-            padding: "14px 18px",
-            borderRadius: 14,
-            fontWeight: 700,
-            marginBottom: 16,
-            border: "2px solid #171716",
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-          }}
+        <div className="bg-sun text-ink pt-[14px] pr-[18px] pb-[14px] pl-[18px] rounded-[14px] font-bold mb-4 border-2 border-solid border-ink flex justify-between items-center"
+          
         >
           <div>
             Siswa <strong>{createdPw.name}</strong> berhasil didaftarkan! Password login sementara:{" "}
-            <code style={{ background: "#fffdf8", padding: "3px 8px", borderRadius: 6, fontSize: 16 }}>
+            <code className="bg-cream pt-[3px] pr-2 pb-[3px] pl-2 rounded-md text-base">
               {createdPw.pw}
             </code>
           </div>
@@ -521,11 +507,11 @@ export default function SiswaManager() {
             <SheetDescription>Daftarkan satu siswa. Gunakan Import Excel untuk massal.</SheetDescription>
           </SheetHeader>
           <div className="flex-1 overflow-y-auto px-6 pb-6">
-          <form onSubmit={createSingleStudent} style={{ display: "grid", gap: 14 }}>
-            <div style={{ display: "grid", gap: 12 }}>
-              <label style={{ display: "grid", gap: 6, fontSize: 13, color: "#74746d" }}>
+          <form className="grid gap-[14px]" onSubmit={createSingleStudent}>
+            <div className="grid gap-3">
+              <label className="grid gap-[6px] text-[13px] text-muted">
                 Nama Lengkap Siswa *:
-                <TextInput
+                <Input
                   placeholder="Contoh: Muhammad Rizky"
                   value={newName}
                   onChange={(e) => setNewName(e.target.value)}
@@ -533,9 +519,9 @@ export default function SiswaManager() {
                 />
               </label>
 
-              <label style={{ display: "grid", gap: 6, fontSize: 13, color: "#74746d" }}>
+              <label className="grid gap-[6px] text-[13px] text-muted">
                 NISN (Nomor Induk Siswa Nasional) *:
-                <TextInput
+                <Input
                   placeholder="Contoh: 0012345678"
                   value={newNisn}
                   onChange={(e) => setNewNisn(e.target.value)}
@@ -543,7 +529,7 @@ export default function SiswaManager() {
                 />
               </label>
 
-              <label style={{ display: "grid", gap: 6, fontSize: 13, color: "#74746d" }}>
+              <label className="grid gap-[6px] text-[13px] text-muted">
                 Kelas:
                 <Select value={newClassId} onValueChange={(v) => setNewClassId(v ?? "")}>
                   <SelectTrigger><SelectValue placeholder="Pilih Kelas" /></SelectTrigger>
@@ -555,16 +541,16 @@ export default function SiswaManager() {
                 </Select>
               </label>
 
-              <label style={{ display: "grid", gap: 6, fontSize: 13, color: "#74746d" }}>
+              <label className="grid gap-[6px] text-[13px] text-muted">
                 No HP WhatsApp Orang Tua (Opsional):
-                <TextInput
+                <Input
                   placeholder="08123456789 atau 628..."
                   value={newPhone}
                   onChange={(e) => setNewPhone(e.target.value)}
                 />
               </label>
 
-              <label style={{ display: "grid", gap: 6, fontSize: 13, color: "#74746d" }}>
+              <label className="grid gap-[6px] text-[13px] text-muted">
                 Jenis Kelamin:
                 <Select value={newGender} onValueChange={(v) => setNewGender((v as "L" | "P") ?? "L")}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
@@ -575,7 +561,7 @@ export default function SiswaManager() {
                 </Select>
               </label>
 
-              <Button variant="sticker" type="submit" disabled={submittingStudent} style={{ width: "100%", minHeight: 44 }}>
+              <Button className="w-full min-h-[44px]" variant="sticker" type="submit" disabled={submittingStudent}>
                 {submittingStudent ? "Mendaftarkan…" : "Daftarkan Siswa"}
               </Button>
             </div>
@@ -585,7 +571,7 @@ export default function SiswaManager() {
       </Sheet>
 
       {/* Tabel Siswa */}
-      <Panel style={{ marginTop: 16 }}>
+      <Card className="mt-4">
         <DataTable<StudentRow>
           columns={columns}
           rows={data?.rows ?? []}
@@ -594,10 +580,10 @@ export default function SiswaManager() {
           onSearchChange={(v) => { setQ(v); setPage(1); }}
           searchPlaceholder="Cari nama / NISN…"
           filters={(
-            <label style={{ display: "grid", gap: 6, fontSize: 13, color: "#74746d" }}>
+            <label className="grid gap-[6px] text-[13px] text-muted">
               Kelas:
               <Select value={classId} onValueChange={(v) => { setClassId(v ?? ""); setPage(1); }}>
-                <SelectTrigger style={{ minHeight: 44 }}><SelectValue placeholder="Semua kelas" /></SelectTrigger>
+                <SelectTrigger className="min-h-[44px]"><SelectValue placeholder="Semua kelas" /></SelectTrigger>
                 <SelectPositioner><SelectPopup>
                   {classes?.rows.map((c) => (
                     <SelectItem key={c.id} value={c.id}>Kelas {c.name}</SelectItem>
@@ -613,49 +599,49 @@ export default function SiswaManager() {
           emptyText="Tidak ada siswa yang cocok."
         />
 
-            <Toolbar>
+            <div className="mb-4 flex flex-wrap items-center gap-2.5">
               <Button variant="sticker-ghost" disabled={page <= 1} onClick={() => setPage((p) => p - 1)}>
                 ‹ Sebelumnya
               </Button>
-              <span style={{ fontSize: 13, color: "#74746d" }}>
+              <span className="text-[13px] text-muted">
                 Halaman {page}/{totalPages}
               </span>
               <Button variant="sticker-ghost" disabled={page >= totalPages} onClick={() => setPage((p) => p + 1)}>
                 Berikutnya ›
               </Button>
-            </Toolbar>
-      </Panel>
+            </div>
+      </Card>
 
       {/* Import Excel */}
-      <div id="import-excel" style={{ scrollMarginTop: 80 }}>
-      <Panel style={{ marginTop: 16 }}>
-        <h2 className="display" style={{ fontSize: 18, margin: "0 0 8px" }}>Import Excel</h2>
-        <Note>Header persis: Nama | JK (L/P) | NISN | Tgl Lahir (YYYY-MM-DD) | Kelas | No Ortu. Maks 10MB, format .xlsx. <a href="/api/students/import/template">Unduh contoh .xlsx</a></Note>
-        <Toolbar>
-          <div style={{ flex: "1 1 280px", minWidth: 240 }}>
+      <div className="scroll-mt-[80px]" id="import-excel">
+      <Card className="mt-4">
+        <h2 className="display text-[18px] mt-0 mr-0 mb-2 ml-0">Import Excel</h2>
+        <Alert>Header persis: Nama | JK (L/P) | NISN | Tgl Lahir (YYYY-MM-DD) | Kelas | No Ortu. Maks 10MB, format .xlsx. <a href="/api/students/import/template">Unduh contoh .xlsx</a></Alert>
+        <div className="mb-4 flex flex-wrap items-center gap-2.5">
+          <div className="flex-[1_1_280px] min-w-[240px]">
             <UploadPopup label="Pilih file .xlsx" hint="Maks 10MB · format .xlsx" maxMb={10} accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" onFile={(f) => { if (f) previewImport(f); }} />
           </div>
           <Button variant="sticker" onClick={uploadImport} disabled={!impPreview}>Proses</Button>
-        </Toolbar>
-        {impMsg && <p style={{ fontWeight: 700 }}>{impMsg}</p>}
+        </div>
+        {impMsg && <p className="font-bold">{impMsg}</p>}
         {impPreview && (
-          <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12.5, marginTop: 8 }}>
-            <thead><tr style={{ background: "#eeeadd" }}>{impPreview.cols.map((h, i) => (
-              <th key={i} style={{ border: "1px solid rgba(23,23,22,.2)", padding: "6px 8px", textAlign: "left" }}>{h}</th>
-            ))}</tr></thead>
-            <tbody>{impPreview.rows.map((r, i) => (
-              <tr key={i}>{impPreview.cols.map((_, j) => (
-                <td key={j} style={{ border: "1px solid rgba(23,23,22,.15)", padding: "6px 8px" }}>{r[j] ?? ""}</td>
-              ))}</tr>
-            ))}</tbody>
-          </table>
+          <Table className="w-full border-collapse text-[12.5px] mt-2">
+            <TableHeader><TableRow className="bg-paper-deep">{impPreview.cols.map((h, i) => (
+              <TableHead className="border border-solid border-line pt-1.5 pr-2 pb-1.5 pl-2 text-left" key={i}>{h}</TableHead>
+            ))}</TableRow></TableHeader>
+            <TableBody>{impPreview.rows.map((r, i) => (
+              <TableRow key={i}>{impPreview.cols.map((_, j) => (
+                <TableCell className="border border-solid border-line pt-1.5 pr-2 pb-1.5 pl-2" key={j}>{r[j] ?? ""}</TableCell>
+              ))}</TableRow>
+            ))}</TableBody>
+          </Table>
         )}
         {impBatch && (
           <p>Status: {impBatch.processedRows}/{impBatch.totalRows} diproses, {impBatch.okRows} berhasil, {impBatch.errRows} gagal ({impBatch.status})
             {impBatch.status === "DONE" && (<> — <a href={`/api/students/import/${impBatch.id}/errors`}>Laporan error</a> · <a href={`/api/students/import/${impBatch.id}/credentials`}>Kredensial</a></>)}
           </p>
         )}
-      </Panel>
+      </Card>
       </div>
       <Sheet open={editing !== null} onOpenChange={(o) => { if (!o) setEditing(null); }}>
         <SheetContent side="right" className="p-0">
@@ -665,11 +651,11 @@ export default function SiswaManager() {
           </SheetHeader>
           {editing && (
           <div className="flex-1 space-y-4 overflow-y-auto px-6 pb-6">
-            <label style={{ display: "grid", gap: 6, fontSize: 13, color: "#74746d" }}>
+            <label className="grid gap-[6px] text-[13px] text-muted">
               Nama Lengkap:
-              <TextInput value={editName} onChange={(e) => setEditName(e.target.value)} />
+              <Input value={editName} onChange={(e) => setEditName(e.target.value)} />
             </label>
-            <label style={{ display: "grid", gap: 6, fontSize: 13, color: "#74746d" }}>
+            <label className="grid gap-[6px] text-[13px] text-muted">
               Kelas:
               <Select value={editClass} onValueChange={(v) => setEditClass(v ?? "")}>
                 <SelectTrigger><SelectValue placeholder="Tanpa kelas" /></SelectTrigger>
@@ -680,20 +666,20 @@ export default function SiswaManager() {
                 </SelectPopup></SelectPositioner>
               </Select>
             </label>
-            <label style={{ display: "grid", gap: 6, fontSize: 13, color: "#74746d" }}>
+            <label className="grid gap-[6px] text-[13px] text-muted">
               Nomor WhatsApp Ortu:
-              <TextInput
+              <Input
                 value={editPhone}
                 onChange={(e) => setEditPhone(e.target.value)}
                 placeholder="08... atau 628..."
               />
             </label>
-            <Toolbar>
+            <div className="mb-4 flex flex-wrap items-center gap-2.5">
               <Button variant="sticker" onClick={saveEdit}>Simpan</Button>
               <Button variant="sticker-ghost" onClick={() => setEditing(null)}>
                 Batal
               </Button>
-            </Toolbar>
+            </div>
           </div>
           )}
         </SheetContent>

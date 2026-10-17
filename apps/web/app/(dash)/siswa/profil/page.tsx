@@ -2,10 +2,13 @@
 
 import { useState } from "react";
 import { useFetch } from "@/app/lib/api";
-import { PageHead, Panel, Note, Err } from "@/components/DashUI";
 import { buttonVariants } from "@/components/ui/button";
 import KartuSection from "@/components/siswa/KartuSection";
 import UploadPopup from "@/components/UploadPopup";
+import { PageHead } from "@/components/ui/page-header";
+import { Card } from "@/components/ui/card";
+import { Alert } from "@/components/ui/alert";
+import { cn } from "@/lib/utils";
 
 type Profile = {
   user: {
@@ -26,24 +29,24 @@ export default function SiswaProfilPage() {
         kicker="Akun"
         title="Profil saya"
         desc="Data dirimu tercatat di sekolah. Minta admin bila ada yang salah."
-        right={<a className={buttonVariants({ variant: "sticker-ghost" })} style={{ textDecoration: "none" }} href="/change-password">Ganti kata sandi</a>}
+        right={<a className={cn(buttonVariants({ variant: "sticker-ghost" }), "no-underline")} href="/change-password">Ganti kata sandi</a>}
       />
-      <div style={{ display: "grid", gap: 14 }}>
+      <div className="grid gap-[14px]">
         <KartuSection />
-        {loading && <Note>Memuat…</Note>}
-        {error && <Err>Gagal: {error}</Err>}
+        {loading && <Alert>Memuat…</Alert>}
+        {error && <Alert variant="destructive">Gagal: {error}</Alert>}
         {data && (
-          <Panel style={{ maxWidth: 520 }}>
-            <div style={{ display: "flex", gap: 14, alignItems: "center", marginBottom: 12 }}>
+          <Card className="max-w-[520px]">
+            <div className="flex gap-[14px] items-center mb-3">
               {avatar ? (
                 // eslint-disable-next-line @next/next/no-img-element
-                <img src={avatar} alt="Avatar" width={64} height={64} style={{ borderRadius: "50%", objectFit: "cover" }} />
+                <img className="rounded-full object-cover" src={avatar} alt="Avatar" width={64} height={64} />
               ) : (
-                <div style={{ width: 64, height: 64, borderRadius: "50%", background: "#eee", display: "grid", placeItems: "center", fontWeight: 700 }}>
+                <div className="w-[64px] h-[64px] rounded-full bg-paper-deep grid place-items-center font-bold">
                   {data.user.name.slice(0, 1).toUpperCase()}
                 </div>
               )}
-              <div style={{ flex: 1, minWidth: 0 }}>
+              <div className="flex-1 min-w-[0px]">
                 <UploadPopup
                   accept="image/png,image/jpeg,image/webp"
                   maxMb={2}
@@ -61,29 +64,29 @@ export default function SiswaProfilPage() {
                     await reload();
                   }}
                 />
-                {msg && <Note>{msg}</Note>}
+                {msg && <Alert>{msg}</Alert>}
               </div>
             </div>
-            <div style={{ display: "grid", gap: 10, fontSize: 14 }}>
+            <div className="grid gap-[10px] text-sm">
               {[
                 ["Nama", data.user.name],
                 ["NISN", data.user.nisn ?? "-"],
                 ["Email", data.user.email ?? "-"],
                 ["Kelas", data.user.studentProfile?.class?.name ?? "-"],
               ].map(([k, v]) => (
-                <div key={k} style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
-                  <span style={{ minWidth: 70, color: "#74746d", flexShrink: 0 }}>{k}</span>
+                <div className="flex gap-3 flex-wrap" key={k}>
+                  <span className="min-w-[70px] text-muted shrink-0">{k}</span>
                   <strong>{v}</strong>
                 </div>
               ))}
               {data.user.studentProfile?.bio && (
-                <div style={{ display: "flex", gap: 12 }}>
-                  <span style={{ width: 70, color: "#74746d" }}>Bio</span>
+                <div className="flex gap-3">
+                  <span className="w-[70px] text-muted">Bio</span>
                   <span>{data.user.studentProfile.bio}</span>
                 </div>
               )}
             </div>
-          </Panel>
+          </Card>
         )}
       </div>
     </>

@@ -3,10 +3,14 @@
 // Guru: persetujuan izin siswa kelasnya (APPROVED mengecualikan auto-alpha).
 import { useState } from "react";
 import { api, useFetch } from "@/app/lib/api";
-import { PageHead, Panel, Toolbar, TextInput, WarmTable, warmCell, Note, Err } from "@/components/DashUI";
 import { Select, SelectTrigger, SelectValue, SelectPositioner, SelectPopup, SelectItem } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { Badge, statusVariant } from "@/components/ui/badge";
+import { PageHead } from "@/components/ui/page-header";
+import { Card } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Alert } from "@/components/ui/alert";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 
 interface Row {
   id: string;
@@ -41,9 +45,9 @@ export default function IzinGuruPage() {
   return (
     <>
       <PageHead kicker="Perizinan" title="Persetujuan izin" desc="Setujui atau tolak pengajuan siswa kelasmu. Yang disetujui dikecualikan dari alpha otomatis." />
-      <Panel>
-        <Toolbar>
-          <label style={{ display: "flex", gap: 8, alignItems: "center", fontSize: 13, color: "#74746d" }}>
+      <Card>
+        <div className="mb-4 flex flex-wrap items-center gap-2.5">
+          <label className="flex gap-2 items-center text-[13px] text-muted">
             Status:
             <Select value={status} onValueChange={(v) => setStatus(v ?? "PENDING")}>
               <SelectTrigger><SelectValue /></SelectTrigger>
@@ -54,52 +58,67 @@ export default function IzinGuruPage() {
               </SelectPopup></SelectPositioner>
             </Select>
           </label>
-        </Toolbar>
-        {loading && <Note>Memuat...</Note>}
-        {error && <Err>Gagal: {error}</Err>}
-        {msg && <p style={{ fontWeight: 700 }}>{msg}</p>}
-        {data && data.rows.length === 0 && <Note>Tidak ada pengajuan pada status ini.</Note>}
+        </div>
+        {loading && <Alert>Memuat...</Alert>}
+        {error && <Alert variant="destructive">Gagal: {error}</Alert>}
+        {msg && <p className="font-bold">{msg}</p>}
+        {data && data.rows.length === 0 && <Alert>Tidak ada pengajuan pada status ini.</Alert>}
         {data && data.rows.length > 0 && (
-          <WarmTable head={["Tanggal", "Nama", "Jenis", "Alasan", "Foto", "Catatan", "Aksi"]}>
+                    <div className="warm-table overflow-x-auto rounded-2xl border border-line">
+            <Table className="text-[13.5px] min-w-[560px]">
+              <TableHeader>
+                <TableRow className="border-line bg-paper-deep hover:bg-paper-deep">
+                  <TableHead className="whitespace-nowrap text-[10px] tracking-[.09em]">{"Tanggal"}</TableHead>
+                  <TableHead className="whitespace-nowrap text-[10px] tracking-[.09em]">{"Nama"}</TableHead>
+                  <TableHead className="whitespace-nowrap text-[10px] tracking-[.09em]">{"Jenis"}</TableHead>
+                  <TableHead className="whitespace-nowrap text-[10px] tracking-[.09em]">{"Alasan"}</TableHead>
+                  <TableHead className="whitespace-nowrap text-[10px] tracking-[.09em]">{"Foto"}</TableHead>
+                  <TableHead className="whitespace-nowrap text-[10px] tracking-[.09em]">{"Catatan"}</TableHead>
+                  <TableHead className="whitespace-nowrap text-[10px] tracking-[.09em]">{"Aksi"}</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
             {data.rows.map((r) => (
-              <tr key={r.id}>
-                <td style={warmCell({ whiteSpace: "nowrap" })}>{r.date.slice(0, 10)}</td>
-                <td style={warmCell({ fontWeight: 700 })}>{r.student.name}</td>
-                <td style={warmCell()}><Badge variant={statusVariant(r.kind)}>{r.kind}</Badge></td>
-                <td style={warmCell()}>{r.description}</td>
-                <td style={warmCell()}>
+              <TableRow key={r.id}>
+                <TableCell className="whitespace-nowrap">{r.date.slice(0, 10)}</TableCell>
+                <TableCell className="font-bold">{r.student.name}</TableCell>
+                <TableCell><Badge variant={statusVariant(r.kind)}>{r.kind}</Badge></TableCell>
+                <TableCell>{r.description}</TableCell>
+                <TableCell>
                   {r.hasPhoto ? (
                     <a href={`/api/leave/${r.id}/photo?which=siswa`} target="_blank" rel="noreferrer" title="Buka foto bukti ukuran penuh">
-                      <img
+                      <img className="w-[72px] h-[72px] object-cover rounded-[10px] border border-solid border-line block"
                         src={`/api/leave/${r.id}/photo?which=siswa`}
                         alt={`Bukti foto pengajuan ${r.student.name}`}
                         loading="lazy"
-                        style={{ width: 72, height: 72, objectFit: "cover", borderRadius: 10, border: "1px solid rgba(23,23,22,.2)", display: "block" }}
+                        
                       />
                     </a>
                   ) : "-"}
-                </td>
-                <td style={warmCell()}>
-                  <TextInput
+                </TableCell>
+                <TableCell>
+                  <Input className="min-w-[140px]"
                     value={notes[r.id] ?? ""}
                     onChange={(e) => setNotes({ ...notes, [r.id]: e.target.value })}
                     placeholder="catatan (opsional)"
-                    style={{ minWidth: 140 }}
+                    
                   />
-                </td>
-                <td style={warmCell()}>
+                </TableCell>
+                <TableCell>
                   {r.status === "PENDING" ? (
-                    <span style={{ display: "flex", gap: 6 }}>
+                    <span className="flex gap-[6px]">
                       <Button variant="sticker" type="button" onClick={() => review(r.id, "APPROVED")}>Setujui</Button>
                       <Button variant="sticker-ghost" type="button" onClick={() => review(r.id, "REJECTED")}>Tolak</Button>
                     </span>
                   ) : <Badge variant={statusVariant(r.status)}>{r.status}</Badge>}
-                </td>
-              </tr>
+                </TableCell>
+              </TableRow>
             ))}
-          </WarmTable>
+              </TableBody>
+            </Table>
+          </div>
         )}
-      </Panel>
+      </Card>
     </>
   );
 }

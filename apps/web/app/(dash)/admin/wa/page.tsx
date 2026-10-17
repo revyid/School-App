@@ -4,9 +4,14 @@
 import { useEffect, useState } from "react";
 import QRCode from "qrcode";
 import { api, useFetch } from "@/app/lib/api";
-import { PageHead, Panel, Toolbar, TextInput, WarmTable, warmCell, SegStat, Note, Err } from "@/components/DashUI";
 import { Button } from "@/components/ui/button";
 import { Badge, statusVariant } from "@/components/ui/badge";
+import { PageHead } from "@/components/ui/page-header";
+import { SegStat } from "@/components/ui/stat-card";
+import { Card } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Alert } from "@/components/ui/alert";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 
 export default function WaAdminPage() {
   const st = useFetch<{ connected: boolean; detail?: string; qr?: string | null }>("/api/wa/status");
@@ -54,69 +59,82 @@ export default function WaAdminPage() {
   return (
     <>
       <PageHead kicker="Notifikasi" title="WhatsApp sekolah" desc="Pairing perangkat, pantau kuota, dan lihat antrean pesan keluar." />
-      <Panel style={{ marginBottom: 16 }}>
-        {st.loading && <Note>Memuat status…</Note>}
-        {st.error && <Err>Gagal: {st.error}</Err>}
+      <Card className="mb-4">
+        {st.loading && <Alert>Memuat status…</Alert>}
+        {st.error && <Alert variant="destructive">Gagal: {st.error}</Alert>}
         {st.data && (
           <>
-            <p style={{ display: "flex", gap: 8, alignItems: "center" }}>
+            <p className="flex gap-2 items-center">
               Status: <Badge variant={statusVariant(st.data.connected ? "AKTIF" : "ALPHA")}>{st.data.connected ? "Terhubung" : `Putus (${st.data.detail ?? "?"})`}</Badge>
             </p>
             {!st.data.connected && st.data.qr && (
               <div>
-                <Note>Pindai QR ini dengan WA sekolah (Tautkan perangkat):</Note>
+                <Alert>Pindai QR ini dengan WA sekolah (Tautkan perangkat):</Alert>
                 {qrImg ? (
                   // eslint-disable-next-line @next/next/no-img-element
-                  <img src={qrImg} alt="QR pairing WA" width={256} height={256} style={{ borderRadius: 16, border: "1px solid rgba(23,23,22,.14)" }} />
+                  <img className="rounded-2xl border border-solid border-line" src={qrImg} alt="QR pairing WA" width={256} height={256} />
                 ) : (
-                  <pre style={{ wordBreak: "break-all", whiteSpace: "pre-wrap", fontSize: 12 }}>{st.data.qr}</pre>
+                  <pre className="break-all whitespace-pre-wrap text-xs">{st.data.qr}</pre>
                 )}
               </div>
             )}
-            {!st.data.connected && !st.data.qr && <Note>QR belum tersedia — tunggu beberapa detik lalu muat ulang.</Note>}
-            <Toolbar><Button variant="sticker-ghost" type="button" onClick={() => st.reload()}>Muat ulang status</Button></Toolbar>
+            {!st.data.connected && !st.data.qr && <Alert>QR belum tersedia — tunggu beberapa detik lalu muat ulang.</Alert>}
+            <div className="mb-4 flex flex-wrap items-center gap-2.5"><Button variant="sticker-ghost" type="button" onClick={() => st.reload()}>Muat ulang status</Button></div>
           </>
         )}
-      </Panel>
-      <Panel style={{ marginBottom: 16 }}>
-        <h2 className="display" style={{ fontSize: 18, margin: "0 0 12px" }}>Kirim manual</h2>
-          <form onSubmit={sendManual} style={{ display: "grid", gap: 10, maxWidth: 520 }}>
-            <label style={{ display: "grid", gap: 6, fontSize: 13, color: "#74746d" }}>
+      </Card>
+      <Card className="mb-4">
+        <h2 className="display text-[18px] mt-0 mr-0 mb-3 ml-0">Kirim manual</h2>
+          <form className="grid gap-[10px] max-w-[520px]" onSubmit={sendManual}>
+            <label className="grid gap-[6px] text-[13px] text-muted">
               Nomor tujuan (08…/62…):
-              <TextInput value={to} onChange={(e) => setTo(e.target.value)} placeholder="08…" required />
+              <Input value={to} onChange={(e) => setTo(e.target.value)} placeholder="08…" required />
             </label>
-            <label style={{ display: "grid", gap: 6, fontSize: 13, color: "#74746d" }}>
+            <label className="grid gap-[6px] text-[13px] text-muted">
               Isi pesan:
-              <TextInput value={text} onChange={(e) => setText(e.target.value)} placeholder="Tulis pesan…" required />
+              <Input value={text} onChange={(e) => setText(e.target.value)} placeholder="Tulis pesan…" required />
             </label>
-            <Toolbar><Button variant="sticker" type="submit">Masukkan antrean</Button></Toolbar>
-            {sendMsg && <Note>{sendMsg}</Note>}
+            <div className="mb-4 flex flex-wrap items-center gap-2.5"><Button variant="sticker" type="submit">Masukkan antrean</Button></div>
+            {sendMsg && <Alert>{sendMsg}</Alert>}
           </form>
-      </Panel>
+      </Card>
       {out.data && (
-        <Panel>
-          <h2 className="display" style={{ fontSize: 18, margin: "0 0 12px" }}>Kuota hari ini</h2>
+        <Card>
+          <h2 className="display text-[18px] mt-0 mr-0 mb-3 ml-0">Kuota hari ini</h2>
           <SegStat stats={[
             { label: "Terkirim 24 jam", value: out.data.quota.sentDay },
             { label: "Batas harian", value: out.data.quota.dailyCap },
             { label: "Maks/menit", value: out.data.quota.perMinuteCap },
           ]} />
-          <h2 className="display" style={{ fontSize: 18, margin: "16px 0 12px" }}>Antrean terakhir</h2>
-          {out.data.rows.length === 0 && <Note>Antrean kosong.</Note>}
+          <h2 className="display text-[18px] mt-4 mr-0 mb-3 ml-0">Antrean terakhir</h2>
+          {out.data.rows.length === 0 && <Alert>Antrean kosong.</Alert>}
           {out.data.rows.length > 0 && (
-            <WarmTable head={["Tujuan", "Isi", "Status", "Percobaan", "Error"]}>
+                        <div className="warm-table overflow-x-auto rounded-2xl border border-line">
+              <Table className="text-[13.5px] min-w-[560px]">
+                <TableHeader>
+                  <TableRow className="border-line bg-paper-deep hover:bg-paper-deep">
+                    <TableHead className="whitespace-nowrap text-[10px] tracking-[.09em]">{"Tujuan"}</TableHead>
+                    <TableHead className="whitespace-nowrap text-[10px] tracking-[.09em]">{"Isi"}</TableHead>
+                    <TableHead className="whitespace-nowrap text-[10px] tracking-[.09em]">{"Status"}</TableHead>
+                    <TableHead className="whitespace-nowrap text-[10px] tracking-[.09em]">{"Percobaan"}</TableHead>
+                    <TableHead className="whitespace-nowrap text-[10px] tracking-[.09em]">{"Error"}</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
               {out.data.rows.map((r) => (
-                <tr key={r.id}>
-                  <td style={warmCell({ whiteSpace: "nowrap" })}>{r.to}</td>
-                  <td style={warmCell()}>{r.text}</td>
-                  <td style={warmCell()}><Badge variant={statusVariant(r.status.toUpperCase())}>{r.status}</Badge></td>
-                  <td style={warmCell()}>{r.attempts}</td>
-                  <td style={warmCell()}>{r.lastError ?? "-"}</td>
-                </tr>
+                <TableRow key={r.id}>
+                  <TableCell className="whitespace-nowrap">{r.to}</TableCell>
+                  <TableCell>{r.text}</TableCell>
+                  <TableCell><Badge variant={statusVariant(r.status.toUpperCase())}>{r.status}</Badge></TableCell>
+                  <TableCell>{r.attempts}</TableCell>
+                  <TableCell>{r.lastError ?? "-"}</TableCell>
+                </TableRow>
               ))}
-            </WarmTable>
+                </TableBody>
+              </Table>
+            </div>
           )}
-        </Panel>
+        </Card>
       )}
     </>
   );

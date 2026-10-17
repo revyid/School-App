@@ -37,37 +37,27 @@ export default function GuruDashboard() {
   const belumAbsen = s ? (s.BELUM ?? 0) : 0;
 
   return (
-    <div style={{ display: "grid", gap: 20 }}>
+    <div className="grid gap-5">
       <Reveal>
         <section
-          className="card"
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: 16,
-            padding: "clamp(20px, 3vw, 36px)",
-            overflow: "hidden",
-            position: "relative",
-            background: "#50643e",
-            color: "#fffdf8",
-            borderColor: "#50643e",
-          }}
+          className="card flex items-center gap-4 p-[clamp(20px,_3vw,_36px)] overflow-hidden relative bg-olive-deep text-cream border-olive-deep"
+         
         >
-          <div style={{ flex: 1, minWidth: 0, position: "relative", zIndex: 2 }}>
-            <p className="kicker" style={{ color: "#f5c94a" }}>Ruang kerja guru</p>
-            <h1 className="display" style={{ fontSize: "clamp(28px, 4vw, 46px)", margin: "8px 0" }}>
+          <div className="flex-1 min-w-[0px] relative z-[2]">
+            <p className="kicker text-sun-soft">Ruang kerja guru</p>
+            <h1 className="display text-[clamp(28px,_4vw,_46px)] mt-2 mr-0 mb-2 ml-0">
               Halo, {nama}!<br />
               Kelas menunggumu.
             </h1>
-            <p style={{ opacity: 0.85, maxWidth: 440, margin: "0 0 16px" }}>
+            <p className="opacity-[0.85] max-w-[440px] mt-0 mr-0 mb-4 ml-0">
               {pendingIzin > 0
                 ? `${pendingIzin} pengajuan izin perlu keputusanmu hari ini.`
                 : belumAbsen > 0
                   ? `${belumAbsen} siswa belum tercatat kehadirannya.`
                   : "Semua antrean beres. Fokus mengajar!"}
             </p>
-            <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
-              <Link href="/guru/scanner" className="btn-sticker" style={{ background: "#f5c94a", color: "#171716", borderColor: "#171716" }}>
+            <div className="flex gap-[10px] flex-wrap">
+              <Link href="/guru/scanner" className="btn-sticker bg-sun text-ink border-ink">
                 Pindai kehadiran
               </Link>
               <Link href="/guru/tugas/new" className="btn-sticker btn-ghost">
@@ -75,70 +65,64 @@ export default function GuruDashboard() {
               </Link>
             </div>
           </div>
-          <div className="dash-hero-char" style={{ position: "relative", flexShrink: 0 }}>
-            <div
-              style={{
-                position: "absolute",
-                inset: "8% -6%",
-                background: "#f5c94a",
-                borderRadius: "52% 48% 45% 55% / 50% 54% 46% 50%",
-                zIndex: 0,
-              }}
+          <div className="dash-hero-char relative shrink-0">
+            <div className="absolute inset-[8%_-6%] bg-sun rounded-[52%_48%_45%_55%_/_50%_54%_46%_50%] z-0"
+              
             />
             <Image
               src="/assets/classroom-illustration.png"
               alt="Ilustrasi ruang kelas"
               width={200}
               height={240}
-              className="anim-floaty"
-              style={{ position: "relative", zIndex: 1, objectFit: "cover", borderRadius: 16 }}
+              className="anim-floaty relative z-[1] object-cover rounded-2xl"
+             
               priority
             />
           </div>
         </section>
       </Reveal>
 
-      <section style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(148px, 1fr))", gap: 14 }} className="dash-metrics">
+      <section className="dash-metrics grid grid-cols-[repeat(auto-fit,minmax(148px,1fr))] gap-[14px]">
         <Reveal delay={60}>
-          <div className="card card-lift" style={{ padding: 18, minHeight: 148 }}>
-            <p style={{ fontSize: 12, color: "#74746d", margin: 0 }}>Kelas diampu</p>
-            <p className="display" style={{ fontSize: 40, margin: "6px 0" }}>
+          <div className="card card-lift p-[18px] min-h-[148px]">
+            <p className="text-xs text-muted m-0">Kelas diampu</p>
+            <p className="display text-[40px] mt-1.5 mr-0 mb-1.5 ml-0">
               {assign.loading ? "…" : kelasUnik.length}
             </p>
-            <p style={{ fontSize: 12, color: "#74746d", margin: 0 }}>
+            <p className="text-xs text-muted m-0">
               {kelas.length > 0 ? kelasUnik.map((k) => k.class.name).slice(0, 2).join(", ") + (kelas.length > 2 ? "…" : "") : "Belum ada penugasan"}
             </p>
           </div>
         </Reveal>
         <Reveal delay={120}>
-          <div className="card card-lift" style={{ background: "#e85e43", color: "#fffdf8", borderColor: "#c94b35", padding: 18, minHeight: 148 }}>
-            <p style={{ fontSize: 12, opacity: 0.9, margin: 0 }}>Izin menunggu</p>
-            <p className="display" style={{ fontSize: 40, margin: "6px 0" }}>
+          <div className="card card-lift bg-terracotta-deep text-cream border-terracotta p-[18px] min-h-[148px]">
+            <p className="text-xs opacity-[0.9] m-0">Izin menunggu</p>
+            <p className="display text-[40px] mt-1.5 mr-0 mb-1.5 ml-0">
               {leave.loading ? "…" : pendingIzin}
             </p>
-            <p style={{ fontSize: 12, margin: 0 }}>
-              <Link href="/guru/izin" style={{ color: "#fffdf8", fontWeight: 700 }}>Tinjau sekarang</Link>
+            <p className="text-xs m-0">
+              <Link className="text-cream font-bold" href="/guru/izin">Tinjau sekarang</Link>
             </p>
           </div>
         </Reveal>
         <Reveal delay={180}>
-          <div className="card card-lift" style={{ padding: 18, minHeight: 148 }}>
-            <p style={{ fontSize: 12, color: "#74746d", margin: 0 }}>Belum absen hari ini</p>
-            <p className="display" style={{ fontSize: 40, margin: "6px 0" }}>
+          <div className="card card-lift p-[18px] min-h-[148px]">
+            <p className="text-xs text-muted m-0">Belum absen hari ini</p>
+            <p className="display text-[40px] mt-1.5 mr-0 mb-1.5 ml-0">
               {!s ? "…" : belumAbsen}
             </p>
-            <p style={{ fontSize: 12, color: "#74746d", margin: 0 }}>
+            <p className="text-xs text-muted m-0">
               {s ? `Hadir ${s.HADIR ?? 0} · Izin ${s.IZIN ?? 0} · Sakit ${s.SAKIT ?? 0} · Alpha ${s.ALPHA ?? 0}` : (kelasUnik[0]?.class.name ?? "")}
             </p>
           </div>
         </Reveal>
         <Reveal delay={240}>
-          <div className="card card-lift" style={{ background: "#f5c94a", padding: 18, minHeight: 148 }}>
-            <p style={{ fontSize: 12, margin: 0 }}>Tugas aktif</p>
-            <p className="display" style={{ fontSize: 40, margin: "6px 0" }}>
+          <div className="card card-lift bg-sun p-[18px] min-h-[148px]">
+            <p className="text-xs m-0">Tugas aktif</p>
+            <p className="display text-[40px] mt-1.5 mr-0 mb-1.5 ml-0">
               {tasks.loading ? "…" : (tasks.data?.rows.length ?? 0)}
             </p>
-            <p style={{ fontSize: 12, margin: 0 }}>
+            <p className="text-xs m-0">
               {tasks.data && tasks.data.rows.length > 0
                 ? `${tasks.data.rows.reduce((a, t) => a + t._count.submissions, 0)} pengumpulan masuk`
                 : "Belum ada tugas"}
@@ -147,28 +131,28 @@ export default function GuruDashboard() {
         </Reveal>
       </section>
 
-      <section style={{ display: "grid", gridTemplateColumns: "1.2fr 1fr", gap: 14 }} className="dash-bottom">
+      <section className="dash-bottom grid grid-cols-[1.2fr_1fr] gap-[14px]">
         <Reveal>
-          <div className="card" style={{ padding: 20 }}>
-            <h2 style={{ fontSize: 17, fontWeight: 800, margin: "0 0 12px" }}>Tugas terbarumu</h2>
+          <div className="card p-5">
+            <h2 className="text-[17px] font-extrabold mt-0 mr-0 mb-3 ml-0">Tugas terbarumu</h2>
             {tasks.loading ? (
-              <p style={{ color: "#74746d" }}>Memuat…</p>
+              <p className="text-muted">Memuat…</p>
             ) : tasks.error ? (
-              <p role="alert" style={{ color: "#c94b35" }}>Tugas gagal dimuat. Muat ulang halaman.</p>
+              <p className="text-terracotta-dark" role="alert">Tugas gagal dimuat. Muat ulang halaman.</p>
             ) : !tasks.data ? (
-              <p style={{ color: "#74746d" }}>Tugas belum tersedia.</p>
+              <p className="text-muted">Tugas belum tersedia.</p>
             ) : tasks.data.rows.length === 0 ? (
-              <p style={{ color: "#74746d" }}>
-                Belum ada tugas. <Link href="/guru/tugas" style={{ fontWeight: 700, color: "#171716" }}>Buat tugas pertama</Link>
+              <p className="text-muted">
+                Belum ada tugas. <Link className="font-bold text-ink" href="/guru/tugas">Buat tugas pertama</Link>
               </p>
             ) : (
-              <ul style={{ listStyle: "none", margin: 0, padding: 0, display: "grid", gap: 10 }}>
+              <ul className="list-none m-0 p-0 grid gap-[10px]">
                 {tasks.data.rows.slice(0, 4).map((t) => (
-                  <li key={t.id} style={{ borderTop: "1px solid rgba(23,23,22,.14)", paddingTop: 10 }}>
-                    <Link href={`/guru/tugas/${t.id}`} style={{ fontWeight: 700, color: "#171716" }}>
+                  <li className="border-t border-line pt-[10px]" key={t.id}>
+                    <Link className="font-bold text-ink" href={`/guru/tugas/${t.id}`}>
                       {t.title}
                     </Link>
-                    <p style={{ fontSize: 12, color: "#74746d", margin: "2px 0 0" }}>
+                    <p className="text-xs text-muted mt-[2px] mr-0 mb-0 ml-0">
                       {t.class.name} · {t._count.submissions} pengumpulan
                     </p>
                   </li>
@@ -178,9 +162,9 @@ export default function GuruDashboard() {
           </div>
         </Reveal>
         <Reveal delay={100}>
-          <div className="card" style={{ padding: 20, background: "#aec6a4" }}>
-            <h2 style={{ fontSize: 17, fontWeight: 800, margin: "0 0 12px" }}>Tautan</h2>
-            <ul style={{ listStyle: "none", margin: 0, padding: 0, display: "grid", gap: 8, fontSize: 14 }}>
+          <div className="card p-5 bg-mint">
+            <h2 className="text-[17px] font-extrabold mt-0 mr-0 mb-3 ml-0">Tautan</h2>
+            <ul className="list-none m-0 p-0 grid gap-2 text-sm">
               {[
                 { href: "/guru/scanner", label: "Pindai QR kehadiran" },
                 { href: "/guru/kehadiran", label: "Rekap kehadiran" },
@@ -188,7 +172,7 @@ export default function GuruDashboard() {
                 { href: "/guru/rapor", label: "Rapor" },
               ].map((l) => (
                 <li key={l.href}>
-                  <Link href={l.href} className="card" style={{ display: "block", padding: "10px 14px", fontWeight: 700, color: "#171716", background: "#fffdf8" }}>
+                  <Link href={l.href} className="card block pt-[10px] pr-[14px] pb-[10px] pl-[14px] font-bold text-ink bg-cream">
                     {l.label}
                   </Link>
                 </li>

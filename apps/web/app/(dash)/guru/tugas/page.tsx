@@ -7,11 +7,13 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { Suspense, useState } from "react";
 import { useFetch } from "@/app/lib/api";
-import { PageHead, Panel, Note, Err } from "@/components/DashUI";
 import { Select, SelectTrigger, SelectValue, SelectPositioner, SelectPopup, SelectItem } from "@/components/ui/select";
 import { PlusIcon } from "lucide-react";
 import { TASK_TYPE_LABEL } from "@sms/shared/lms";
 import { Skeleton } from "@/components/ui/skeleton";
+import { PageHead } from "@/components/ui/page-header";
+import { Card } from "@/components/ui/card";
+import { Alert } from "@/components/ui/alert";
 
 interface TaskRow {
   id: string;
@@ -36,10 +38,10 @@ interface AssessRow {
 }
 
 const STATUS_DOT: Record<string, string> = {
-  Draf: "#a09f97",
-  Terjadwal: "#7a8fbd",
-  Aktif: "#50643e",
-  Selesai: "#c94b35",
+  Draf: "var(--color-muted)",
+  Terjadwal: "var(--color-slate)",
+  Aktif: "var(--color-olive-deep)",
+  Selesai: "var(--color-terracotta-dark)",
 };
 
 function kelasLabel(t: TaskRow | AssessRow, filterClassId: string, fallback: string): string {
@@ -125,7 +127,7 @@ function Inner() {
         </Link>
       </div>
 
-      <Panel>
+      <Card>
         {jenis === "tugas" && (
           <>
             {tasks.loading && !tasks.data && (
@@ -142,9 +144,9 @@ function Inner() {
                 ))}
               </div>
             )}
-            {tasks.error && <Err>Gagal: {tasks.error}</Err>}
+            {tasks.error && <Alert variant="destructive">Gagal: {tasks.error}</Alert>}
             {tasks.data && tasks.data.rows.length === 0 && (
-              <Note>Belum ada tugas{statusF !== "semua" ? " dengan filter ini" : ""}.</Note>
+              <Alert>Belum ada tugas{statusF !== "semua" ? " dengan filter ini" : ""}.</Alert>
             )}
             {tasks.data && tasks.data.rows.length > 0 && (
               <div className="flex flex-col gap-px">
@@ -156,7 +158,8 @@ function Inner() {
                   >
                     <span
                       className="mt-0.5 size-2 shrink-0 rounded-full"
-                      style={{ background: STATUS_DOT[t.listStatus] ?? "#a09f97" }}
+                      // dynamic: warna status dari data tugas
+                      style={{ background: STATUS_DOT[t.listStatus] ?? "var(--color-muted)" }}
                     />
                     <span className="min-w-0 flex-1">
                       <span className="block truncate text-[14px] font-bold text-ink">{t.title}</span>
@@ -170,7 +173,11 @@ function Inner() {
                         {t._count.categories > 0 ? ` · ${t._count.categories} kategori` : ""}
                       </span>
                     </span>
-                    <span className="shrink-0 text-[12px] font-bold" style={{ color: STATUS_DOT[t.listStatus] ?? "#a09f97" }}>
+                    <span
+                      className="shrink-0 text-[12px] font-bold"
+                      // dynamic: warna status dari data tugas
+                      style={{ color: STATUS_DOT[t.listStatus] ?? "var(--color-muted)" }}
+                    >
                       {t.listStatus}
                     </span>
                     {t.deadline && (
@@ -200,15 +207,15 @@ function Inner() {
                 ))}
               </div>
             )}
-            {assesses.error && <Err>Gagal: {assesses.error}</Err>}
+            {assesses.error && <Alert variant="destructive">Gagal: {assesses.error}</Alert>}
             {assesses.data && assessRows.length === 0 && (
-              <Note>Belum ada asesmen{classId ? " untuk kelas ini" : ""}.</Note>
+              <Alert>Belum ada asesmen{classId ? " untuk kelas ini" : ""}.</Alert>
             )}
             {assesses.data && assessRows.length > 0 && (
               <div className="flex flex-col gap-px">
                 {assessRows.map((r) => (
                   <div key={r.id} className="flex items-center gap-3 rounded-2xl px-3 py-3">
-                    <span className="mt-0.5 size-2 shrink-0 rounded-full" style={{ background: "#50643e" }} />
+                    <span className="mt-0.5 size-2 shrink-0 rounded-full bg-olive-deep" />
                     <span className="min-w-0 flex-1">
                       <span className="block truncate text-[14px] font-bold text-ink">{r.title}</span>
                       <span className="block text-[12px] text-muted-strong">
@@ -229,7 +236,7 @@ function Inner() {
             )}
           </>
         )}
-      </Panel>
+      </Card>
     </>
   );
 }

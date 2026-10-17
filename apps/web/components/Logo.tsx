@@ -1,5 +1,7 @@
 // Wordmark SMS-LMS / Nama Sekolah: matahari kecil + teks (teks di HTML, bukan gambar).
 // Bila `src` diisi (logo sekolah dari /api/portal/logo), gambar logo dipakai.
+import { cn } from "@/lib/utils";
+
 export default function Logo({
   compact = false,
   light = false,
@@ -11,41 +13,31 @@ export default function Logo({
   src?: string | null;
   name?: string;
 }) {
-  const ink = light ? "#fffdf8" : "#171716";
   const displayText = name || "sms-lms";
   const isCustomName = Boolean(name && name.toLowerCase() !== "sms-lms");
 
   return (
-    <span style={{ display: "inline-flex", alignItems: "center", gap: 8, color: ink, minWidth: 0 }}>
+    <span className={cn("inline-flex min-w-0 items-center gap-2", light ? "text-cream" : "text-ink")}>
       {src ? (
         // eslint-disable-next-line @next/next/no-img-element
-        <img src={src} alt={displayText} width={compact ? 24 : 28} height={compact ? 24 : 28} style={{ borderRadius: 8, objectFit: "cover", flexShrink: 0 }} />
+        <img className="shrink-0 rounded-lg object-cover" src={src} alt={displayText} width={compact ? 24 : 28} height={compact ? 24 : 28} />
       ) : (
-        <svg width={compact ? 24 : 28} height={compact ? 24 : 28} viewBox="0 0 32 32" aria-hidden="true" style={{ flexShrink: 0 }}>
-          <circle cx="16" cy="18" r="9" fill="none" stroke={ink} strokeWidth="2.4" />
-          <circle cx="16" cy="18" r="3.2" fill="#e85e43" />
-          <g stroke={ink} strokeWidth="2.2" strokeLinecap="round">
+        <svg className="shrink-0" width={compact ? 24 : 28} height={compact ? 24 : 28} viewBox="0 0 32 32" aria-hidden="true">
+          <circle cx="16" cy="18" r="9" fill="none" stroke="currentColor" strokeWidth="2.4" />
+          <circle cx="16" cy="18" r="3.2" className="fill-terracotta" />
+          <g stroke="currentColor" strokeWidth="2.2" strokeLinecap="round">
             <line x1="16" y1="2.5" x2="16" y2="6" />
             <line x1="7.5" y1="5.5" x2="10" y2="8" />
             <line x1="24.5" y1="5.5" x2="22" y2="8" />
           </g>
         </svg>
       )}
-      <span
-        style={{
-          fontWeight: 800,
-          letterSpacing: "-0.04em",
-          fontSize: compact ? 16 : 18,
-          overflow: "hidden",
-          textOverflow: "ellipsis",
-          whiteSpace: "nowrap",
-        }}
-      >
+      <span className={cn("overflow-hidden text-ellipsis whitespace-nowrap font-extrabold tracking-[-0.04em]", compact ? "text-base" : "text-[18px]")}>
         {isCustomName ? (
           displayText
         ) : (
           <>
-            sms<span style={{ color: "#e85e43" }}>-lms</span>
+            sms<span className="text-terracotta">-lms</span>
           </>
         )}
       </span>

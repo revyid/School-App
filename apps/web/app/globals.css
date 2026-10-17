@@ -9,17 +9,36 @@
   --color-paper-deep: #eeeadd;
   --color-cream: #fffdf8;
   --color-ink: #171716;
-  --color-muted: #74746d;
+  /* muted: teks sekunder; #6d6d66 ≈ 4,7:1 di atas paper & 5,1:1 di atas cream (AA),
+     sedangkan #74746d hanya 4,28:1 di atas paper. */
+  --color-muted: #6d6d66;
   --color-muted-strong: #5f5f58;
   --color-terracotta: #e85e43;
   --color-terracotta-dark: #c94b35;
+  /* terracotta-deep: latar yang berteks terang + teks terracotta kecil di atas
+     paper/cream (4,7–5,1:1). #e85e43 gagal AA keduanya (3,1–3,4:1). */
+  --color-terracotta-deep: #bf4429;
   --color-olive: #71845a;
   --color-olive-deep: #50643e;
   --color-sun: #f5c94a;
+  /* sun-soft: varian sun untuk TEKS di atas panel gelap (olive-deep/ink). */
+  --color-sun-soft: #ffe08a;
+  --color-sun-deep: #6b5010;
+  --color-mint-soft: #dcead0;
+  --color-blush: #f6e8e3;
+  --color-sage: #eef0e6;
+  --color-sage-deep: #3d4935;
+  --color-line-strong: #c9cabb;
+  --color-slate: #7a8fbd;
+  --color-forest: #1a3b1e;
+  --color-cocoa: #3d3215;
   --color-sky: #97c4db;
   --color-mint: #aec6a4;
   --color-line: rgba(23, 23, 22, 0.14);
   --color-danger: #b3261e;
+  /* teal: aksen peran SISWA; digelapkan dari #4a8fa8 supaya teks/ikon cream
+     di atasnya lulus AA (4,7:1 vs 3,6:1). */
+  --color-teal: #3d7a91;
 
   --font-display: "Plus Jakarta Sans", system-ui, sans-serif;
   --font-meta: "DM Mono", ui-monospace, monospace;
@@ -66,7 +85,9 @@
   --color-primary-foreground: var(--primary-foreground);
   --color-secondary: var(--secondary);
   --color-secondary-foreground: var(--secondary-foreground);
-  --color-muted: var(--muted);
+  /* --color-muted sengaja TIDAK dipetakan ke var(--muted) shadcn: token edukids
+     (--color-muted: #74746d) dipakai untuk teks sekunder; var(--muted) = #f0ede3
+     adalah latar terang. Memetakannya membuat text-muted nyaris tak terlihat. */
   --color-muted-foreground: var(--muted-foreground);
   --color-accent: var(--accent);
   --color-accent-foreground: var(--accent-foreground);
@@ -154,64 +175,66 @@ input, select, button, textarea {
   font: inherit;
 }
 
-/* --- Tipografi editorial --- */
-.display {
-  font-family: var(--font-display);
-  font-weight: 800;
-  letter-spacing: -0.055em;
-  line-height: 1.04;
-  text-wrap: balance;
-}
-.kicker {
-  font-family: var(--font-meta);
-  font-size: 10px;
-  text-transform: uppercase;
-  letter-spacing: 0.12em;
-  color: var(--color-terracotta);
-}
+/* --- Tipografi editorial, kartu, tombol ---
+   Semua di @layer components supaya utility Tailwind (bg-*, border-*, text-*,
+   p-*, rounded-*, min-h-*) menang di elemen yang sama. */
+@layer components {
+  .display {
+    font-family: var(--font-display);
+    font-weight: 800;
+    letter-spacing: -0.055em;
+    line-height: 1.04;
+    text-wrap: balance;
+  }
+  .kicker {
+    font-family: var(--font-meta);
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: var(--color-terracotta-deep);
+  }
 
-/* --- Kartu editorial --- */
-.card {
-  background: var(--color-cream);
-  border: 1px solid var(--color-line);
-  border-radius: 24px;
-}
-.card-lift {
-  transition: transform 0.25s ease, box-shadow 0.25s ease;
-}
-.card-lift:hover {
-  transform: translateY(-6px) rotate(-0.4deg);
-  box-shadow: 0 18px 40px -22px rgba(23, 23, 22, 0.35);
-}
+  .card {
+    background: var(--color-cream);
+    border: 1px solid var(--color-line);
+    border-radius: 24px;
+  }
+  .card-lift {
+    transition: transform 0.25s ease, box-shadow 0.25s ease;
+  }
+  .card-lift:hover {
+    transform: translateY(-6px) rotate(-0.4deg);
+    box-shadow: 0 18px 40px -22px rgba(23, 23, 22, 0.35);
+  }
 
-/* --- Tombol stiker --- */
-.btn-sticker {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.5rem;
-  border-radius: 999px;
-  font-weight: 700;
-  font-size: 13px;
-  padding: 0.7rem 1.4rem;
-  border: 1px solid var(--color-ink);
-  transition: transform 0.18s ease, box-shadow 0.18s ease;
-  min-height: 44px;
-}
-.btn-sticker:hover {
-  transform: translateY(-2px);
-}
-.btn-primary {
-  background: var(--color-terracotta);
-  border-color: var(--color-terracotta-dark);
-  color: #fffdf8;
-  box-shadow: 3px 3px 0 var(--color-ink);
-}
-.btn-primary:hover {
-  background: var(--color-terracotta-dark);
-}
-.btn-ghost {
-  background: var(--color-cream);
-  color: var(--color-ink);
+  .btn-sticker {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    border-radius: 999px;
+    font-weight: 700;
+    font-size: 13px;
+    padding: 0.7rem 1.4rem;
+    border: 1px solid var(--color-ink);
+    transition: transform 0.18s ease, box-shadow 0.18s ease;
+    min-height: 44px;
+  }
+  .btn-sticker:hover {
+    transform: translateY(-2px);
+  }
+  .btn-primary {
+    background: var(--color-terracotta-dark);
+    border-color: var(--color-terracotta-deep);
+    color: var(--color-cream);
+    box-shadow: 3px 3px 0 var(--color-ink);
+  }
+  .btn-primary:hover {
+    background: var(--color-terracotta-deep);
+  }
+  .btn-ghost {
+    background: var(--color-cream);
+    color: var(--color-ink);
+  }
 }
 
 /* --- Motion bernyawa (bukan fade-only) --- */
@@ -268,6 +291,41 @@ button:active, a:active, .btn-sticker:active {
 .side-icon-emoji { transition: transform .3s; }
 a:hover .side-icon-emoji, button:hover .side-icon-emoji { transform: rotate(15deg) scale(1.2); }
 
+/* --- Popup/menu motion: pop kecil (select, dropdown, popover) ---
+   Enter ±160ms playful (scale .96 + geser 4px dari sisi popup),
+   keluar ±110ms. Origin mengikuti trigger via --transform-origin. */
+.menu-popup {
+  transform-origin: var(--transform-origin);
+  transition:
+    opacity 160ms ease-out,
+    scale 160ms cubic-bezier(0.34, 1.3, 0.5, 1),
+    translate 160ms ease-out;
+}
+.menu-popup[data-ending-style] {
+  transition-duration: 110ms;
+}
+.menu-popup[data-starting-style],
+.menu-popup[data-ending-style] {
+  opacity: 0;
+  scale: 0.96;
+}
+.menu-popup[data-side="bottom"][data-starting-style],
+.menu-popup[data-side="bottom"][data-ending-style] {
+  translate: 0 -4px;
+}
+.menu-popup[data-side="top"][data-starting-style],
+.menu-popup[data-side="top"][data-ending-style] {
+  translate: 0 4px;
+}
+.menu-popup[data-side="left"][data-starting-style],
+.menu-popup[data-side="left"][data-ending-style] {
+  translate: 4px 0;
+}
+.menu-popup[data-side="right"][data-starting-style],
+.menu-popup[data-side="right"][data-ending-style] {
+  translate: -4px 0;
+}
+
 /* Scroll reveal: pembuka section, bukan satu-satunya motion. */
 .reveal {
   opacity: 0;
@@ -282,6 +340,9 @@ a:hover .side-icon-emoji, button:hover .side-icon-emoji { transform: rotate(15de
 @media (prefers-reduced-motion: reduce) {
   html { scroll-behavior: auto; }
   .anim-floaty, .anim-breathe, .anim-drift, .anim-dot-ping, .anim-spin-slow { animation: none; }
+  .menu-popup { transition: none; }
+  .menu-popup[data-starting-style],
+  .menu-popup[data-ending-style] { opacity: 1; scale: 1; translate: none; }
   .reveal { opacity: 1; transform: none; transition: none; }
   .card-lift:hover, .btn-sticker:hover { transform: none; }
 }

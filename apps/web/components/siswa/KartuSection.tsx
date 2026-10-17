@@ -2,8 +2,9 @@
 
 // Kartu QR kehadiran siswa — dipakai di halaman Profil (pengganti /siswa/kartu).
 import { useFetch } from "@/app/lib/api";
-import { Panel, Note, Err } from "@/components/DashUI";
 import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { Alert } from "@/components/ui/alert";
 
 export default function KartuSection() {
   const { data, loading, error } = useFetch<{
@@ -11,26 +12,26 @@ export default function KartuSection() {
   }>("/api/attendance/qr");
 
   return (
-    <Panel style={{ maxWidth: 520, textAlign: "center" }}>
-      <h2 className="display" style={{ fontSize: 18, margin: "0 0 4px" }}>Kartu QR saya</h2>
-      <p style={{ color: "#74746d", fontSize: 13, margin: "0 0 14px" }}>
+    <Card className="max-w-[520px] text-center">
+      <h2 className="display text-[18px] mt-0 mr-0 mb-1 ml-0">Kartu QR saya</h2>
+      <p className="text-muted text-[13px] mt-0 mr-0 mb-[14px] ml-0">
         Tunjukkan kode ini ke guru untuk discan saat tiba di sekolah.
       </p>
-      {loading && <Note>Memuat…</Note>}
-      {error && <Err>Gagal: {error}</Err>}
+      {loading && <Alert>Memuat…</Alert>}
+      {error && <Alert variant="destructive">Gagal: {error}</Alert>}
       {data && (
         <>
-          <p className="display" style={{ fontSize: 22, margin: "0 0 4px" }}>{data.qr.student.name}</p>
-          <p style={{ color: "#74746d", fontSize: 13, margin: "0 0 14px" }}>
+          <p className="display text-[22px] mt-0 mr-0 mb-1 ml-0">{data.qr.student.name}</p>
+          <p className="text-muted text-[13px] mt-0 mr-0 mb-[14px] ml-0">
             NISN: {data.qr.student.nisn ?? "-"} · Kelas: {data.qr.student.className ?? "-"}
           </p>
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/api/attendance/qr/png" alt="QR kehadiran" width={256} height={256} style={{ borderRadius: 16, border: "1px solid rgba(23,23,22,.14)", maxWidth: "100%", height: "auto" }} />
-          <div style={{ marginTop: 14 }}>
-            <Button variant="sticker" style={{ background: "#171716", color: "#fffdf8" }} type="button" onClick={() => window.print()}>Cetak kartu</Button>
+          <img className="rounded-2xl border border-solid border-line max-w-full h-auto" src="/api/attendance/qr/png" alt="QR kehadiran" width={256} height={256} />
+          <div className="mt-[14px]">
+            <Button className="bg-ink text-cream" variant="sticker"  type="button" onClick={() => window.print()}>Cetak kartu</Button>
           </div>
         </>
       )}
-    </Panel>
+    </Card>
   );
 }

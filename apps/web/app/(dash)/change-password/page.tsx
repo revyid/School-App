@@ -3,7 +3,10 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { api } from "@/app/lib/api";
-import { PageHead, Panel, Toolbar, TextInput, Err } from "@/components/DashUI";
+import { PageHead } from "@/components/ui/page-header";
+import { Card } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 
 export default function ChangePasswordPage() {
@@ -43,24 +46,24 @@ export default function ChangePasswordPage() {
   return (
     <>
       <PageHead kicker="Akun" title="Ganti kata sandi" desc="Minimal 8 karakter. Setelah berhasil kamu diminta login ulang." />
-      <Panel style={{ maxWidth: 480 }}>
-        <form onSubmit={submit} style={{ display: "grid", gap: 12 }}>
-          <label style={{ display: "grid", gap: 6, fontSize: 13, color: "#74746d" }}>
+      <Card className="max-w-[480px]">
+        <form onSubmit={submit} className="grid gap-3">
+          <label className="grid gap-1.5 text-[13px] text-muted">
             Kata sandi lama
-            <TextInput type="password" value={oldPassword} onChange={(e) => setOld(e.target.value)} autoComplete="current-password" required />
+            <Input type="password" value={oldPassword} onChange={(e) => setOld(e.target.value)} autoComplete="current-password" required />
           </label>
-          <label style={{ display: "grid", gap: 6, fontSize: 13, color: "#74746d" }}>
+          <label className="grid gap-1.5 text-[13px] text-muted">
             Kata sandi baru (min. 8 karakter)
-            <TextInput type="password" value={p1} onChange={(e) => setP1(e.target.value)} autoComplete="new-password" required />
+            <Input type="password" value={p1} onChange={(e) => setP1(e.target.value)} autoComplete="new-password" required />
           </label>
-          <label style={{ display: "grid", gap: 6, fontSize: 13, color: "#74746d" }}>
+          <label className="grid gap-1.5 text-[13px] text-muted">
             Ulangi kata sandi baru
-            <TextInput type="password" value={p2} onChange={(e) => setP2(e.target.value)} autoComplete="new-password" required />
+            <Input type="password" value={p2} onChange={(e) => setP2(e.target.value)} autoComplete="new-password" required />
           </label>
-          {error && <Err>{error}</Err>}
-          <Toolbar><Button variant="sticker" type="submit" disabled={busy}>{busy ? "Menyimpan…" : "Simpan"}</Button></Toolbar>
+          {error && <Alert variant="destructive">{error}</Alert>}
+          <div className="mb-4 flex flex-wrap items-center gap-2.5"><Button variant="sticker" type="submit" disabled={busy}>{busy ? "Menyimpan…" : "Simpan"}</Button></div>
         </form>
-      </Panel>
+      </Card>
     </>
   );
 }

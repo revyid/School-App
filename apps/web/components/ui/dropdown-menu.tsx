@@ -26,19 +26,29 @@ function DropdownMenuTrigger({
 
 function DropdownMenuContent({
   className,
+  side = "bottom",
+  align = "center",
+  sideOffset = 6,
+  alignOffset = 0,
   ...props
-}: MenuPrimitive.Popup.Props & { className?: string }) {
+}: MenuPrimitive.Popup.Props &
+  Pick<MenuPrimitive.Positioner.Props, "side" | "align" | "sideOffset" | "alignOffset"> & {
+    className?: string;
+  }) {
   return (
     <MenuPrimitive.Portal>
       <MenuPrimitive.Positioner
         data-slot="dropdown-menu-positioner"
         className="z-50 outline-none"
-        sideOffset={6}
+        side={side}
+        align={align}
+        sideOffset={sideOffset}
+        alignOffset={alignOffset}
       >
         <MenuPrimitive.Popup
           data-slot="dropdown-menu-content"
           className={cn(
-            "min-w-44 overflow-hidden rounded-2xl border border-line bg-cream p-1.5 shadow-xl outline-none duration-150 data-ending-style:opacity-0 data-starting-style:opacity-0",
+            "menu-popup min-w-44 overflow-hidden rounded-2xl border border-line bg-cream p-1.5 shadow-xl outline-none",
             className,
           )}
           {...props}
@@ -58,7 +68,7 @@ function DropdownMenuItem({
       data-slot="dropdown-menu-item"
       className={cn(
         "flex min-h-11 cursor-pointer items-center gap-2 rounded-lg px-3 py-2 text-sm font-semibold outline-none select-none data-highlighted:bg-paper data-disabled:pointer-events-none data-disabled:opacity-50 [&_svg]:size-4",
-        danger ? "text-[#b3402a]" : "text-ink",
+        danger ? "text-danger" : "text-ink",
         className,
       )}
       {...props}

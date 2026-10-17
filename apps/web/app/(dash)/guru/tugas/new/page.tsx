@@ -5,12 +5,16 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { api, useFetch } from "@/app/lib/api";
-import { PageHead, Panel, Toolbar, TextInput, Note, Err } from "@/components/DashUI";
 import { Select, SelectTrigger, SelectValue, SelectPositioner, SelectPopup, SelectItem } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import CategorySheet from "@/components/CategorySheet";
 import { TASK_TYPE_LABEL } from "@sms/shared/lms";
 import { PlusIcon, Trash2Icon } from "lucide-react";
+import { PageHead } from "@/components/ui/page-header";
+import { Card } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Alert } from "@/components/ui/alert";
+import { cn } from "@/lib/utils";
 
 /* ── types ──────────────────────────────────────────────── */
 interface Category {
@@ -140,7 +144,7 @@ export default function TugasNewPage() {
       <form onSubmit={submit} className="grid gap-5 max-w-2xl">
 
         {/* ── Identitas ── */}
-        <Panel>
+        <Card>
           <h2 className="display mb-4 text-[15px]">Identitas tugas</h2>
           <div className="grid gap-4">
 
@@ -190,7 +194,7 @@ export default function TugasNewPage() {
             </Field>
 
             <Field label="Judul tugas">
-              <TextInput
+              <Input
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
                 placeholder="mis. Tugas Bab 3 — Fotosintesis"
@@ -211,10 +215,10 @@ export default function TugasNewPage() {
             </Field>
 
           </div>
-        </Panel>
+        </Card>
 
         {/* ── Instruksi ── */}
-        <Panel>
+        <Card>
           <h2 className="display mb-2 text-[15px]">Instruksi</h2>
           <textarea
             value={instruction}
@@ -224,19 +228,16 @@ export default function TugasNewPage() {
             placeholder="Tuliskan instruksi tugas di sini…"
             className="w-full rounded-2xl border border-line bg-cream px-3 py-2.5 text-[13px] leading-relaxed focus:outline-none focus:ring-1 focus:ring-ink/30"
           />
-        </Panel>
+        </Card>
 
         {/* ── Jadwal & Status ── */}
-        <Panel>
+        <Card>
           <h2 className="display mb-4 text-[15px]">Jadwal & status</h2>
           <div className="grid gap-4">
 
             <div className="flex flex-wrap gap-4">
               <label
-                className="flex cursor-pointer items-center gap-2.5 rounded-2xl border px-4 py-2.5 text-[13px] font-bold transition-colors"
-                style={status === "PUBLISHED"
-                  ? { background: "#171716", color: "#fffdf8", borderColor: "#171716" }
-                  : { background: "#fffdf8", color: "#575752", borderColor: "rgba(23,23,22,.2)" }}
+                className={cn("flex cursor-pointer items-center gap-2.5 rounded-2xl border px-4 py-2.5 text-[13px] font-bold transition-colors", status === "PUBLISHED" ? "border-ink bg-ink text-cream" : "border-ink/20 bg-cream text-muted-strong")}
               >
                 <input
                   type="radio"
@@ -249,10 +250,7 @@ export default function TugasNewPage() {
                 Terbit
               </label>
               <label
-                className="flex cursor-pointer items-center gap-2.5 rounded-2xl border px-4 py-2.5 text-[13px] font-bold transition-colors"
-                style={status === "DRAFT"
-                  ? { background: "#171716", color: "#fffdf8", borderColor: "#171716" }
-                  : { background: "#fffdf8", color: "#575752", borderColor: "rgba(23,23,22,.2)" }}
+                className={cn("flex cursor-pointer items-center gap-2.5 rounded-2xl border px-4 py-2.5 text-[13px] font-bold transition-colors", status === "DRAFT" ? "border-ink bg-ink text-cream" : "border-ink/20 bg-cream text-muted-strong")}
               >
                 <input
                   type="radio"
@@ -268,14 +266,14 @@ export default function TugasNewPage() {
 
             <div className="grid grid-cols-2 gap-4 max-sm:grid-cols-1">
               <Field label="Jadwal terbit (opsional)" hint="Kosongkan = terbit sekarang">
-                <TextInput
+                <Input
                   type="datetime-local"
                   value={publishAt}
                   onChange={(e) => setPublishAt(e.target.value)}
                 />
               </Field>
               <Field label="Deadline (opsional)">
-                <TextInput
+                <Input
                   type="datetime-local"
                   value={deadline}
                   onChange={(e) => setDeadline(e.target.value)}
@@ -294,10 +292,10 @@ export default function TugasNewPage() {
             </label>
 
           </div>
-        </Panel>
+        </Card>
 
         {/* ── Kelompok ── */}
-        <Panel>
+        <Card>
           <div className="mb-3 flex items-center justify-between">
             <h2 className="display text-[15px]">Kerja kelompok</h2>
             <label className="flex cursor-pointer items-center gap-2 text-[13px]">
@@ -313,7 +311,7 @@ export default function TugasNewPage() {
           {isGroup ? (
             <div className="grid grid-cols-2 gap-4 max-sm:grid-cols-1">
               <Field label="Min anggota">
-                <TextInput
+                <Input
                   type="number"
                   value={String(groupMin)}
                   onChange={(e) => setGroupMin(Number(e.target.value))}
@@ -322,7 +320,7 @@ export default function TugasNewPage() {
                 />
               </Field>
               <Field label="Maks anggota">
-                <TextInput
+                <Input
                   type="number"
                   value={String(groupMax)}
                   onChange={(e) => setGroupMax(Number(e.target.value))}
@@ -332,12 +330,12 @@ export default function TugasNewPage() {
               </Field>
             </div>
           ) : (
-            <Note>Centang "Aktifkan" bila tugas ini dikerjakan berkelompok.</Note>
+            <Alert>Centang "Aktifkan" bila tugas ini dikerjakan berkelompok.</Alert>
           )}
-        </Panel>
+        </Card>
 
         {/* ── Kategori unggahan ── */}
-        <Panel>
+        <Card>
           <div className="mb-3 flex items-center justify-between">
             <div>
               <h2 className="display text-[15px]">Kategori unggahan</h2>
@@ -355,7 +353,7 @@ export default function TugasNewPage() {
           </div>
 
           {cats.length === 0 && (
-            <Note>Belum ada kategori. Klik "Tambah" untuk menambah.</Note>
+            <Alert>Belum ada kategori. Klik "Tambah" untuk menambah.</Alert>
           )}
 
           <ul className="grid gap-2">
@@ -368,7 +366,7 @@ export default function TugasNewPage() {
               </li>
             ))}
           </ul>
-        </Panel>
+        </Card>
 
         <CategorySheet
           open={catOpen}
@@ -380,16 +378,16 @@ export default function TugasNewPage() {
         />
 
         {/* ── Error & submit ── */}
-        {err && <Err>{err}</Err>}
+        {err && <Alert variant="destructive">{err}</Alert>}
 
-        <Toolbar>
+        <div className="mb-4 flex flex-wrap items-center gap-2.5">
           <Button variant="sticker-ghost" type="button" onClick={() => router.back()}>Batal</Button>
           <Button variant="sticker" type="submit" disabled={saving}>
             {saving
               ? "Menyimpan…"
               : status === "DRAFT" ? "Simpan draf" : "Terbitkan tugas"}
           </Button>
-        </Toolbar>
+        </div>
 
       </form>
     </>

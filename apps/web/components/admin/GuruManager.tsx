@@ -3,13 +3,6 @@
 import { useMemo, useState } from "react";
 import { type ColumnDef } from "@tanstack/react-table";
 import { api, useFetch } from "@/app/lib/api";
-import {
-  Panel,
-  TextInput,
-  Note,
-  Err,
-  Toolbar,
-} from "@/components/DashUI";
 import { Select, SelectTrigger, SelectValue, SelectPositioner, SelectPopup, SelectItem } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { buttonVariants } from "@/components/ui/button";
@@ -19,6 +12,10 @@ import { DataTable, selectColumn, actionsColumn } from "@/components/ui/data-tab
 import {
   Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription,
 } from "@/components/ui/sheet";
+import { Card } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+
+import { cn } from "@/lib/utils";
 
 interface TeacherRow {
   id: string;
@@ -186,9 +183,9 @@ export default function GuruManager() {
       cell: ({ row }) => {
         const t = row.original;
         return (
-          <span style={{ fontWeight: 700 }}>
+          <span className="font-bold">
             {t.name}
-            {t.email && <div style={{ fontWeight: 400, fontSize: 12, color: "#74746d" }}>{t.email}</div>}
+            {t.email && <div className="font-normal text-xs text-muted">{t.email}</div>}
           </span>
         );
       },
@@ -199,15 +196,12 @@ export default function GuruManager() {
       cell: ({ row }) => {
         const nm = row.original.homeroomOf?.[0]?.name;
         return nm ? (
-          <span
-            style={{
-              background: "#aec6a4", padding: "3px 10px", borderRadius: 99,
-              fontWeight: 700, fontSize: 12, border: "1px solid #171716",
-            }}
+          <span className="bg-mint pt-[3px] pr-[10px] pb-[3px] pl-[10px] rounded-[99px] font-bold text-xs border border-solid border-ink"
+            
           >
             Kelas {nm}
           </span>
-        ) : (<span style={{ color: "#a0a096" }}>-</span>);
+        ) : (<span className="text-muted">-</span>);
       },
     },
     {
@@ -215,13 +209,13 @@ export default function GuruManager() {
       header: "Mapel & Kelas Diampu",
       cell: ({ row }) => {
         const taught = row.original.taughtFromSlots ?? [];
-        if (taught.length === 0) return <span style={{ color: "#a0a096" }}>Belum ada mapel</span>;
+        if (taught.length === 0) return <span className="text-muted">Belum ada mapel</span>;
         return (
-          <div style={{ display: "flex", gap: 4, flexWrap: "wrap", maxWidth: 280 }}>
+          <div className="flex gap-[4px] flex-wrap max-w-[280px]">
             {taught.map((tc) => (
-              <span
+              <span className="bg-paper-deep pt-[2px] pr-2 pb-[2px] pl-2 rounded-md text-[11px] whitespace-nowrap"
                 key={`${tc.teacherId}:${tc.classId}:${tc.subject ?? "-"}`}
-                style={{ background: "#eeeadd", padding: "2px 8px", borderRadius: 6, fontSize: 11, whiteSpace: "nowrap" }}
+                
               >
                 {tc.subject ?? "Mapel"} ({tc.class.name})
               </span>
@@ -248,23 +242,15 @@ export default function GuruManager() {
 
   return (
     <>
-      <Toolbar>
+      <div className="mb-4 flex flex-wrap items-center gap-2.5">
         <Button variant="sticker" onClick={() => setAddOpen(true)}>+ Tambah Guru</Button>
-      </Toolbar>
+      </div>
       {lastPw && (
-        <div
-          style={{
-            background: "#f5c94a",
-            color: "#171716",
-            padding: "12px 18px",
-            borderRadius: 14,
-            fontWeight: 700,
-            marginBottom: 16,
-            border: "2px solid #171716",
-          }}
+        <div className="bg-sun text-ink pt-3 pr-[18px] pb-3 pl-[18px] rounded-[14px] font-bold mb-4 border-2 border-solid border-ink"
+          
         >
           Password sementara guru baru (simpan sekarang, hanya muncul sekali):{" "}
-          <code style={{ background: "#fffdf8", padding: "2px 8px", borderRadius: 6, fontSize: 15 }}>
+          <code className="bg-cream pt-[2px] pr-2 pb-[2px] pl-2 rounded-md text-[15px]">
             {lastPw}
           </code>
         </div>
@@ -279,15 +265,15 @@ export default function GuruManager() {
           </SheetHeader>
           {editingTeacher && (
           <div className="flex-1 space-y-4 overflow-y-auto px-6 pb-6">
-            <label style={{ display: "grid", gap: 6, fontSize: 13, color: "#74746d" }}>
+            <label className="grid gap-[6px] text-[13px] text-muted">
               Nama Guru:
-              <TextInput value={editName} onChange={(e) => setEditName(e.target.value)} required />
+              <Input value={editName} onChange={(e) => setEditName(e.target.value)} required />
             </label>
-            <label style={{ display: "grid", gap: 6, fontSize: 13, color: "#74746d" }}>
+            <label className="grid gap-[6px] text-[13px] text-muted">
               Email:
-              <TextInput value={editEmail} onChange={(e) => setEditEmail(e.target.value)} required />
+              <Input value={editEmail} onChange={(e) => setEditEmail(e.target.value)} required />
             </label>
-            <label style={{ display: "grid", gap: 6, fontSize: 13, color: "#74746d" }}>
+            <label className="grid gap-[6px] text-[13px] text-muted">
               Wali Kelas:
               <Select value={editHomeroom} onValueChange={(v) => setEditHomeroom(v ?? "")}>
                 <SelectTrigger><SelectValue placeholder="Bukan Wali Kelas" /></SelectTrigger>
@@ -298,35 +284,26 @@ export default function GuruManager() {
                 </SelectPopup></SelectPositioner>
               </Select>
             </label>
-            <Button variant="sticker" onClick={saveTeacherEdit} disabled={submitting} style={{ width: "100%" }}>
+            <Button className="w-full" variant="sticker" onClick={saveTeacherEdit} disabled={submitting}>
               {submitting ? "Menyimpan…" : "Simpan"}
             </Button>
-            <div style={{ borderTop: "1px solid rgba(23,23,22,.14)", paddingTop: 14 }}>
-              <h3 style={{ fontSize: 15, fontWeight: 700, margin: "0 0 10px" }}>Mata Pelajaran yang Diampu Guru Ini:</h3>
+            <div className="border-t border-line pt-[14px]">
+              <h3 className="text-[15px] font-bold mt-0 mr-0 mb-[10px] ml-0">Mata Pelajaran yang Diampu Guru Ini:</h3>
               {(!editingTeacher.taughtFromSlots || editingTeacher.taughtFromSlots.length === 0) ? (
-                <p style={{ color: "#74746d", fontSize: 13 }}>Belum mengampu mata pelajaran di kelas manapun. Atur lewat <a className={buttonVariants({ variant: "sticker-ghost" })} style={{ textDecoration: "none" }} href="/admin/jadwal">Jadwal</a>.</p>
+                <p className="text-muted text-[13px]">Belum mengampu mata pelajaran di kelas manapun. Atur lewat <a className={cn(buttonVariants({ variant: "sticker-ghost" }), "no-underline")} href="/admin/jadwal">Jadwal</a>.</p>
               ) : (
-                <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 14 }}>
+                <div className="flex gap-2 flex-wrap mb-[14px]">
                   {editingTeacher.taughtFromSlots.map((tc) => (
                     <span
+                      className="bg-paper-deep border border-solid border-line rounded-[99px] pt-1 pr-3 pb-1 pl-3 text-[13px] inline-flex items-center gap-2"
                       key={`${tc.teacherId}:${tc.classId}:${tc.subject ?? "-"}`}
-                      style={{
-                        background: "#eeeadd",
-                        border: "1px solid rgba(23,23,22,.2)",
-                        borderRadius: 99,
-                        padding: "4px 12px",
-                        fontSize: 13,
-                        display: "inline-flex",
-                        alignItems: "center",
-                        gap: 8,
-                      }}
                     >
                       <strong>{tc.subject ?? "Mapel"}</strong> (Kelas {tc.class.name})
                     </span>
                   ))}
                 </div>
               )}
-              <p style={{ color: "#74746d", fontSize: 12, margin: 0 }}>Penugasan mapel diatur lewat jadwal, bukan di sini.</p>
+              <p className="text-muted text-xs m-0">Penugasan mapel diatur lewat jadwal, bukan di sini.</p>
             </div>
           </div>
           )}
@@ -334,7 +311,7 @@ export default function GuruManager() {
       </Sheet>
 
       {/* Tabel Data Guru */}
-      <Panel style={{ marginBottom: 20 }}>
+      <Card className="mb-5">
         <DataTable<TeacherRow>
           columns={columns}
           rows={tampil}
@@ -343,10 +320,10 @@ export default function GuruManager() {
           onSearchChange={setQ}
           searchPlaceholder="Cari nama / email guru…"
           filters={(
-            <label style={{ display: "grid", gap: 6, fontSize: 13, color: "#74746d" }}>
+            <label className="grid gap-[6px] text-[13px] text-muted">
               Wali kelas:
               <Select value={filterWali} onValueChange={(v) => setFilterWali((v as typeof filterWali) ?? "semua")}>
-                <SelectTrigger style={{ minHeight: 44 }}><SelectValue /></SelectTrigger>
+                <SelectTrigger className="min-h-[44px]"><SelectValue /></SelectTrigger>
                 <SelectPositioner><SelectPopup>
                   <SelectItem value="semua">Semua</SelectItem>
                   <SelectItem value="wali">Wali kelas saja</SelectItem>
@@ -361,7 +338,7 @@ export default function GuruManager() {
           ]}
           emptyText="Tidak ada guru yang cocok."
         />
-      </Panel>
+      </Card>
 
       {/* Sheet Tambah Guru Baru */}
       <Sheet open={addOpen} onOpenChange={setAddOpen}>
@@ -371,16 +348,16 @@ export default function GuruManager() {
             <SheetDescription>Daftarkan satu guru. Penugasan mapel diatur lewat Jadwal.</SheetDescription>
           </SheetHeader>
           <div className="flex-1 overflow-y-auto px-6 pb-6">
-            <form onSubmit={create} style={{ display: "grid", gap: 14 }}>
-              <label style={{ display: "grid", gap: 6, fontSize: 13, color: "#74746d" }}>
+            <form className="grid gap-[14px]" onSubmit={create}>
+              <label className="grid gap-[6px] text-[13px] text-muted">
                 Nama Lengkap Guru *:
-                <TextInput placeholder="Contoh: Budi Santoso, S.Pd." value={name} onChange={(e) => setName(e.target.value)} required />
+                <Input placeholder="Contoh: Budi Santoso, S.Pd." value={name} onChange={(e) => setName(e.target.value)} required />
               </label>
-              <label style={{ display: "grid", gap: 6, fontSize: 13, color: "#74746d" }}>
+              <label className="grid gap-[6px] text-[13px] text-muted">
                 Alamat Email *:
-                <TextInput type="email" placeholder="budi@sekolah.sch.id" value={email} onChange={(e) => setEmail(e.target.value)} required />
+                <Input type="email" placeholder="budi@sekolah.sch.id" value={email} onChange={(e) => setEmail(e.target.value)} required />
               </label>
-              <label style={{ display: "grid", gap: 6, fontSize: 13, color: "#74746d" }}>
+              <label className="grid gap-[6px] text-[13px] text-muted">
                 Wali Kelas (Opsional):
                 <Select value={homeroomClassId} onValueChange={(v) => setHomeroomClassId(v ?? "")}>
                   <SelectTrigger><SelectValue placeholder="Bukan Wali Kelas" /></SelectTrigger>
@@ -391,7 +368,7 @@ export default function GuruManager() {
                   </SelectPopup></SelectPositioner>
                 </Select>
               </label>
-              <Button variant="sticker" type="submit" style={{ minHeight: 44 }}>Daftarkan Guru</Button>
+              <Button className="min-h-[44px]" variant="sticker" type="submit">Daftarkan Guru</Button>
             </form>
           </div>
         </SheetContent>

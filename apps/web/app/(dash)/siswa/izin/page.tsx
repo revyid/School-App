@@ -5,11 +5,14 @@
 // Foto: SATU jepretan foto bersama siswa + orang tua dalam satu frame.
 import { useEffect, useRef, useState } from "react";
 import { api, useFetch } from "@/app/lib/api";
-import { PageHead, Panel, Toolbar, TextInput, Note } from "@/components/DashUI";
 import { Select, SelectTrigger, SelectValue, SelectPositioner, SelectPopup, SelectItem } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { Badge, statusVariant } from "@/components/ui/badge";
 import { useCamera } from "@/components/useCamera";
+import { PageHead } from "@/components/ui/page-header";
+import { Card } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Alert } from "@/components/ui/alert";
 
 function todayWibInput() {
   const d = new Date(Date.now() + 7 * 3600 * 1000);
@@ -125,24 +128,24 @@ export default function IzinPage() {
     <>
       <PageHead kicker="Perizinan" title="Izin / sakit" desc="Foto bersama siswa dan orang tua diambil langsung dari kamera dalam satu frame (tidak bisa dari galeri). Pencegahan dasar, bukan anti-spoofing sempurna." />
       {consentKnown && !consented && (
-        <Panel style={{ marginBottom: 16 }}>
-          <Note>Persetujuan orang tua belum dicatat. Minta admin/tata usaha mencatat persetujuan di menu Privasi, lalu muat ulang halaman ini sebelum mengajukan.</Note>
-        </Panel>
+        <Card className="mb-4">
+          <Alert>Persetujuan orang tua belum dicatat. Minta admin/tata usaha mencatat persetujuan di menu Privasi, lalu muat ulang halaman ini sebelum mengajukan.</Alert>
+        </Card>
       )}
       {consented && (
-        <Panel style={{ marginBottom: 16 }}>
-          <Note>Persetujuan orang tua sudah tercatat. Anda bisa mengajukan izin.</Note>
-        </Panel>
+        <Card className="mb-4">
+          <Alert>Persetujuan orang tua sudah tercatat. Anda bisa mengajukan izin.</Alert>
+        </Card>
       )}
-      <Panel style={{ marginBottom: 16 }}>
-        <Toolbar>
+      <Card className="mb-4">
+        <div className="mb-4 flex flex-wrap items-center gap-2.5">
           {!streaming
-            ? <Button variant="sticker" type="button" style={{ background: "#171716", color: "#fffdf8" }} onClick={startCamera}>Nyalakan kamera</Button>
+            ? <Button className="bg-ink text-cream" variant="sticker" type="button"  onClick={startCamera}>Nyalakan kamera</Button>
             : <Button variant="sticker-ghost" onClick={stopCamera}>Matikan kamera</Button>}
-        </Toolbar>
-        <video ref={videoRef} playsInline muted style={{ width: "100%", maxWidth: 480, background: "#171716", borderRadius: 16 }} />
-        <canvas ref={canvasRef} style={{ display: "none" }} />
-        <Toolbar>
+        </div>
+        <video className="w-full max-w-[480px] bg-ink rounded-2xl" ref={videoRef} playsInline muted  />
+        <canvas className="hidden" ref={canvasRef} />
+        <div className="mb-4 flex flex-wrap items-center gap-2.5">
           <Button variant="sticker-ghost"            type="button"                        onClick={jepret}
             disabled={!streaming || needConsent || busy}
             title={needConsent ? "Menunggu persetujuan orang tua dicatat admin" : "Jepret foto bersama dalam satu frame"}
@@ -150,17 +153,17 @@ export default function IzinPage() {
             Jepret foto bersama
           </Button>
           {foto && <Button variant="sticker-ghost" onClick={ulang}>Ulangi</Button>}
-          <span style={{ fontSize: 13, color: "#74746d" }}>{foto ? "Foto bersama: sudah ada" : "Foto bersama: belum ada"}</span>
-        </Toolbar>
+          <span className="text-[13px] text-muted">{foto ? "Foto bersama: sudah ada" : "Foto bersama: belum ada"}</span>
+        </div>
         {preview && (
-          <img src={preview} alt="Pratinjau foto bersama siswa dan orang tua" style={{ width: "100%", maxWidth: 480, borderRadius: 16, border: "1px solid rgba(23,23,22,.2)" }} />
+          <img className="w-full max-w-[480px] rounded-2xl border border-solid border-line" src={preview} alt="Pratinjau foto bersama siswa dan orang tua" />
         )}
-        <form onSubmit={ajukan} style={{ display: "grid", gap: 12, maxWidth: 520, marginTop: 12 }}>
-          <label style={{ display: "grid", gap: 6, fontSize: 13, color: "#74746d" }}>
+        <form className="grid gap-3 max-w-[520px] mt-3" onSubmit={ajukan}>
+          <label className="grid gap-[6px] text-[13px] text-muted">
             Tanggal:
-            <TextInput type="date" value={date} onChange={(e) => setDate(e.target.value)} required />
+            <Input type="date" value={date} onChange={(e) => setDate(e.target.value)} required />
           </label>
-          <label style={{ display: "grid", gap: 6, fontSize: 13, color: "#74746d" }}>
+          <label className="grid gap-[6px] text-[13px] text-muted">
             Jenis:
             <Select value={kind} onValueChange={(v) => setKind(v ?? "IZIN")}>
               <SelectTrigger><SelectValue /></SelectTrigger>
@@ -170,11 +173,11 @@ export default function IzinPage() {
               </SelectPopup></SelectPositioner>
             </Select>
           </label>
-          <label style={{ display: "grid", gap: 6, fontSize: 13, color: "#74746d" }}>
+          <label className="grid gap-[6px] text-[13px] text-muted">
             Alasan (min 10 huruf):
-            <textarea value={desc} onChange={(e) => setDesc(e.target.value)} required minLength={10} rows={3} style={{ borderRadius: 14, border: "1px solid rgba(23,23,22,.25)", background: "#fffdf8", padding: "9px 14px", fontSize: 14 }} />
+            <textarea className="rounded-[14px] border border-solid border-line bg-cream pt-[9px] pr-[14px] pb-[9px] pl-[14px] text-sm" value={desc} onChange={(e) => setDesc(e.target.value)} required minLength={10} rows={3} />
           </label>
-          <Toolbar>
+          <div className="mb-4 flex flex-wrap items-center gap-2.5">
             <Button variant="sticker"
               type="submit"
               disabled={busy || needConsent}
@@ -182,28 +185,28 @@ export default function IzinPage() {
             >
               {busy ? "Mengirim..." : "Ajukan"}
             </Button>
-          </Toolbar>
+          </div>
           {needConsent && (
-            <span style={{ fontSize: 13, color: "#74746d" }}>Tombol Ajukan aktif setelah admin mencatat persetujuan orang tua.</span>
+            <span className="text-[13px] text-muted">Tombol Ajukan aktif setelah admin mencatat persetujuan orang tua.</span>
           )}
         </form>
-        {msg && <p style={{ fontWeight: 700 }}>{msg}</p>}
-      </Panel>
-      <Panel>
-        <h2 className="display" style={{ fontSize: 18, margin: "0 0 12px" }}>Riwayat saya</h2>
-        {history.data && history.data.rows.length === 0 && <Note>Belum pernah mengajukan.</Note>}
+        {msg && <p className="font-bold">{msg}</p>}
+      </Card>
+      <Card>
+        <h2 className="display text-[18px] mt-0 mr-0 mb-3 ml-0">Riwayat saya</h2>
+        {history.data && history.data.rows.length === 0 && <Alert>Belum pernah mengajukan.</Alert>}
         {history.data && history.data.rows.length > 0 && (
-          <ul style={{ listStyle: "none", margin: 0, padding: 0, display: "grid", gap: 8 }}>
+          <ul className="list-none m-0 p-0 grid gap-2">
             {history.data.rows.map((r) => (
-              <li key={r.id} style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap", fontSize: 14 }}>
-                <span style={{ fontFamily: "var(--font-meta)", fontSize: 12 }}>{r.date.slice(0, 10)}</span>
+              <li className="flex gap-[10px] items-center flex-wrap text-sm" key={r.id}>
+                <span className="font-meta text-xs">{r.date.slice(0, 10)}</span>
                 <Badge variant={statusVariant(r.kind)}>{r.kind}</Badge>
                 <Badge variant={statusVariant(r.status)}>{r.status}</Badge>
               </li>
             ))}
           </ul>
         )}
-      </Panel>
+      </Card>
     </>
   );
 }

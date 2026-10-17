@@ -5,12 +5,16 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { api, useFetch } from "@/app/lib/api";
 import AssessmentStemMarkdown from "@/components/AssessmentStemMarkdown";
-import { PageHead, Panel, Toolbar, TextInput, Note, Err } from "@/components/DashUI";
 import { Select, SelectTrigger, SelectValue, SelectPositioner, SelectPopup, SelectItem } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import SoalSheet from "@/components/SoalSheet";
 import { parseMultiQuestions, PLACEHOLDER_EXAMPLE } from "@/lib/parse-questions";
 import { PlusIcon, CheckIcon } from "lucide-react";
+import { PageHead } from "@/components/ui/page-header";
+import { Card } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Alert } from "@/components/ui/alert";
+import { cn } from "@/lib/utils";
 
 interface BankRow {
   id: string; type: string; stem: string;
@@ -125,7 +129,7 @@ export default function AsesmenNewPage() {
       <form onSubmit={submit} className="grid gap-5 max-w-2xl">
 
         {/* Identitas */}
-        <Panel>
+        <Card>
           <h2 className="display mb-4 text-[15px]">Identitas asesmen</h2>
           <div className="grid gap-4">
             <Field label="Kelas utama" hint="Kelas utama target asesmen ini.">
@@ -163,7 +167,7 @@ export default function AsesmenNewPage() {
             )}
 
             <Field label="Judul asesmen / ujian">
-              <TextInput
+              <Input
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
                 placeholder="mis. Ulangan Harian Bab 1"
@@ -174,14 +178,14 @@ export default function AsesmenNewPage() {
 
             <div className="grid grid-cols-2 gap-4 max-sm:grid-cols-1">
               <Field label="Deadline (opsional)">
-                <TextInput
+                <Input
                   type="datetime-local"
                   value={deadline}
                   onChange={(e) => setDeadline(e.target.value)}
                 />
               </Field>
               <Field label="Durasi menit (opsional)">
-                <TextInput
+                <Input
                   type="number"
                   value={durationMin}
                   onChange={(e) => setDurationMin(e.target.value)}
@@ -207,10 +211,10 @@ export default function AsesmenNewPage() {
               </label>
             </div>
           </div>
-        </Panel>
+        </Card>
 
         {/* Soal massal */}
-        <Panel>
+        <Card>
           <h2 className="display mb-1 text-[15px]">Soal massal</h2>
           <p className="mb-4 text-[12px] text-muted-strong">
             Tulis (BENAR) di akhir opsi yang benar. Tipe: (SORTING) mengurutkan, (ISIAN: jawaban).
@@ -233,7 +237,7 @@ export default function AsesmenNewPage() {
             <div className="rounded-2xl bg-cream px-3 py-2.5 text-[12px]">
               <strong>{parsed.length} soal terdeteksi</strong>
               {parseErrors.length > 0 && (
-                <ul className="mt-1.5 list-disc pl-4 text-terracotta">
+                <ul className="mt-1.5 list-disc pl-4 text-terracotta-deep">
                   {parseErrors.map((e, i) => <li key={i}>{e}</li>)}
                 </ul>
               )}
@@ -247,10 +251,10 @@ export default function AsesmenNewPage() {
               </ul>
             </div>
           </div>
-        </Panel>
+        </Card>
 
         {/* Bank soal */}
-        <Panel>
+        <Card>
           <div className="mb-4 flex items-center justify-between">
             <div>
               <h2 className="display text-[15px]">Bank soal ({picked.length} dipilih)</h2>
@@ -265,19 +269,18 @@ export default function AsesmenNewPage() {
             </button>
           </div>
 
-          {bank.loading && <Note>Memuat bank soal…</Note>}
-          {bank.error && <Err>Gagal: {bank.error}</Err>}
-          {bank.data && (bank.data.rows ?? []).length === 0 && <Note>Bank masih kosong. Tambah soal di atas.</Note>}
+          {bank.loading && <Alert>Memuat bank soal…</Alert>}
+          {bank.error && <Alert variant="destructive">Gagal: {bank.error}</Alert>}
+          {bank.data && (bank.data.rows ?? []).length === 0 && <Alert>Bank masih kosong. Tambah soal di atas.</Alert>}
 
           <div className="grid gap-2">
             {(bank.data?.rows ?? []).slice(0, 50).map((b) => (
               <label
                 key={b.id}
-                className="flex cursor-pointer items-start gap-3 rounded-2xl border border-line p-3 transition-colors"
-                style={{ background: picked.includes(b.id) ? "#eeeadd" : "#fffdf8" }}
+                className={cn("flex cursor-pointer items-start gap-3 rounded-2xl border border-line p-3 transition-colors", picked.includes(b.id) ? "bg-paper-deep" : "bg-cream")}
               >
-                <span className="relative mt-0.5 flex size-5 shrink-0 items-center justify-center rounded-md border-2 border-line" style={picked.includes(b.id) ? { background: "#50643e", borderColor: "#50643e" } : {}}>
-                  {picked.includes(b.id) && <CheckIcon size={12} color="#fff" />}
+                <span className={cn("relative mt-0.5 flex size-5 shrink-0 items-center justify-center rounded-md border-2", picked.includes(b.id) ? "border-olive-deep bg-olive-deep" : "border-line")}>
+                  {picked.includes(b.id) && <CheckIcon size={12} className="text-cream" />}
                   <input type="checkbox" className="sr-only" checked={picked.includes(b.id)} onChange={() => togglePick(b.id)} />
                 </span>
                 <span className="min-w-0 flex-1 text-[13px]">
@@ -295,19 +298,19 @@ export default function AsesmenNewPage() {
               </label>
             ))}
           </div>
-          {bankMsg && <p className="mt-2 text-[12px] font-bold" style={{ color: bankMsg.includes("bank") ? "#50643e" : "#c94b35" }}>{bankMsg}</p>}
-        </Panel>
+          {bankMsg && <p className={cn("mt-2 text-[12px] font-bold", bankMsg.includes("bank") ? "text-olive-deep" : "text-terracotta-dark")}>{bankMsg}</p>}
+        </Card>
 
         <SoalSheet open={addOpen} onOpenChange={setAddOpen} busy={bankBusy} msg={bankMsg} onSubmit={(p) => void tambahBank(p)} />
 
-        {err && <p className="text-[13px] font-bold text-terracotta">{err}</p>}
+        {err && <p className="text-[13px] font-bold text-terracotta-deep">{err}</p>}
 
-        <Toolbar>
+        <div className="mb-4 flex flex-wrap items-center gap-2.5">
           <Button variant="sticker-ghost" type="button" onClick={() => router.back()}>Batal</Button>
           <Button variant="sticker" type="submit" disabled={saving || (parsed.length === 0 && picked.length === 0)}>
             {saving ? "Menyimpan…" : `Buat ${parsed.length + picked.length} soal`}
           </Button>
-        </Toolbar>
+        </div>
       </form>
     </>
   );

@@ -3,7 +3,11 @@
 // Admin: viewer audit log (pagination cursor).
 import { useState } from "react";
 import { api } from "@/app/lib/api";
-import { PageHead, Panel, Toolbar, TextInput, WarmTable, warmCell, Note, Err } from "@/components/DashUI";
+import { PageHead } from "@/components/ui/page-header";
+import { Card } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 
 interface Row {
@@ -31,28 +35,39 @@ export default function AuditPage() {
   return (
     <>
       <PageHead kicker="Keamanan" title="Audit log" desc="Jejak append-only semua aksi penting di sekolah ini." />
-      <Panel>
-        <Toolbar>
-          <TextInput value={action} onChange={(e) => setAction(e.target.value)} placeholder="Filter aksi, mis. LEAVE.REVIEW" style={{ maxWidth: 300 }} />
+      <Card>
+        <div className="mb-4 flex flex-wrap items-center gap-2.5">
+          <Input value={action} onChange={(e) => setAction(e.target.value)} placeholder="Filter aksi, mis. LEAVE.REVIEW" className="max-w-[300px]" />
           <Button variant="sticker" type="button" onClick={() => muat(true)}>Muat</Button>
-        </Toolbar>
-        {msg && <Err>{msg}</Err>}
-        {rows.length === 0 && <Note>Belum ada baris. Tekan Muat untuk menampilkan.</Note>}
+        </div>
+        {msg && <Alert variant="destructive">{msg}</Alert>}
+        {rows.length === 0 && <Alert>Belum ada baris. Tekan Muat untuk menampilkan.</Alert>}
         {rows.length > 0 && (
-          <WarmTable head={["Waktu", "Aksi", "Pelaku", "Entitas", "IP"]}>
-            {rows.map((r) => (
-              <tr key={r.id}>
-                <td style={warmCell({ whiteSpace: "nowrap", fontFamily: "var(--font-meta)", fontSize: 12 })}>{r.createdAt.slice(0, 19).replace("T", " ")}</td>
-                <td style={warmCell({ fontWeight: 700 })}>{r.action}</td>
-                <td style={warmCell()}>{r.actor} ({r.role})</td>
-                <td style={warmCell()}>{r.entity ?? "-"} {r.entityId?.slice(0, 8) ?? ""}</td>
-                <td style={warmCell()}>{r.ip ?? "-"}</td>
-              </tr>
-            ))}
-          </WarmTable>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Waktu</TableHead>
+                <TableHead>Aksi</TableHead>
+                <TableHead>Pelaku</TableHead>
+                <TableHead>Entitas</TableHead>
+                <TableHead>IP</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {rows.map((r) => (
+                <TableRow key={r.id}>
+                  <TableCell className="whitespace-nowrap font-meta text-xs">{r.createdAt.slice(0, 19).replace("T", " ")}</TableCell>
+                  <TableCell className="font-bold">{r.action}</TableCell>
+                  <TableCell>{r.actor} ({r.role})</TableCell>
+                  <TableCell>{r.entity ?? "-"} {r.entityId?.slice(0, 8) ?? ""}</TableCell>
+                  <TableCell>{r.ip ?? "-"}</TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
         )}
-        {cursor && <Toolbar><Button variant="sticker-ghost" type="button" onClick={() => muat(false)}>Muat lagi</Button></Toolbar>}
-      </Panel>
+        {cursor && <div className="mb-4 flex flex-wrap items-center gap-2.5"><Button variant="sticker-ghost" type="button" onClick={() => muat(false)}>Muat lagi</Button></div>}
+      </Card>
     </>
   );
 }

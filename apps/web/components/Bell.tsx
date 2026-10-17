@@ -311,7 +311,7 @@ export default function Bell() {
         >
           <BellIcon className="size-[18px]" />
           {unread > 0 && (
-            <span className="absolute -top-1 -right-1 grid min-w-[18px] place-items-center rounded-full bg-terracotta px-1 text-[10px] font-extrabold text-cream" aria-hidden="true">
+            <span className="absolute -top-1 -right-1 grid min-w-[18px] place-items-center rounded-full bg-terracotta-deep px-1 text-[10px] font-extrabold text-cream" aria-hidden="true">
               {unread > 99 ? "99+" : unread}
             </span>
           )}
@@ -354,7 +354,7 @@ export default function Bell() {
             </DialogDescription>
           </DialogHeader>
           {/* Teks penuh membungkus (bukan terpotong). */}
-          <div className="max-h-[40vh] overflow-y-auto rounded-2xl border border-line bg-paper p-4 text-sm leading-relaxed text-ink" style={{ overflowWrap: "anywhere" }}>
+          <div className="max-h-[40vh] overflow-y-auto rounded-2xl border border-line bg-paper p-4 text-sm leading-relaxed text-ink [overflow-wrap:anywhere]">
             {activeNotif?.body}
           </div>
           <div className="flex justify-end gap-2">
@@ -437,7 +437,7 @@ function BellInbox({
         <span className="text-sm font-extrabold">
           Notifikasi
           {unread > 0 && (
-            <span className="ml-2 rounded-full bg-terracotta px-2 py-0.5 text-[10px] font-extrabold text-cream">
+            <span className="ml-2 rounded-full bg-terracotta-deep px-2 py-0.5 text-[10px] font-extrabold text-cream">
               {unread} belum dibaca
             </span>
           )}
@@ -445,7 +445,7 @@ function BellInbox({
         </span>
         <div className="flex items-center gap-2">
           {unread > 0 && (
-            <button type="button" onClick={onReadAll} className="cursor-pointer border-0 bg-none p-0 text-[11px] font-bold text-terracotta hover:underline">
+            <button type="button" onClick={onReadAll} className="cursor-pointer border-0 bg-none p-0 text-[11px] font-bold text-terracotta-deep hover:underline">
               Tandai semua dibaca
             </button>
           )}
@@ -489,10 +489,10 @@ function BellInbox({
               >
                 <span className={cn("mt-1.5 size-2 shrink-0 rounded-full", isUnread ? "bg-terracotta" : "bg-transparent")} />
                 <span className="min-w-0 overflow-hidden">
-                  <span className={cn("mb-0.5 line-clamp-2 block text-[13px] leading-snug", isUnread ? "font-bold" : "font-medium", "text-ink")} style={{ overflowWrap: "anywhere" }}>
+                  <span className={cn("mb-0.5 line-clamp-2 block text-[13px] leading-snug [overflow-wrap:anywhere]", isUnread ? "font-bold" : "font-medium", "text-ink")}>
                     {n.title}
                   </span>
-                  <span className="line-clamp-2 block text-xs leading-snug text-muted-foreground" style={{ overflowWrap: "anywhere" }}>
+                  <span className="line-clamp-2 block text-xs leading-snug text-muted-foreground [overflow-wrap:anywhere]">
                     {n.body}
                   </span>
                 </span>
@@ -508,7 +508,7 @@ function BellInbox({
         <span className="text-xs text-muted-foreground">Notifikasi push di perangkat ini</span>
         <Switch checked={pushState === "on"} onCheckedChange={() => onTogglePush()} disabled={pushLoading || pushState === "unknown"} aria-label="Aktifkan notifikasi push" />
       </div>
-      {pushError && <p className="m-0 px-4 pb-3 text-[11px] text-terracotta-dark" style={{ overflowWrap: "anywhere", wordBreak: "break-word" }}>{pushError}</p>}
+      {pushError && <p className="m-0 px-4 pb-3 text-[11px] text-terracotta-dark [overflow-wrap:anywhere] [word-break:break-word]">{pushError}</p>}
     </div>
   );
 }

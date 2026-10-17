@@ -10,6 +10,7 @@
 //   />
 import { useCallback, useRef, useState } from "react";
 import { UploadCloudIcon, FileIcon, XIcon, CheckIcon } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 export type UploadProgressFn = (pct: number) => void;
 
@@ -117,13 +118,11 @@ export default function UploadPopup({
         onDragEnd={onDragLeave}
         onClick={() => !disabled && !file && inputRef.current?.click()}
         onKeyDown={(e) => { if ((e.key === "Enter" || e.key === " ") && !disabled && !file) inputRef.current?.click(); }}
-        className="relative flex cursor-pointer flex-col items-center justify-center gap-3 rounded-2xl border-2 border-dashed p-6 text-center transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/30"
-        style={{
-          borderColor: dragging ? "var(--color-ink)" : error ? "#c94b35" : "rgba(23,23,22,.22)",
-          background: dragging ? "rgba(23,23,22,.04)" : "#fffdf8",
-          cursor: disabled ? "not-allowed" : file ? "default" : "pointer",
-          opacity: disabled ? 0.5 : 1,
-        }}
+        className={cn(
+          "relative flex flex-col items-center justify-center gap-3 rounded-2xl border-2 border-dashed p-6 text-center transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/30",
+          dragging ? "border-ink bg-ink/5" : error ? "border-terracotta-dark bg-cream" : "border-line bg-cream",
+          disabled ? "cursor-not-allowed opacity-50" : file ? "cursor-default" : "cursor-pointer",
+        )}
       >
         {/* Idle state */}
         {!file && !error && (
@@ -169,6 +168,7 @@ export default function UploadPopup({
               <div className="h-1.5 w-full overflow-hidden rounded-full bg-paper-deep">
                 <div
                   className="h-full rounded-full bg-ink transition-all duration-200"
+                  // dynamic: lebar dari nilai progress runtime
                   style={{ width: `${progress}%` }}
                 />
               </div>
@@ -182,7 +182,7 @@ export default function UploadPopup({
         {/* Error */}
         {error && (
           <div className="flex w-full flex-col gap-1">
-            <p className="text-[13px] font-bold text-terracotta">{error}</p>
+            <p className="text-[13px] font-bold text-terracotta-deep">{error}</p>
             <button
               type="button"
               onClick={(e) => { e.stopPropagation(); clear(); }}
