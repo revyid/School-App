@@ -202,8 +202,6 @@ export default function AIChatWidgetEnhanced() {
   if (TASK_PAGE_RE.test(pathname ?? "")) return null;
   if (!enabled) return null;
   const liveMood: Mood = loading ? "thinking" : mood;
-  // Hanya avatar pesan terakhir yang dianimasikan; sisanya statis (hemat rAF).
-  const lastAiIndex = messages.reduce((acc, m, i) => (m.sender === "ai" ? i : acc), -1);
 
   return <div className="ai-enhanced-root" ref={rootRef}>
     {!open && <button className="ai-enhanced-launcher" type="button" onClick={toggle} aria-label="Buka chat RAI"><RaiAvatar size={35} mood={liveMood} /><span>Tanya RAI</span><i aria-hidden="true" /></button>}
@@ -215,16 +213,12 @@ export default function AIChatWidgetEnhanced() {
           <MessageScroller className="ai-enhanced-messages">
             <MessageScrollerViewport className="px-3.5 py-4">
               <MessageScrollerContent className="gap-2.5" aria-live="polite" aria-busy={loading}>
-                {messages.map((message, index) => {
-                  const animated = index === lastAiIndex && !streamText;
-                  return (
-                    <MessageScrollerItem key={message.id} messageId={message.id} scrollAnchor={message.sender === "user"} className={`ai-enhanced-row ${message.sender}`}>
-                      {message.sender === "ai" && <RaiAvatar size={26} mood={animated ? liveMood : "idle"} interactive={false} animate={animated} />}
-                      <div className={`ai-enhanced-bubble ${message.sender}`}>{message.sender === "ai" ? <RaiMarkdown text={message.text} /> : message.text}</div>
-                    </MessageScrollerItem>
-                  );
-                })}
-                {streamText && !messages.some((m) => m.sender === "ai" && m.text === streamText) && <MessageScrollerItem messageId="stream" className="ai-enhanced-row ai"><RaiAvatar size={26} mood={liveMood} interactive={false} /><div className="ai-enhanced-bubble ai ai-stream"><RaiMarkdown text={streamText} /></div></MessageScrollerItem>}
+                {messages.map((message) => (
+                  <MessageScrollerItem key={message.id} messageId={message.id} scrollAnchor={message.sender === "user"} className={`ai-enhanced-row ${message.sender}`}>
+                    <div className={`ai-enhanced-bubble ${message.sender}`}>{message.sender === "ai" ? <RaiMarkdown text={message.text} /> : message.text}</div>
+                  </MessageScrollerItem>
+                ))}
+                {streamText && !messages.some((m) => m.sender === "ai" && m.text === streamText) && <MessageScrollerItem messageId="stream" className="ai-enhanced-row ai"><div className="ai-enhanced-bubble ai ai-stream"><RaiMarkdown text={streamText} /></div></MessageScrollerItem>}
                 {loading && !streamText && <MessageScrollerItem messageId="thinking" className="ai-enhanced-row ai"><RaiAvatar size={26} mood="thinking" interactive={false} /><div className="ai-enhanced-bubble ai">Mencari jawaban…</div></MessageScrollerItem>}
               </MessageScrollerContent>
             </MessageScrollerViewport>

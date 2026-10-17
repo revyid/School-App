@@ -2,7 +2,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { AvatarEngine, BODY_RADIUS, DEFAULT_PAPER, type AnimationState, type AvatarFrame, type HeadGaze } from "@/lib/grok-engine";
 type AvatarMood = "idle" | "thinking" | "happy" | "concerned" | "angry" | "wary" | "confused";
-interface Props { mood?: AvatarMood; size?: number; interactive?: boolean; label?: string; animate?: boolean }
+interface Props { mood?: AvatarMood; size?: number; interactive?: boolean; label?: string }
 const MOOD: Record<AvatarMood, { state: AnimationState; expression: string; label: string }> = {
   idle: { state: "Idle", expression: "attentive", label: "Asisten siap membantu" },
   thinking: { state: "Thinking", expression: "curious", label: "Asisten sedang berpikir" },
@@ -12,7 +12,7 @@ const MOOD: Record<AvatarMood, { state: AnimationState; expression: string; labe
   wary: { state: "Alert", expression: "wary", label: "Asisten waspada soal keamanan" },
   confused: { state: "Idle", expression: "confused", label: "Asisten belum yakin dengan jawaban" },
 };
-export default function RaiAvatar({ mood = "idle", size = 58, interactive = true, label, animate = true }: Props) {
+export default function RaiAvatar({ mood = "idle", size = 58, interactive = true, label }: Props) {
   const config = MOOD[mood];
   const engine = useMemo(() => new AvatarEngine({ state: "Idle", shape: "circle", expression: "attentive", paper: DEFAULT_PAPER, wander: 0.6, blink: true, float: true }, 420), []);
   const [frame, setFrame] = useState<AvatarFrame>(() => engine.sample(0, { expression: "attentive", gaze: { yaw: 0, pitch: 0, roll: 0 }, wander: 0.6, blink: true, float: true }));
@@ -29,9 +29,6 @@ export default function RaiAvatar({ mood = "idle", size = 58, interactive = true
   }, [interactive]);
   useEffect(() => { if (lastState.current !== config.state) { engine.setState(config.state, performance.now() / 1000); lastState.current = config.state; } }, [config.state, engine]);
   useEffect(() => {
-    // Avatar per pesan dibuat statis (animate=false) supaya riwayat panjang
-    // tidak menjalankan puluhan loop rAF.
-    if (!animate) return;
     let active = true;
     const tick = (time: number) => {
       if (!active) return;
@@ -42,7 +39,7 @@ export default function RaiAvatar({ mood = "idle", size = 58, interactive = true
     };
     raf.current = requestAnimationFrame(tick);
     return () => { active = false; if (raf.current !== null) cancelAnimationFrame(raf.current); };
-  }, [config.expression, engine, animate]);
+  }, [config.expression, engine]);
   const gradientIds = new Map(frame.arcs.map((arc, i) => [arc.id, `${uid}-arc-${i}`]));
   const dot = (d: AvatarFrame["dots"][number], key: string) => d.d ? <path key={key} d={d.d} fill={frame.fill} opacity={d.opacity} transform={`translate(${d.x * BODY_RADIUS} ${d.y * BODY_RADIUS}) rotate(${d.rot ?? 0})`} /> : <circle key={key} cx={d.x * BODY_RADIUS} cy={d.y * BODY_RADIUS} r={d.r * BODY_RADIUS} fill={frame.fill} opacity={d.opacity} />;
   return <span className="rai-avatar"
