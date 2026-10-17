@@ -1,11 +1,45 @@
 "use client";
 
-// Renderer markdown minimal untuk chat RAI: head, list, quote, code, bold/italic/link.
-// Tanpa dependensi. HTML user di-escape dulu — tidak ada dangerouslySetInnerHTML mentah.
+// Renderer markdown minimal untuk chat RAI: head, list, quote, kode, bold/italic/link.
+// HTML di-escape dulu lalu di-unescape hanya saat ditampilkan sebagai teks (kode/link);
+// tidak ada dangerouslySetInnerHTML. Blok kode memakai CodeBlock registry + shiki.
 import { Fragment, type ReactNode } from "react";
+import {
+  CodeBlock,
+  CodeBlockActions,
+  CodeBlockContent,
+  CodeBlockCopyButton,
+  CodeBlockHeader,
+  CodeBlockLine,
+  CodeBlockTitle,
+} from "@/components/ui/code-block";
+import { useHighlightedCode } from "@/hooks/use-highlighted-code";
 
 function escapeHtml(s: string): string {
   return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+}
+
+function unescapeHtml(s: string): string {
+  return s.replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&amp;/g, "&");
+}
+
+function MdCode({ code, lang }: { code: string; lang: string }) {
+  const lines = useHighlightedCode(code, lang);
+  return (
+    <CodeBlock className="my-2 bg-white!" size="sm">
+      <CodeBlockHeader>
+        <CodeBlockTitle>{lang || "kode"}</CodeBlockTitle>
+        <CodeBlockActions>
+          <CodeBlockCopyButton value={code} />
+        </CodeBlockActions>
+      </CodeBlockHeader>
+      <CodeBlockContent>
+        {lines.map((line, index) => (
+          <CodeBlockLine key={index}>{line}</CodeBlockLine>
+        ))}
+      </CodeBlockContent>
+    </CodeBlock>
+  );
 }
 
 function renderInline(src: string, keyPrefix: string): ReactNode[] {
@@ -16,33 +50,41 @@ function renderInline(src: string, keyPrefix: string): ReactNode[] {
   let m: RegExpExecArray | null;
   let k = 0;
   while ((m = rx.exec(src)) !== null) {
-    if (m.index > last) parts.push(<Fragment key={`${keyPrefix}-t${k++}`}>{src.slice(last, m.index)}</Fragment>);
+    if (m.index > last) parts.push(<Fragment key={`${keyPrefix}-t${k++}`}>{unescapeHtml(src.slice(last, m.index))}</Fragment>);
     const tok = m[0];
     if (tok.startsWith("`")) {
       parts.push(
-        <code key={`${keyPrefix}-c${k++}`} style={{ background: "rgba(23,23,22,.07)", borderRadius: 6, padding: "1px 6px", fontSize: "0.92em" }}>
-          {tok.slice(1, -1)}
+        <code key={`${keyPrefix}-c${k++}`} className="rounded-md bg-ink/8 px-1.5 py-px font-mono text-[0.92em]">
+          {unescapeHtml(tok.slice(1, -1))}
         </code>
       );
     } else if (tok.startsWith("**")) {
-      parts.push(<strong key={`${keyPrefix}-b${k++}`}>{tok.slice(2, -2)}</strong>);
+      parts.push(<strong key={`${keyPrefix}-b${k++}`} className="font-bold">{unescapeHtml(tok.slice(2, -2))}</strong>);
     } else if (tok.startsWith("*")) {
-      parts.push(<em key={`${keyPrefix}-i${k++}`}>{tok.slice(1, -1)}</em>);
+      parts.push(<em key={`${keyPrefix}-i${k++}`} className="italic">{unescapeHtml(tok.slice(1, -1))}</em>);
     } else {
       const mm = /^\[([^\]]+)\]\(([^)\s]+)\)$/.exec(tok);
       if (mm) {
+        const href = unescapeHtml(mm[2]);
+        const external = href.startsWith("http");
         parts.push(
-          <a key={`${keyPrefix}-a${k++}`} href={mm[2]} target={mm[2].startsWith("http") ? "_blank" : undefined} rel="noreferrer" style={{ color: "#50643e", fontWeight: 700 }}>
-            {mm[1]}
+          <a
+            key={`${keyPrefix}-a${k++}`}
+            href={href}
+            target={external ? "_blank" : undefined}
+            rel="noreferrer"
+            className="font-bold text-olive-deep underline decoration-olive-deep/40 underline-offset-2"
+          >
+            {unescapeHtml(mm[1])}
           </a>
         );
       } else {
-        parts.push(<Fragment key={`${keyPrefix}-x${k++}`}>{tok}</Fragment>);
+        parts.push(<Fragment key={`${keyPrefix}-x${k++}`}>{unescapeHtml(tok)}</Fragment>);
       }
     }
     last = m.index + tok.length;
   }
-  if (last < src.length) parts.push(<Fragment key={`${keyPrefix}-t${k++}`}>{src.slice(last)}</Fragment>);
+  if (last < src.length) parts.push(<Fragment key={`${keyPrefix}-t${k++}`}>{unescapeHtml(src.slice(last))}</Fragment>);
   return parts;
 }
 
@@ -57,15 +99,12 @@ export default function RaiMarkdown({ text }: { text: string }) {
     const line = lines[i];
     // Code fence
     if (line.trim().startsWith("```")) {
+      const lang = line.trim().slice(3).trim().toLowerCase();
       const buf: string[] = [];
       i++;
       while (i < lines.length && !lines[i].trim().startsWith("```")) { buf.push(lines[i]); i++; }
       i++;
-      blocks.push(
-        <pre key={`b${b++}`} style={{ background: "#171716", color: "#f4f3ec", borderRadius: 10, padding: "10px 12px", fontSize: 12, overflowX: "auto", margin: "6px 0" }}>
-          <code>{buf.join("\n")}</code>
-        </pre>
-      );
+      blocks.push(<MdCode key={`b${b++}`} code={unescapeHtml(buf.join("\n"))} lang={lang} />);
       continue;
     }
     // Heading
@@ -73,9 +112,9 @@ export default function RaiMarkdown({ text }: { text: string }) {
     if (h) {
       const lvl = h[1].length;
       blocks.push(
-        <div key={`b${b++}`} style={{ fontWeight: 800, fontSize: lvl === 1 ? 15 : 14, margin: "8px 0 4px" }}>
+        <p key={`b${b++}`} className={`mb-1 mt-2 font-extrabold text-ink ${lvl === 1 ? "text-[15px]" : "text-[14px]"}`}>
           {renderInline(h[2], `h${b}`)}
-        </div>
+        </p>
       );
       i++;
       continue;
@@ -85,11 +124,11 @@ export default function RaiMarkdown({ text }: { text: string }) {
       const buf: string[] = [];
       while (i < lines.length && /^&gt;\s?/.test(lines[i])) { buf.push(lines[i].replace(/^&gt;\s?/, "")); i++; }
       blocks.push(
-        <div key={`b${b++}`} style={{ borderLeft: "3px solid #50643e", paddingLeft: 10, color: "#575752", margin: "6px 0" }}>
+        <blockquote key={`b${b++}`} className="my-1.5 border-s-[3px] border-olive-deep ps-2.5 text-muted-strong">
           {buf.map((l, j) => (
             <div key={j}>{renderInline(l, `q${b}-${j}`)}</div>
           ))}
-        </div>
+        </blockquote>
       );
       continue;
     }
@@ -105,7 +144,7 @@ export default function RaiMarkdown({ text }: { text: string }) {
       }
       const List = ordered ? "ol" : "ul";
       blocks.push(
-        <List key={`b${b++}`} style={{ margin: "6px 0", paddingLeft: 20, display: "grid", gap: 3 }}>
+        <List key={`b${b++}`} className={`my-1.5 grid gap-[3px] ps-5 ${ordered ? "list-decimal" : "list-disc"}`}>
           {items.map((it, j) => (
             <li key={j}>{renderInline(it, `l${b}-${j}`)}</li>
           ))}
@@ -122,7 +161,7 @@ export default function RaiMarkdown({ text }: { text: string }) {
       buf.push(lines[i]);
       i++;
     }
-    blocks.push(<p key={`b${b++}`} style={{ margin: "4px 0" }}>{renderInline(buf.join("\n"), `p${b}`)}</p>);
+    blocks.push(<p key={`b${b++}`} className="my-1">{renderInline(buf.join("\n"), `p${b}`)}</p>);
   }
   return <>{blocks}</>;
 }

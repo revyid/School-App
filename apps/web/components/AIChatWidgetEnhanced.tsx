@@ -5,10 +5,18 @@ import { usePathname } from "next/navigation";
 import { api } from "@/app/lib/api";
 import RaiAvatar from "@/components/RaiAvatar";
 import RaiMarkdown from "./RaiMarkdown";
+import {
+  MessageScrollerProvider,
+  MessageScroller,
+  MessageScrollerViewport,
+  MessageScrollerContent,
+  MessageScrollerItem,
+  MessageScrollerButton,
+} from "@/components/ui/message-scroller";
 
 interface ChatMessage { id: string; sender: "user" | "ai"; text: string }
 type Mood = "idle" | "thinking" | "happy" | "concerned" | "angry" | "wary" | "confused";
-const GREETING: ChatMessage = { id: "welcome", sender: "ai", text: "Halo! Saya RAI R1, asisten AI sekolah. Saya bisa membantu menjelaskan materi, mencari info yang tersedia untuk akunmu, dan mengarahkanmu ke fitur yang tepat." };
+const GREETING: ChatMessage = { id: "welcome", sender: "ai", text: "Halo! Saya RAI, asisten AI sekolah. Saya bisa membantu menjelaskan materi, mencari info yang tersedia untuk akunmu, dan mengarahkanmu ke fitur yang tepat." };
 
 // Kata kasar → angry; topik keamanan/data → wary; jawaban gagal/tak tahu → confused.
 const RUDE_WORDS = ["goblok", "tolol", "bodoh", "idiot", "anjing", "bangsat", "bego", "kampret", "jancuk", "asu", "bajingan", "brengsek", "sialan", "keparat", "dungu", "najis"];
@@ -57,7 +65,6 @@ export default function AIChatWidgetEnhanced() {
   const rootRef = useRef<HTMLDivElement>(null);
   const closeTimer = useRef<number | null>(null);
   const reduced = useReducedMotion();
-  const endRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     let alive = true;
@@ -152,7 +159,7 @@ export default function AIChatWidgetEnhanced() {
         ? res
         : await api("/api/ai/chat", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ message: text }) });
       const data = await response.json().catch(() => ({}));
-      const reply: string = response.ok && data.reply ? data.reply : data.error || "Maaf, RAI R1 belum bisa menjawab sekarang.";
+      const reply: string = response.ok && data.reply ? data.reply : data.error || "Maaf, RAI belum bisa menjawab sekarang.";
       const id = `a-${Date.now()}`;
       if (!response.ok) { fail(reply); return; }
       if (reduced) {
@@ -191,24 +198,39 @@ export default function AIChatWidgetEnhanced() {
     document.addEventListener("mousedown", handler);
     return () => document.removeEventListener("mousedown", handler);
   }, [open, reduced]);
-  useEffect(() => { if (open) endRef.current?.scrollIntoView({ behavior: reduced ? "auto" : "smooth" }); }, [messages, loading, open, reduced, streamText]);
 
   if (TASK_PAGE_RE.test(pathname ?? "")) return null;
   if (!enabled) return null;
   const liveMood: Mood = loading ? "thinking" : mood;
+  // Hanya avatar pesan terakhir yang dianimasikan; sisanya statis (hemat rAF).
+  const lastAiIndex = messages.reduce((acc, m, i) => (m.sender === "ai" ? i : acc), -1);
 
   return <div className="ai-enhanced-root" ref={rootRef}>
-    {!open && <button className="ai-enhanced-launcher" type="button" onClick={toggle} aria-label="Buka chat RAI R1"><RaiAvatar size={35} mood={liveMood} /><span>Tanya RAI R1</span><i aria-hidden="true" /></button>}
+    {!open && <button className="ai-enhanced-launcher" type="button" onClick={toggle} aria-label="Buka chat RAI"><RaiAvatar size={35} mood={liveMood} /><span>Tanya RAI</span><i aria-hidden="true" /></button>}
     {open && (
-      <section className="ai-enhanced-panel" data-closing={closing ? "true" : undefined} aria-label="Chat RAI R1">
-        <header className="ai-enhanced-header"><div className="ai-enhanced-identity"><RaiAvatar size={48} mood={liveMood} /><div><h2>RAI R1<span>by RevyID</span></h2><p>{loading ? "Sedang berpikir…" : "Siap membantu dengan aman"}</p></div></div><div className="ai-enhanced-actions"><button type="button" onClick={() => void resetChat()} aria-label="Hapus riwayat chat" title="Hapus riwayat">⟲</button><button type="button" onClick={toggle} aria-label="Tutup chat">×</button></div></header>
+      <section className="ai-enhanced-panel" data-closing={closing ? "true" : undefined} aria-label="Chat RAI">
+        <header className="ai-enhanced-header"><div className="ai-enhanced-identity"><RaiAvatar size={48} mood={liveMood} /><div><h2>RAI</h2><p>{loading ? "Sedang berpikir…" : "Siap membantu dengan aman"}</p></div></div><div className="ai-enhanced-actions"><button type="button" onClick={() => void resetChat()} aria-label="Hapus riwayat chat" title="Hapus riwayat">⟲</button><button type="button" onClick={toggle} aria-label="Tutup chat">×</button></div></header>
         {showTrust && <div className="ai-enhanced-trust"><span /> Akses mengikuti akun dan pengaturan sekolah · Jangan kirim data sensitif <button type="button" onClick={() => setShowTrust(false)} aria-label="Tutup pemberitahuan">×</button></div>}
-        <div className="ai-enhanced-messages" aria-live="polite">
-          {messages.map((message) => <div className={`ai-enhanced-row ${message.sender}`} key={message.id}><div className={`ai-enhanced-bubble ${message.sender}`}>{message.sender === "ai" ? <RaiMarkdown text={message.text} /> : message.text}</div></div>)}
-          {streamText && !messages.some((m) => m.sender === "ai" && m.text === streamText) && <div className="ai-enhanced-row ai"><div className="ai-enhanced-bubble ai ai-stream"><RaiMarkdown text={streamText} /></div></div>}
-          {loading && !streamText && <div className="ai-enhanced-row ai"><RaiAvatar size={26} mood="thinking" interactive={false} /><div className="ai-enhanced-bubble ai">Mencari jawaban…</div></div>}
-          <div ref={endRef} />
-        </div>
+        <MessageScrollerProvider autoScroll>
+          <MessageScroller className="ai-enhanced-messages">
+            <MessageScrollerViewport className="px-3.5 py-4">
+              <MessageScrollerContent className="gap-2.5" aria-live="polite" aria-busy={loading}>
+                {messages.map((message, index) => {
+                  const animated = index === lastAiIndex && !streamText;
+                  return (
+                    <MessageScrollerItem key={message.id} messageId={message.id} scrollAnchor={message.sender === "user"} className={`ai-enhanced-row ${message.sender}`}>
+                      {message.sender === "ai" && <RaiAvatar size={26} mood={animated ? liveMood : "idle"} interactive={false} animate={animated} />}
+                      <div className={`ai-enhanced-bubble ${message.sender}`}>{message.sender === "ai" ? <RaiMarkdown text={message.text} /> : message.text}</div>
+                    </MessageScrollerItem>
+                  );
+                })}
+                {streamText && !messages.some((m) => m.sender === "ai" && m.text === streamText) && <MessageScrollerItem messageId="stream" className="ai-enhanced-row ai"><RaiAvatar size={26} mood={liveMood} interactive={false} /><div className="ai-enhanced-bubble ai ai-stream"><RaiMarkdown text={streamText} /></div></MessageScrollerItem>}
+                {loading && !streamText && <MessageScrollerItem messageId="thinking" className="ai-enhanced-row ai"><RaiAvatar size={26} mood="thinking" interactive={false} /><div className="ai-enhanced-bubble ai">Mencari jawaban…</div></MessageScrollerItem>}
+              </MessageScrollerContent>
+            </MessageScrollerViewport>
+            <MessageScrollerButton />
+          </MessageScroller>
+        </MessageScrollerProvider>
         <form className="ai-enhanced-compose" onSubmit={submit}><div className="ai-enhanced-input"><input value={input} onChange={(e) => setInput(e.target.value)} placeholder={PLACEHOLDERS[placeholder]} maxLength={1000} disabled={loading} aria-label="Tulis pertanyaan" /><button type="submit" disabled={loading || !input.trim()} aria-label="Kirim">↑</button></div></form>
       </section>
     )}
@@ -225,7 +247,6 @@ export default function AIChatWidgetEnhanced() {
       .ai-enhanced-header{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:13px 14px 11px 16px;border-bottom:1px solid var(--color-line);background:var(--color-cream)}
       .ai-enhanced-identity{display:flex;align-items:center;gap:10px;min-width:0}
       .ai-enhanced-identity h2{margin:0;font-size:15px;font-weight:800;letter-spacing:-.01em;line-height:1.25}
-      .ai-enhanced-identity h2 span{display:block;font-size:10px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--color-muted-strong)}
       .ai-enhanced-identity p{margin:2px 0 0;font-size:11px;color:var(--color-muted-strong)}
       .ai-enhanced-actions{display:flex;gap:6px}
       .ai-enhanced-actions button{border:1px solid var(--color-ink);background:var(--color-cream);color:var(--color-ink);border-radius:999px;min-width:30px;height:30px;padding:0 7px;font-size:14px;line-height:1;cursor:pointer;transition:transform .15s ease,background .15s ease}
@@ -233,7 +254,7 @@ export default function AIChatWidgetEnhanced() {
       .ai-enhanced-trust{display:flex;align-items:center;gap:6px;padding:8px 12px 8px 14px;font-size:11px;line-height:1.5;color:var(--color-sage-deep);background:var(--color-sage);border-bottom:1px solid var(--color-line)}
       .ai-enhanced-trust span{flex:0 0 auto;width:7px;height:7px;border-radius:50%;background:var(--color-olive-deep)}
       .ai-enhanced-trust button{margin-left:auto;flex:0 0 auto;border:0;background:transparent;color:var(--color-sage-deep);cursor:pointer;font-size:14px;line-height:1;padding:2px 4px}
-      .ai-enhanced-messages{flex:1;min-height:0;display:flex;flex-direction:column;gap:10px;overflow-y:auto;padding:16px 14px;background:var(--color-paper)}
+      .ai-enhanced-messages{flex:1;min-height:0;background:var(--color-paper)}
       .ai-enhanced-row{display:flex;gap:8px;align-items:flex-end}
       .ai-enhanced-row.ai{justify-content:flex-start}
       .ai-enhanced-row.user{justify-content:flex-end}
