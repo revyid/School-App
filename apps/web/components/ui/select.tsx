@@ -7,9 +7,19 @@ import * as React from "react";
 import { Select as SelectPrimitive } from "@base-ui/react/select";
 import { CheckIcon, ChevronDownIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { itemsFromChildren } from "@/lib/select-items";
 
-function Select({ ...props }: SelectPrimitive.Root.Props<string>) {
-  return <SelectPrimitive.Root data-slot="select" {...props} />;
+function Select({ items, children, ...props }: SelectPrimitive.Root.Props<string>) {
+  // Label item terpilih hanya bisa dibaca Base UI dari `items` (lihat lib/select-items.ts).
+  const derived = React.useMemo(
+    () => items ?? itemsFromChildren(children, (t) => t === SelectItem),
+    [items, children],
+  );
+  return (
+    <SelectPrimitive.Root data-slot="select" items={derived} {...props}>
+      {children}
+    </SelectPrimitive.Root>
+  );
 }
 
 function SelectTrigger({ className, children, ...props }: SelectPrimitive.Trigger.Props) {
@@ -30,30 +40,36 @@ function SelectTrigger({ className, children, ...props }: SelectPrimitive.Trigge
   );
 }
 
-function SelectValue({ className, children, ...props }: SelectPrimitive.Value.Props) {
+function SelectValue({ className, ...props }: SelectPrimitive.Value.Props) {
+  // `placeholder` dan `children` diteruskan apa adanya: Base UI sendiri yang memilih
+  // antara label item terpilih, children, atau placeholder.
   return (
     <SelectPrimitive.Value
       data-slot="select-value"
       className={cn("min-w-0 flex-1 truncate text-left data-[placeholder]:text-muted-foreground", className)}
       {...props}
-    >
-      {children ?? (props.placeholder as React.ReactNode) ?? null}
-    </SelectPrimitive.Value>
+    />
   );
 }
 
 function SelectPositioner({ className, ...props }: SelectPrimitive.Positioner.Props) {
+  // WAJIB lewat Portal (pola sama dengan dropdown-menu.tsx): tanpa itu popup dirender
+  // inline di dalam <label> pembungkus, lalu klik item memicu aktivasi label → trigger
+  // di-klik ulang → dropdown tak pernah tertutup. Portal juga membebaskan popup dari
+  // kliping ancestor ber-overflow (mis. tabel scroll).
   return (
-    <SelectPrimitive.Positioner
-      data-slot="select-positioner"
-      className={cn("z-50 outline-none", className)}
-      // Default Base UI menaruh popup MENIMPA trigger (alignItemWithTrigger) khusus
-      // input mouse — item langsung di bawah kursor sehingga terasa "kedip buka-tutup".
-      // Untuk dasbor desktop: dropdown normal di bawah trigger.
-      alignItemWithTrigger={false}
-      sideOffset={6}
-      {...props}
-    />
+    <SelectPrimitive.Portal>
+      <SelectPrimitive.Positioner
+        data-slot="select-positioner"
+        className={cn("z-50 outline-none", className)}
+        // Default Base UI menaruh popup MENIMPA trigger (alignItemWithTrigger) khusus
+        // input mouse — item langsung di bawah kursor sehingga terasa "kedip buka-tutup".
+        // Untuk dasbor desktop: dropdown normal di bawah trigger.
+        alignItemWithTrigger={false}
+        sideOffset={6}
+        {...props}
+      />
+    </SelectPrimitive.Portal>
   );
 }
 
