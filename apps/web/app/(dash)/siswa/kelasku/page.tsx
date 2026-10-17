@@ -5,8 +5,11 @@
 import { useMemo } from "react";
 import Link from "next/link";
 import { useFetch } from "@/app/lib/api";
-import { PageHead, Panel, Note, Err } from "@/components/DashUI";
 import { Skeleton } from "@/components/ui/skeleton";
+import { PageHead } from "@/components/ui/page-header";
+import { Card } from "@/components/ui/card";
+import { Alert } from "@/components/ui/alert";
+import { cn } from "@/lib/utils";
 
 const HARI = ["Min", "Sen", "Sel", "Rab", "Kam", "Jum", "Sab"];
 
@@ -123,27 +126,27 @@ export default function KelaskuPage() {
           ))}
         </div>
       )}
-      {galat && <Err>Gagal: {galat}</Err>}
+      {galat && <Alert variant="destructive">Gagal: {galat}</Alert>}
       {!memuat && !galat && mapels.length === 0 && (
-        <Panel>
-          <Note>Belum ada jadwal — hubungi admin.</Note>
-        </Panel>
+        <Card>
+          <Alert>Belum ada jadwal — hubungi admin.</Alert>
+        </Card>
       )}
-      <div style={{ display: "grid", gap: 12, gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))" }}>
+      <div className="grid gap-3 grid-cols-[repeat(auto-fill,_minmax(280px,_1fr))]">
         {mapels.map((m) => {
           return (
             <Link
               key={m.key}
               href={`/siswa/kelasku/${encodeURIComponent(m.key)}`}
-              className="card card-lift"
-              style={{ padding: 18, display: "flex", alignItems: "flex-start", gap: 12, textDecoration: "none", color: "inherit" }}
+              className="card card-lift p-[18px] flex items-start gap-3 no-underline"
+             
             >
-              <span style={{ flex: 1, minWidth: 0 }}>
-                <span className="display" style={{ fontSize: 19, display: "block" }}>{m.nama}</span>
-                <span style={{ fontSize: 13, color: "#74746d", display: "block", marginTop: 2 }}>
+              <span className="flex-1 min-w-[0px]">
+                <span className="display text-[19px] block">{m.nama}</span>
+                <span className="text-[13px] text-muted block mt-[2px]">
                   {m.guru}
                 </span>
-                <span style={{ fontSize: 12.5, color: "#74746d", display: "block", marginTop: 6 }}>
+                <span className="text-[12.5px] text-muted block mt-1.5">
                   {m.slot.length === 0
                     ? "Jadwal belum diatur"
                     : m.slot.map((s) => `${HARI[s.dayOfWeek] ?? "?"} ${s.startTime}–${s.endTime}`).join(" · ")}
@@ -152,13 +155,10 @@ export default function KelaskuPage() {
               <span
                 aria-label={m.belum > 0 ? `${m.belum} belum dikerjakan` : "Semua beres"}
                 title={m.belum > 0 ? `${m.belum} belum dikerjakan` : "Semua beres"}
-                style={{
-                  flexShrink: 0, width: 40, height: 40, borderRadius: "50%",
-                  display: "inline-flex", alignItems: "center", justifyContent: "center",
-                  fontWeight: 800, fontSize: 15, color: "#fffdf8",
-                  background: m.belum > 0 ? "#e85e43" : "#50643e",
-                  border: "2px solid #171716",
-                }}
+                className={cn(
+                  "inline-flex size-10 shrink-0 items-center justify-center rounded-full border-2 border-ink text-[15px] font-extrabold text-cream",
+                  m.belum > 0 ? "bg-terracotta-deep" : "bg-olive-deep",
+                )}
               >
                 {m.belum}
               </span>

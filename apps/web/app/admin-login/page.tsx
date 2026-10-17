@@ -3,7 +3,8 @@
 // Login SUPER_ADMIN — hanya dilayani di admin.<apex> (lihat proxy + admin-login route).
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { TextInput, Err } from "@/components/DashUI";
+import { Input } from "@/components/ui/input";
+import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 
 export default function AdminLoginPage() {
@@ -38,21 +39,21 @@ export default function AdminLoginPage() {
   }
 
   return (
-    <main style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", padding: "clamp(12px, 4vw, 24px)" }}>
-      <div className="card" style={{ width: "100%", maxWidth: 400, padding: "clamp(18px, 5vw, 28px)" }}>
-        <p className="kicker" style={{ margin: "0 0 8px" }}>Super-admin</p>
-        <h1 className="display" style={{ fontSize: 28, margin: "0 0 6px" }}>Masuk pengelola</h1>
-        <p style={{ color: "#74746d", fontSize: 13.5, margin: "0 0 18px" }}>Hanya untuk pengelola platform, bukan warga sekolah.</p>
-        <form onSubmit={submit} style={{ display: "grid", gap: 12 }}>
-          <label style={{ display: "grid", gap: 6, fontSize: 13, color: "#74746d" }}>
+    <main className="flex min-h-screen items-center justify-center p-[clamp(12px,4vw,24px)]">
+      <div className="card w-full max-w-[400px] p-[clamp(18px,5vw,28px)]">
+        <p className="kicker m-0 mb-2">Super-admin</p>
+        <h1 className="display m-0 mb-1.5 text-[28px]">Masuk pengelola</h1>
+        <p className="m-0 mb-[18px] text-[13.5px] text-muted">Hanya untuk pengelola platform, bukan warga sekolah.</p>
+        <form onSubmit={submit} className="grid gap-3">
+          <label className="grid gap-1.5 text-[13px] text-muted">
             Email
-            <TextInput type="email" value={email} onChange={(e) => setEmail(e.target.value)} autoComplete="username" required />
+            <Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} autoComplete="username" required />
           </label>
-          <label style={{ display: "grid", gap: 6, fontSize: 13, color: "#74746d" }}>
+          <label className="grid gap-1.5 text-[13px] text-muted">
             Kata sandi
-            <TextInput type="password" value={password} onChange={(e) => setPassword(e.target.value)} autoComplete="current-password" required />
+            <Input type="password" value={password} onChange={(e) => setPassword(e.target.value)} autoComplete="current-password" required />
           </label>
-          {error && <Err>{error}</Err>}
+          {error && <Alert variant="destructive">{error}</Alert>}
           <Button variant="sticker" type="submit" disabled={busy}>{busy ? "Memproses…" : "Masuk"}</Button>
         </form>
       </div>

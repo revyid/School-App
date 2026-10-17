@@ -2,7 +2,11 @@
 
 // Dashboard super-admin: agregat /api/admin/health (semua sekolah).
 import { useEffect, useState } from "react";
-import { PageHead, Panel, WarmTable, warmCell, SegStat, Note, Err } from "@/components/DashUI";
+import { PageHead } from "@/components/ui/page-header";
+import { SegStat } from "@/components/ui/stat-card";
+import { Card } from "@/components/ui/card";
+import { Alert } from "@/components/ui/alert";
+import { Table, TableHeader, TableBody, TableHead, TableRow, TableCell } from "@/components/ui/table";
 import { Badge, statusVariant } from "@/components/ui/badge";
 
 interface Health {
@@ -29,8 +33,8 @@ export default function PantauPage() {
     }).catch((e) => setError(String(e)));
   }, []);
 
-  if (error) return <Err>{error}</Err>;
-  if (!h) return <Note>Memuat…</Note>;
+  if (error) return <Alert variant="destructive">{error}</Alert>;
+  if (!h) return <Alert>Memuat…</Alert>;
 
   return (
     <>
@@ -39,32 +43,43 @@ export default function PantauPage() {
         title={`Pantau (${h.schoolCount} sekolah)`}
         desc={`Backup: ${h.backup.lastAt ?? "belum pernah"} (${h.backup.lastResult ?? "-"})`}
       />
-      <Panel style={{ marginBottom: 16 }}>
-        <h2 className="display" style={{ fontSize: 18, margin: "0 0 12px" }}>Antrean</h2>
+      <Card className="mb-4">
+        <h2 className="display mb-3 text-[18px]">Antrean</h2>
         <SegStat stats={Object.entries(h.queues).map(([q, s]) => ({ label: q, value: `${s.waiting} tunggu / ${s.failed} gagal` }))} />
-      </Panel>
-      <Panel style={{ marginBottom: 16 }}>
-        <h2 className="display" style={{ fontSize: 18, margin: "0 0 12px" }}>WhatsApp</h2>
-        {(h.wa.rows ?? []).length === 0 && <Note>Tidak ada data WA.</Note>}
+      </Card>
+      <Card className="mb-4">
+        <h2 className="display mb-3 text-[18px]">WhatsApp</h2>
+        {(h.wa.rows ?? []).length === 0 && <Alert>Tidak ada data WA.</Alert>}
         {(h.wa.rows ?? []).length > 0 && (
-          <WarmTable head={["Sekolah", "Status"]}>
-            {(h.wa.rows ?? []).map((r) => (
-              <tr key={r.schoolId}>
-                <td style={warmCell({ fontWeight: 700 })}>{r.slug}</td>
-                <td style={warmCell()}><Badge variant={statusVariant(r.connected ? "AKTIF" : "ALPHA")}>{r.connected ? "terhubung" : `putus (${r.detail})`}</Badge></td>
-              </tr>
-            ))}
-          </WarmTable>
+          <div className="warm-table overflow-x-auto rounded-2xl border border-line">
+            <Table className="min-w-[560px] text-[13.5px]">
+              <TableHeader>
+                <TableRow className="border-line bg-paper-deep hover:bg-paper-deep">
+                  {["Sekolah", "Status"].map((head) => (
+                    <TableHead key={head} className="whitespace-nowrap text-[10px] tracking-[.09em]">{head}</TableHead>
+                  ))}
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {(h.wa.rows ?? []).map((r) => (
+                  <TableRow key={r.schoolId}>
+                    <TableCell className="font-bold">{r.slug}</TableCell>
+                    <TableCell><Badge variant={statusVariant(r.connected ? "AKTIF" : "ALPHA")}>{r.connected ? "terhubung" : `putus (${r.detail})`}</Badge></TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
         )}
-      </Panel>
-      <Panel>
-        <h2 className="display" style={{ fontSize: 18, margin: "0 0 12px" }}>Sekolah</h2>
-        <ul style={{ margin: 0, paddingLeft: 18, display: "grid", gap: 4, fontSize: 14 }}>
+      </Card>
+      <Card>
+        <h2 className="display mb-3 text-[18px]">Sekolah</h2>
+        <ul className="m-0 grid list-disc gap-1 pl-[18px] text-sm">
           {h.schools.map((s) => (
             <li key={s.id}>{s.name} ({s.slug})</li>
           ))}
         </ul>
-      </Panel>
+      </Card>
     </>
   );
 }

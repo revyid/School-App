@@ -19,6 +19,13 @@ import {
 import {
   Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription,
 } from "@/components/ui/sheet";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 export type MenuItem = {
   href: string;
@@ -54,6 +61,19 @@ export const MENU_ICONS = {
   izin: ShieldCheck,
 } as const;
 
+// Aksen per role. Nilai var() hanya dipakai di properti CSS (background/border),
+// bukan di atribut SVG.
+const ROLE_ACCENT: Record<string, string> = {
+  ADMIN: "var(--color-terracotta-dark)",
+  GURU: "var(--color-olive-deep)",
+  SISWA: "var(--color-teal)",
+};
+const ROLE_ACCENT_CLASS: Record<string, string> = {
+  ADMIN: "text-terracotta-dark",
+  GURU: "text-olive-deep",
+  SISWA: "text-teal",
+};
+
 export default function DashShell({
   role,
   userName,
@@ -68,16 +88,14 @@ export default function DashShell({
   children: React.ReactNode;
 }) {
   const [open, setOpen] = useState(false);
-  const [profileOpen, setProfileOpen] = useState(false);
   const path = usePathname();
 
   useEffect(() => {
     setOpen(false);
-    setProfileOpen(false);
   }, [path]);
 
-  const roleAccent: Record<string, string> = { ADMIN: "#c94b35", GURU: "#50643e", SISWA: "#4a8fa8" };
-  const accent = roleAccent[role] ?? "#c94b35";
+  const accent = ROLE_ACCENT[role] ?? "var(--color-terracotta-dark)";
+  const accentClass = ROLE_ACCENT_CLASS[role] ?? "text-terracotta-dark";
 
   const nav = (items: MenuItem[]) =>
     items.map((m) => {
@@ -94,12 +112,14 @@ export default function DashShell({
               ? "border-l-[3px] bg-paper font-extrabold text-ink"
               : "border-l-[3px] border-transparent text-muted-strong hover:bg-paper hover:text-ink",
           )}
+          // dynamic: warna aksen role
           style={active ? { borderLeftColor: accent } : undefined}
           aria-current={active ? "page" : undefined}
         >
-          <Icon size={16} className="shrink-0" color={active ? accent : "#5f5f58"} aria-hidden="true" />
+          <Icon size={16} className={cn("shrink-0", active ? accentClass : "text-muted-strong")} aria-hidden="true" />
           <span className="flex-1">{m.label}</span>
           {typeof m.badge === "number" && m.badge > 0 && (
+            // dynamic: warna aksen role
             <span className="grid min-w-[18px] place-items-center rounded-full px-1.5 text-center text-[10px] font-extrabold text-cream" style={{ background: accent }}>
               {m.badge > 99 ? "99+" : m.badge}
             </span>
@@ -136,7 +156,7 @@ export default function DashShell({
   return (
     <div className="flex min-h-screen">
       {/* Sidebar desktop */}
-      <aside className="dash-sidebar-desktop sticky top-0 hidden md:flex h-screen flex-col gap-1 overflow-y-auto border-r border-line bg-cream px-3.5 py-5" style={{ width: 232, flexShrink: 0 }}>
+      <aside className="dash-sidebar-desktop sticky top-0 hidden h-screen w-[232px] shrink-0 flex-col gap-1 overflow-y-auto border-r border-line bg-cream px-3.5 py-5 md:flex">
         {sidebar}
       </aside>
 
@@ -179,51 +199,47 @@ export default function DashShell({
 
             {/* Avatar chip + dropdown profil (Profil · Ganti sandi · Keluar) */}
             <div className="relative">
-              <button
-                type="button"
-                onClick={() => setProfileOpen((v) => !v)}
-                aria-label="Menu profil"
-                aria-expanded={profileOpen}
-                className="flex cursor-pointer items-center gap-2 border-l border-line bg-transparent py-1 pl-3 text-[13px] text-ink outline-none"
-              >
-                <span className="dash-username max-w-[140px] overflow-hidden text-ellipsis whitespace-nowrap font-bold">{userName}</span>
-                <span
-                  className="grid size-[34px] shrink-0 place-items-center rounded-full border-2 border-cream font-extrabold text-cream"
-                  style={{ background: accent, boxShadow: `0 0 0 2px ${accent}` }}
+              <DropdownMenu key={path}>
+                <DropdownMenuTrigger
+                  aria-label="Menu profil"
+                  className="flex min-h-0 gap-2 rounded-none border-0 border-l border-line bg-transparent py-1 pl-3 text-[13px] font-normal hover:bg-transparent [&_svg]:size-2.5"
                 >
-                  {(userName || "?").slice(0, 1).toUpperCase()}
-                </span>
-                <svg width="10" height="10" viewBox="0 0 12 12" fill="none" aria-hidden="true"><path d="M2 4l4 4 4-4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" /></svg>
-              </button>
-              {profileOpen && (
-                <>
-                  <div onClick={() => setProfileOpen(false)} className="fixed inset-0 z-[60]" aria-hidden="true" />
-                  <div className="absolute right-0 top-[calc(100%+8px)] z-[61] grid min-w-[240px] gap-2 rounded-3xl border border-line bg-cream p-3.5 shadow-2xl">
-                    <div className="flex items-center gap-2.5">
-                      <span className="grid size-10 shrink-0 place-items-center rounded-full font-extrabold text-cream" style={{ background: accent }}>
-                        {(userName || "?").slice(0, 1).toUpperCase()}
-                      </span>
-                      <div className="min-w-0">
-                        <div className="truncate text-sm font-extrabold">{userName}</div>
-                        <div className="text-[11px] font-bold tracking-wider text-muted-strong uppercase">{roleLabel}</div>
-                      </div>
-                    </div>
-                    <div className="grid border-t border-line pt-2">
-                      {profileHref && (
-                        <Link href={profileHref} onClick={() => setProfileOpen(false)} className="rounded-xl px-2 py-2 text-[13px] font-medium text-ink hover:bg-paper">
-                          Profil
-                        </Link>
-                      )}
-                      <Link href="/change-password" onClick={() => setProfileOpen(false)} className="rounded-xl px-2 py-2 text-[13px] font-medium text-ink hover:bg-paper">
-                        Ganti kata sandi
-                      </Link>
-                    </div>
-                    <div className="border-t border-line pt-2">
-                      <LogoutButton />
+                  <span className="dash-username max-w-[140px] overflow-hidden text-ellipsis whitespace-nowrap font-bold">{userName}</span>
+                  {/* dynamic: warna aksen role + ring */}
+                  <span
+                    className="grid size-[34px] shrink-0 place-items-center rounded-full border-2 border-cream font-extrabold text-cream"
+                    style={{ background: accent, boxShadow: `0 0 0 2px ${accent}` }}
+                  >
+                    {(userName || "?").slice(0, 1).toUpperCase()}
+                  </span>
+                  <svg width="10" height="10" viewBox="0 0 12 12" fill="none" aria-hidden="true"><path d="M2 4l4 4 4-4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" /></svg>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" sideOffset={8} className="min-w-[240px] rounded-3xl p-3.5">
+                  <div className="flex items-center gap-2.5 px-1 py-1">
+                    {/* dynamic: warna aksen role */}
+                    <span className="grid size-10 shrink-0 place-items-center rounded-full font-extrabold text-cream" style={{ background: accent }}>
+                      {(userName || "?").slice(0, 1).toUpperCase()}
+                    </span>
+                    <div className="min-w-0">
+                      <div className="truncate text-sm font-extrabold text-ink">{userName}</div>
+                      <div className="text-[11px] font-bold tracking-wider text-muted-strong uppercase">{roleLabel}</div>
                     </div>
                   </div>
-                </>
-              )}
+                  <DropdownMenuSeparator />
+                  {profileHref && (
+                    <DropdownMenuItem render={<Link href={profileHref} />}>
+                      Profil
+                    </DropdownMenuItem>
+                  )}
+                  <DropdownMenuItem render={<Link href="/change-password" />}>
+                    Ganti kata sandi
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <div className="px-1 py-1">
+                    <LogoutButton />
+                  </div>
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
           </div>
         </header>

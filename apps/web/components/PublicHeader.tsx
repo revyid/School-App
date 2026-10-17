@@ -13,6 +13,7 @@ import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import PublicLogo from "./PublicLogo";
 import AuthCta from "@/app/(portal)/AuthCta";
+import { cn } from "@/lib/utils";
 
 import { MenuIcon, XIcon } from "lucide-react";
 
@@ -49,131 +50,57 @@ export default function PublicHeader({ schoolName }: { schoolName: string }) {
 
   return (
     <header
-      style={{
-        display: "flex",
-        alignItems: "center",
-        gap: 16,
-        padding: "14px clamp(16px, 4vw, 88px)",
-        borderBottom: "1px solid rgba(23,23,22,.14)",
-        background: "rgba(247, 244, 236, 0.95)",
-        backdropFilter: "blur(12px)",
-        position: "sticky",
-        top: 0,
-        zIndex: 40,
-        flexWrap: "nowrap",
-        minHeight: 72,
-      }}
+      className="sticky top-0 z-40 flex min-h-[72px] flex-nowrap items-center gap-4 border-b border-line bg-paper/95 px-[clamp(16px,4vw,88px)] py-[14px] backdrop-blur-[12px]"
     >
-      <Link href="/" style={{ textDecoration: "none", color: "inherit", flexShrink: 0, minWidth: 0 }}>
+      <Link className="no-underline shrink-0 min-w-[0px]" href="/">
         <PublicLogo name={schoolName} />
       </Link>
 
       {/* Tautan lebar (desktop) — 1 baris, tanpa wrap, mengecil otomatis */}
       <nav
-        className="public-nav"
-        style={{
-          display: "flex",
-          gap: "clamp(12px, 2vw, 26px)",
-          marginLeft: "auto",
-          alignItems: "center",
-          fontSize: 12.5,
-          fontWeight: 700,
-          flexWrap: "nowrap",
-          whiteSpace: "nowrap",
-          minWidth: 0,
-          overflow: "hidden",
-        }}
+        className="public-nav ml-auto flex min-w-0 flex-nowrap items-center gap-[clamp(12px,2vw,26px)] overflow-hidden whitespace-nowrap text-[12.5px] font-bold"
       >
         {NAV.map((n) => (
           <Link
             key={n.href}
             href={n.href}
-            style={{ color: n.accent ? "#e85e43" : "#575752", textDecoration: "none", flexShrink: 0 }}
+            className={cn("shrink-0 no-underline", n.accent ? "text-terracotta-deep" : "text-muted-strong")}
           >
             {n.label}
           </Link>
         ))}
         <AuthCta
-          className="btn-sticker"
-          style={{
-            background: "#171716",
-            color: "#fffdf8",
-            textDecoration: "none",
-            padding: "8px 16px",
-            minHeight: 38,
-            fontSize: 12,
-            flexShrink: 0,
-          }}
+          className="btn-sticker bg-ink text-cream no-underline pt-2 pr-4 pb-2 pl-4 min-h-[38px] text-xs shrink-0"
         />
       </nav>
 
       {/* Burger + dropdown (mobile) */}
-      <div ref={boxRef} className="public-burger" style={{ position: "relative", marginLeft: "auto", flexShrink: 0 }}>
-        <button
+      <div ref={boxRef} className="public-burger relative ml-auto shrink-0">
+        <button className="grid place-items-center w-[40px] h-[40px] border border-solid border-ink rounded-full bg-cream cursor-pointer text-base"
           type="button"
           aria-label="Buka menu navigasi"
           aria-expanded={open}
           onClick={() => setOpen((v) => !v)}
-          style={{
-            display: "grid",
-            placeItems: "center",
-            width: 40,
-            height: 40,
-            border: "1px solid #171716",
-            borderRadius: "50%",
-            background: "#fffdf8",
-            cursor: "pointer",
-            fontSize: 16,
-          }}
         >
           {open ? <XIcon size={18} aria-hidden="true" /> : <MenuIcon size={18} aria-hidden="true" />}
         </button>
         {open && (
           <nav
-            style={{
-              position: "absolute",
-              right: 0,
-              top: 48,
-              display: "flex",
-              flexDirection: "column",
-              gap: 4,
-              minWidth: 210,
-              padding: 10,
-              background: "#fffdf8",
-              border: "1px solid #171716",
-              borderRadius: 16,
-              boxShadow: "0 8px 24px rgba(23,23,22,.15)",
-              zIndex: 50,
-            }}
+            className="absolute right-0 top-12 z-50 flex min-w-[210px] flex-col gap-1 rounded-2xl border border-ink bg-cream p-[10px] shadow-[0_8px_24px_rgba(23,23,22,.15)]"
           >
             {NAV.map((n) => (
               <Link
                 key={n.href}
                 href={n.href}
                 onClick={() => setOpen(false)}
-                style={{
-                  padding: "10px 14px",
-                  borderRadius: 10,
-                  color: n.accent ? "#e85e43" : "#171716",
-                  fontSize: 13,
-                  fontWeight: 700,
-                  textDecoration: "none",
-                }}
+                className={cn("rounded-[10px] px-[14px] py-[10px] text-[13px] font-bold no-underline", n.accent ? "text-terracotta-deep" : "text-ink")}
               >
                 {n.label}
               </Link>
             ))}
-            <div style={{ padding: "6px 10px 2px" }}>
+            <div className="pt-1.5 pr-[10px] pb-[2px] pl-[10px]">
               <AuthCta
-                className="btn-sticker"
-                style={{
-                  background: "#171716",
-                  color: "#fffdf8",
-                  textDecoration: "none",
-                  width: "100%",
-                  justifyContent: "center",
-                  fontSize: 12,
-                }}
+                className="btn-sticker bg-ink text-cream no-underline w-full justify-center text-xs"
               />
             </div>
           </nav>

@@ -2,8 +2,10 @@
 
 import { useMemo } from "react";
 import { useFetch } from "@/app/lib/api";
-import { PageHead, Panel, Note, Err } from "@/components/DashUI";
 import { Skeleton } from "@/components/ui/skeleton";
+import { PageHead } from "@/components/ui/page-header";
+import { Card } from "@/components/ui/card";
+import { Alert } from "@/components/ui/alert";
 
 const DAYS = ["Minggu", "Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu"];
 
@@ -56,17 +58,17 @@ export default function GuruJadwalPage() {
         </div>
       )}
 
-      {error && <Err>Gagal memuat jadwal: {error}</Err>}
+      {error && <Alert variant="destructive">Gagal memuat jadwal: {error}</Alert>}
 
       {!loading && !error && grouped.length === 0 && (
-        <Panel>
-          <Note>Belum ada jadwal mengajar yang terdaftar untuk akun Anda. Hubungi administrator sekolah.</Note>
-        </Panel>
+        <Card>
+          <Alert>Belum ada jadwal mengajar yang terdaftar untuk akun Anda. Hubungi administrator sekolah.</Alert>
+        </Card>
       )}
 
       <div className="grid gap-5">
         {grouped.map(({ day, dayName, slots }) => (
-          <section key={day} className="card p-5" style={{ borderRadius: 16 }}>
+          <section key={day} className="card p-5 rounded-2xl">
             <h2 className="display text-lg font-bold text-ink mb-3">{dayName}</h2>
             <div className="divide-y divide-line">
               {slots.map((s) => {
@@ -75,8 +77,8 @@ export default function GuruJadwalPage() {
                   <div key={s.id} className="flex flex-wrap items-center justify-between gap-3 py-3 first:pt-0 last:pb-0">
                     <div className="flex items-center gap-3">
                       <span
-                        className="inline-block rounded-lg px-2.5 py-1 text-[12px] font-mono font-bold"
-                        style={{ background: "#eeeadd", border: "1px solid rgba(23,23,22,.15)" }}
+                        className="inline-block rounded-lg px-2.5 py-1 text-[12px] font-mono font-bold bg-paper-deep border border-solid border-line"
+                       
                       >
                         {s.startTime} – {s.endTime}
                       </span>

@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { IconLogout } from "./Icons";
+import { cn } from "@/lib/utils";
 
 async function getCsrf(): Promise<string> {
   const cached = sessionStorage.getItem("csrf");
@@ -38,44 +39,16 @@ export function LogoutButton() {
       disabled={busy}
       title={busy ? "Mengeluarkan akun…" : "Keluar"}
       aria-label="Keluar dari akun"
-      style={{
-        display: "inline-flex",
-        alignItems: "center",
-        justifyContent: "center",
-        width: 36,
-        height: 36,
-        borderRadius: "50%",
-        border: "1px solid rgba(23,23,22,.18)",
-        background: "#fffdf8",
-        color: "#e85e43",
-        cursor: busy ? "wait" : "pointer",
-        padding: 0,
-        transition: "all .18s ease",
-        flexShrink: 0,
-      }}
-      className="btn-logout-icon"
+      className={cn(
+        "group inline-flex size-9 shrink-0 items-center justify-center rounded-full border border-line bg-cream p-0 text-terracotta transition-all duration-[180ms]",
+        busy
+          ? "cursor-wait"
+          : "cursor-pointer hover:border-terracotta-dark hover:bg-terracotta-deep hover:text-cream hover:shadow-[0_4px_12px_rgba(232,94,67,0.25)]",
+      )}
     >
-      <span
-        style={{
-          display: "grid",
-          placeItems: "center",
-          transform: busy ? "scale(0.85)" : "none",
-          transition: "transform .2s ease",
-        }}
-      >
-        <IconLogout size={17} color="#e85e43" strokeWidth={2.2} />
+      <span className={cn("grid place-items-center transition-transform duration-200", busy && "scale-[0.85]")}>
+        <IconLogout size={17} strokeWidth={2.2} className="text-terracotta group-hover:text-cream" />
       </span>
-      <style>{`
-        .btn-logout-icon:hover {
-          background: #e85e43 !important;
-          color: #fffdf8 !important;
-          border-color: #c94b35 !important;
-          box-shadow: 0 4px 12px rgba(232,94,67,.25);
-        }
-        .btn-logout-icon:hover svg {
-          stroke: #fffdf8 !important;
-        }
-      `}</style>
     </button>
   );
 }

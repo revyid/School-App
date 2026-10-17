@@ -24,6 +24,8 @@ import {
 } from "@/components/ui/dialog";
 import { TASK_TYPE_LABEL, SUBMIT_STATE_LABEL } from "@sms/shared/lms";
 import { ArrowLeftIcon, BellIcon, FileTextIcon, UsersIcon, Trash2Icon, PlusIcon } from "lucide-react";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { cn } from "@/lib/utils";
 
 interface Detail {
   task: {
@@ -216,9 +218,9 @@ export default function GuruTugasDetail({ params }: { params: Promise<{ id: stri
 
   // Chart data: donut status + histogram nilai (5 rentang).
   const donut = [
-    { label: "Sudah", n: stats?.done ?? 0, color: "#71845a" },
-    { label: "Terlambat", n: stats?.late ?? 0, color: "#f5c94a" },
-    { label: "Belum", n: stats?.missing ?? 0, color: "#e85e43" },
+    { label: "Sudah", n: stats?.done ?? 0, cls: "text-olive" },
+    { label: "Terlambat", n: stats?.late ?? 0, cls: "text-sun" },
+    { label: "Belum", n: stats?.missing ?? 0, cls: "text-terracotta" },
   ];
   const total = donut.reduce((s, d) => s + d.n, 0) || 1;
   const buckets = [0, 0, 0, 0, 0];
@@ -264,7 +266,7 @@ export default function GuruTugasDetail({ params }: { params: Promise<{ id: stri
 
       {/* Banner kontekstual pengingat (muncul bila deadline <24 jam atau terlewat) */}
       {(hoursLeft !== null && hoursLeft < 24 || missingCount > 0) && (hoursLeft === null || hoursLeft < 24) && (
-        <div className="card flex flex-wrap items-center justify-between gap-3 border-l-4 p-4" style={{ borderLeftColor: "var(--color-terracotta)" }}>
+        <div className="card flex flex-wrap items-center justify-between gap-3 border-l-4 p-4 border-l-terracotta">
           <p className="text-sm font-medium">
             {missingCount} siswa belum mengumpulkan
             {hoursLeft !== null && hoursLeft > 0 ? ` · deadline ${Math.round(hoursLeft)} jam lagi` : " · deadline sudah lewat"}
@@ -319,7 +321,7 @@ export default function GuruTugasDetail({ params }: { params: Promise<{ id: stri
                   {(() => { let acc = 0; return donut.map((d) => {
                     const frac = d.n / total;
                     const el = (
-                      <circle key={d.label} cx="21" cy="21" r="15.9" fill="none" stroke={d.color} strokeWidth="7"
+                      <circle key={d.label} cx="21" cy="21" r="15.9" fill="none" stroke="currentColor" className={d.cls} strokeWidth="7"
                         strokeDasharray={`${frac * 100} ${100 - frac * 100}`} strokeDashoffset={-acc * 100} pathLength={100} />
                     );
                     acc += frac; return el;
@@ -328,7 +330,7 @@ export default function GuruTugasDetail({ params }: { params: Promise<{ id: stri
                 <ul className="space-y-1.5 text-sm">
                   {donut.map((d) => (
                     <li key={d.label} className="flex items-center gap-2">
-                      <span className="inline-block size-3 rounded-full" style={{ background: d.color }} /> {d.label}: <strong>{d.n}</strong>
+                      <span className={cn("inline-block size-3 rounded-full bg-current", d.cls)} /> {d.label}: <strong>{d.n}</strong>
                     </li>
                   ))}
                 </ul>
@@ -341,7 +343,11 @@ export default function GuruTugasDetail({ params }: { params: Promise<{ id: stri
                 {buckets.map((n, i) => (
                   <div key={i} className="flex flex-1 flex-col items-center gap-1">
                     <span className="text-xs font-bold">{n || ""}</span>
-                    <div className="w-full rounded-t-lg bg-olive" style={{ height: `${Math.max(3, (n / Math.max(1, ...buckets)) * 100)}%` }} />
+                    <div
+                      className="w-full rounded-t-lg bg-olive"
+                      // dynamic: tinggi bar mengikuti jumlah per rentang nilai
+                      style={{ height: `${Math.max(3, (n / Math.max(1, ...buckets)) * 100)}%` }}
+                    />
                     <span className="text-[10px] text-muted-strong">{i * 20}–{i * 20 + 19}</span>
                   </div>
                 ))}
@@ -364,26 +370,26 @@ export default function GuruTugasDetail({ params }: { params: Promise<{ id: stri
             </div>
             {/* Tabel → kartu bertumpuk ≤640px (U4) */}
             <div className="hidden overflow-x-auto sm:block">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b border-line text-left text-xs uppercase tracking-wide text-muted-strong">
-                    <th className="px-3 py-2.5">Nama</th>
-                    {t.isGroup && <th className="px-3 py-2.5">Kelompok</th>}
-                    <th className="px-3 py-2.5">Status</th>
-                    <th className="px-3 py-2.5">Waktu</th>
-                    <th className="px-3 py-2.5">File</th>
-                    <th className="px-3 py-2.5">Nilai</th>
-                    <th className="px-3 py-2.5">Aksi</th>
-                  </tr>
-                </thead>
-                <tbody>
+              <Table className="w-full text-sm">
+                <TableHeader>
+                  <TableRow className="border-b border-line text-left text-xs uppercase tracking-wide text-muted-strong">
+                    <TableHead className="px-3 py-2.5">Nama</TableHead>
+                    {t.isGroup && <TableHead className="px-3 py-2.5">Kelompok</TableHead>}
+                    <TableHead className="px-3 py-2.5">Status</TableHead>
+                    <TableHead className="px-3 py-2.5">Waktu</TableHead>
+                    <TableHead className="px-3 py-2.5">File</TableHead>
+                    <TableHead className="px-3 py-2.5">Nilai</TableHead>
+                    <TableHead className="px-3 py-2.5">Aksi</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
                   {rows.map((r) => (
-                    <tr key={r.student.id} className="border-b border-line/60 align-middle">
-                      <td className="px-3 py-2.5 font-semibold">{r.student.name}</td>
-                      {t.isGroup && <td className="px-3 py-2.5 text-muted-foreground">{r.group?.name ?? "—"}</td>}
-                      <td className="px-3 py-2.5"><Badge variant={STATUS_BADGE[r.state] ?? "outline"}>{SUBMIT_STATE_LABEL[r.state] ?? r.state}</Badge></td>
-                      <td className="px-3 py-2.5 text-xs text-muted-foreground">{r.submittedAt ? new Date(r.submittedAt).toLocaleString("id-ID", { dateStyle: "short", timeStyle: "short" }) : "—"}</td>
-                      <td className="px-3 py-2.5">
+                    <TableRow key={r.student.id} className="border-b border-line/60 align-middle">
+                      <TableCell className="px-3 py-2.5 font-semibold">{r.student.name}</TableCell>
+                      {t.isGroup && <TableCell className="px-3 py-2.5 text-muted-foreground">{r.group?.name ?? "—"}</TableCell>}
+                      <TableCell className="px-3 py-2.5"><Badge variant={STATUS_BADGE[r.state] ?? "outline"}>{SUBMIT_STATE_LABEL[r.state] ?? r.state}</Badge></TableCell>
+                      <TableCell className="px-3 py-2.5 text-xs text-muted-foreground">{r.submittedAt ? new Date(r.submittedAt).toLocaleString("id-ID", { dateStyle: "short", timeStyle: "short" }) : "—"}</TableCell>
+                      <TableCell className="px-3 py-2.5">
                         <div className="flex flex-wrap gap-1">
                           {r.files.map((f) => (
                             <a key={f.name} href={`/api/task-files/${t.id}/${encodeURIComponent(f.name)}`} className="rounded-full border border-line px-2 py-0.5 text-[10px] font-bold hover:bg-paper" title={f.name}>
@@ -393,8 +399,8 @@ export default function GuruTugasDetail({ params }: { params: Promise<{ id: stri
                           {r.hasText && <span className="rounded-full bg-paper px-2 py-0.5 text-[10px] font-bold">teks</span>}
                           {r.files.length + (r.hasText ? 1 : 0) === 0 && <span className="text-xs text-muted-foreground">—</span>}
                         </div>
-                      </td>
-                      <td className="px-3 py-2.5">
+                      </TableCell>
+                      <TableCell className="px-3 py-2.5">
                         <Input
                           className="h-8 w-16"
                           inputMode="numeric"
@@ -404,18 +410,18 @@ export default function GuruTugasDetail({ params }: { params: Promise<{ id: stri
                           onKeyDown={(e) => { if (e.key === "Enter") void saveScore(r); }}
                           aria-label={`Nilai ${r.student.name}`}
                         />
-                      </td>
-                      <td className="px-3 py-2.5">
+                      </TableCell>
+                      <TableCell className="px-3 py-2.5">
                         {(r.state === "BELUM" || r.state === "TUTUP") && (
                           <Button variant="ghost" size="icon-sm" onClick={() => { setNudgeTarget(r); setNudgeResult(null); }} aria-label={`Ingatkan ${r.student.name}`}>
                             <BellIcon className="size-4" />
                           </Button>
                         )}
-                      </td>
-                    </tr>
+                      </TableCell>
+                    </TableRow>
                   ))}
-                </tbody>
-              </table>
+                </TableBody>
+              </Table>
             </div>
             {/* Versi kartu mobile */}
             <div className="divide-y divide-line sm:hidden">

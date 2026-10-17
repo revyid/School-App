@@ -76,9 +76,9 @@ export default function AnonimForm() {
         onClose={() => setToast(null)}
         title={toast?.title ?? ""}
         description={toast?.body ?? ""}
-        background="#fffdf8"
-        color="#171716"
-        fuseColor="#e85e43"
+        background="var(--color-cream)"
+        color="var(--color-ink)"
+        fuseColor="var(--color-terracotta)"
         width={360}
         radius={18}
         duration={6000}

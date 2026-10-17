@@ -77,5 +77,5 @@ export default function AssessChart({ labels, pcts, counts }: { labels: string[]
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [key]);
 
-  return <canvas ref={canvasRef} style={{ maxWidth: "100%" }} aria-label="Chart persentase benar per soal" />;
+  return <canvas ref={canvasRef} className="max-w-full" aria-label="Chart persentase benar per soal" />;
 }

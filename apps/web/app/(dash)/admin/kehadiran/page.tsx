@@ -3,10 +3,15 @@
 // Admin: dashboard kehadiran (ringkasan hari ini per kelas) + ekspor bulanan.
 import { useState } from "react";
 import { api, useFetch } from "@/app/lib/api";
-import { PageHead, Panel, Toolbar, TextInput, WarmTable, warmCell, SegStat, Note, Err } from "@/components/DashUI";
 import { Select, SelectTrigger, SelectValue, SelectPositioner, SelectPopup, SelectItem } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { Badge, statusVariant } from "@/components/ui/badge";
+import { PageHead } from "@/components/ui/page-header";
+import { SegStat } from "@/components/ui/stat-card";
+import { Card } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Alert } from "@/components/ui/alert";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 
 interface Row {
   studentId: string;
@@ -82,12 +87,12 @@ export default function AdminKehadiranPage() {
   return (
     <>
       <PageHead kicker="Absensi" title="Kehadiran sekolah" desc="Pantau kehadiran harian per kelas dan unduh rekap bulanan." />
-      <Panel style={{ marginBottom: 16 }}>
-        <Toolbar>
-          <label style={{ display: "flex", gap: 8, alignItems: "center", fontSize: 13, color: "#74746d" }}>
-            Tanggal: <TextInput type="date" value={date} onChange={(e) => setDate(e.target.value)} style={{ width: "auto" }} />
+      <Card className="mb-4">
+        <div className="mb-4 flex flex-wrap items-center gap-2.5">
+          <label className="flex gap-2 items-center text-[13px] text-muted">
+            Tanggal: <Input className="w-auto" type="date" value={date} onChange={(e) => setDate(e.target.value)} />
           </label>
-          <label style={{ display: "flex", gap: 8, alignItems: "center", fontSize: 13, color: "#74746d" }}>
+          <label className="flex gap-2 items-center text-[13px] text-muted">
             Kelas:
             <Select value={classId} onValueChange={(v) => setClassId(v ?? "")}>
               <SelectTrigger><SelectValue placeholder="— pilih —" /></SelectTrigger>
@@ -98,12 +103,12 @@ export default function AdminKehadiranPage() {
               </SelectPopup></SelectPositioner>
             </Select>
           </label>
-          <label style={{ display: "flex", gap: 8, alignItems: "center", fontSize: 13, color: "#74746d" }}>
-            Bulan: <TextInput type="month" value={month} onChange={(e) => setMonth(e.target.value)} style={{ width: "auto" }} />
+          <label className="flex gap-2 items-center text-[13px] text-muted">
+            Bulan: <Input className="w-auto" type="month" value={month} onChange={(e) => setMonth(e.target.value)} />
           </label>
           <Button variant="sticker-ghost" type="button" onClick={exportMonthly}>Unduh rekap (.xlsx)</Button>
           <Button variant="sticker-ghost" type="button" onClick={cetakMassal}>Cetak kartu QR sekelas</Button>
-        </Toolbar>
+        </div>
         {s && (
           <SegStat stats={[
             { label: "Hadir", value: s.HADIR ?? 0 },
@@ -113,21 +118,32 @@ export default function AdminKehadiranPage() {
             { label: "Belum", value: s.BELUM ?? 0 },
           ]} />
         )}
-        {msg && <p style={{ fontWeight: 700 }}>{msg}</p>}
-        {daily.loading && <Note>Memuat…</Note>}
-        {daily.error && <Err>Gagal: {daily.error}</Err>}
+        {msg && <p className="font-bold">{msg}</p>}
+        {daily.loading && <Alert>Memuat…</Alert>}
+        {daily.error && <Alert variant="destructive">Gagal: {daily.error}</Alert>}
         {daily.data && (
-          <WarmTable head={["Nama", "NISN", "Status"]}>
+                    <div className="warm-table overflow-x-auto rounded-2xl border border-line">
+            <Table className="text-[13.5px] min-w-[560px]">
+              <TableHeader>
+                <TableRow className="border-line bg-paper-deep hover:bg-paper-deep">
+                  <TableHead className="whitespace-nowrap text-[10px] tracking-[.09em]">{"Nama"}</TableHead>
+                  <TableHead className="whitespace-nowrap text-[10px] tracking-[.09em]">{"NISN"}</TableHead>
+                  <TableHead className="whitespace-nowrap text-[10px] tracking-[.09em]">{"Status"}</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
             {daily.data.rows.map((r) => (
-              <tr key={r.studentId}>
-                <td style={warmCell({ fontWeight: 700 })}>{r.name}</td>
-                <td style={warmCell()}>{r.nisn ?? "-"}</td>
-                <td style={warmCell()}>{r.record ? <Badge variant={statusVariant(r.record.status)}>{r.record.status}</Badge> : <Badge variant={statusVariant("BELUM")}>BELUM</Badge>}</td>
-              </tr>
+              <TableRow key={r.studentId}>
+                <TableCell className="font-bold">{r.name}</TableCell>
+                <TableCell>{r.nisn ?? "-"}</TableCell>
+                <TableCell>{r.record ? <Badge variant={statusVariant(r.record.status)}>{r.record.status}</Badge> : <Badge variant={statusVariant("BELUM")}>BELUM</Badge>}</TableCell>
+              </TableRow>
             ))}
-          </WarmTable>
+              </TableBody>
+            </Table>
+          </div>
         )}
-      </Panel>
+      </Card>
     </>
   );
 }

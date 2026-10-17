@@ -9,6 +9,7 @@ import {
   Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription,
 } from "@/components/ui/sheet";
 import { Trash2Icon } from "lucide-react";
+import { cn } from "@/lib/utils";
 import { UPLOAD_ACCEPT_LABEL } from "@sms/shared/lms";
 
 export interface CatItem {
@@ -77,8 +78,7 @@ export default function CategorySheet({
                 <span className="mb-1.5 block text-[12px] font-bold text-muted-strong uppercase tracking-wide">Tipe file diterima</span>
                 <div className="flex flex-wrap gap-2">
                   {(Object.keys(UPLOAD_ACCEPT_LABEL) as string[]).map((acc) => (
-                    <label key={acc} className="flex cursor-pointer items-center gap-1.5 rounded-xl border px-3 py-1.5 text-[12px] font-bold transition-colors"
-                      style={accept.includes(acc) ? { background: "#50643e", color: "#fff", borderColor: "#50643e" } : { background: "#fffdf8", color: "#575752", borderColor: "rgba(23,23,22,.2)" }}>
+                    <label key={acc} className={cn("flex cursor-pointer items-center gap-1.5 rounded-xl border px-3 py-1.5 text-[12px] font-bold transition-colors", accept.includes(acc) ? "border-olive-deep bg-olive-deep text-cream" : "border-ink/20 bg-cream text-muted-strong")}>
                       <input type="checkbox" className="sr-only" checked={accept.includes(acc)} onChange={() => toggle(acc)} />
                       {UPLOAD_ACCEPT_LABEL[acc as keyof typeof UPLOAD_ACCEPT_LABEL]}
                     </label>

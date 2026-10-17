@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
+import { Button } from "@/components/ui/button";
 
 export interface ConfirmDialogProps {
   open: boolean;
@@ -60,51 +61,31 @@ export default function ConfirmDialog({
       aria-modal="true"
       aria-label={title}
       onClick={onCancel}
-      style={{
-        position: "fixed",
-        inset: 0,
-        background: "rgba(23,23,22,.55)",
-        zIndex: 9999,
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        padding: 20,
-      }}
+      className="fixed inset-0 z-[9999] flex items-center justify-center bg-ink/55 p-5"
     >
       <div
         ref={dialogRef}
         onClick={(e) => e.stopPropagation()}
-        style={{
-          width: "min(100%, 440px)",
-          background: "#f7f4ec",
-          color: "#171716",
-          border: "2px solid #171716",
-          borderRadius: 24,
-          padding: "24px 28px",
-          boxShadow: "0 16px 48px rgba(23,23,22,.25)",
-          display: "flex",
-          flexDirection: "column",
-          gap: 14,
-        }}
+        className="flex w-[min(100%,440px)] flex-col gap-3.5 rounded-3xl border-2 border-ink bg-paper px-7 py-6 text-ink shadow-[0_16px_48px_rgba(23,23,22,0.25)]"
       >
-        <h3 className="display" style={{ fontSize: 20, margin: 0 }}>
+        <h3 className="display m-0 text-[20px]">
           {title}
         </h3>
-        <p style={{ margin: 0, color: "#575752", fontSize: 14, lineHeight: 1.6 }}>
+        <p className="m-0 text-sm leading-[1.6] text-muted-strong">
           {message}
         </p>
-        <div style={{ display: "flex", gap: 10, justifyContent: "flex-end", marginTop: 8, flexWrap: "wrap" }}>
-          <button ref={cancelRef} type="button" className="btn-sticker btn-ghost" onClick={onCancel}>
+        <div className="mt-2 flex flex-wrap justify-end gap-2.5">
+          <Button ref={cancelRef} type="button" variant="sticker-ghost" onClick={onCancel}>
             Batal
-          </button>
-          <button
+          </Button>
+          <Button
             type="button"
-            className="btn-sticker"
-            style={{ background: "#171716", color: "#fffdf8", borderColor: "#171716" }}
+            variant="sticker"
+            className="border-ink bg-ink text-cream hover:bg-ink/90"
             onClick={() => void onConfirm()}
           >
             {confirmLabel}
-          </button>
+          </Button>
         </div>
       </div>
     </div>

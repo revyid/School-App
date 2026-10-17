@@ -3,13 +3,17 @@
 import { useMemo, useState } from "react";
 import { type ColumnDef } from "@tanstack/react-table";
 import { api, useFetch } from "@/app/lib/api";
-import { PageHead, Panel, Toolbar, TextInput, WarmTable, warmCell, Note, Err } from "@/components/DashUI";
 import { Select, SelectTrigger, SelectValue, SelectPositioner, SelectPopup, SelectItem } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import ConfirmDialog from "@/components/ConfirmDialog";
 import UploadPopup from "@/components/UploadPopup";
 import { DataTable, selectColumn } from "@/components/ui/data-table";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { PageHead } from "@/components/ui/page-header";
+import { Card } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Alert } from "@/components/ui/alert";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 
 const DAYS = ["Min", "Sen", "Sel", "Rab", "Kam", "Jum", "Sab"];
 const DAY_FULL = ["Minggu", "Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu"];
@@ -42,7 +46,7 @@ export default function TimetablePage() {
   );
   const [impFile, setImpFile] = useState<File | null>(null);
   const { data: classes } = useFetch<{ rows: { id: string; name: string; gradeLevel: string | null }[] }>(`/api/classes?page=1&perPage=100`);
-  const { data: teachers } = useFetch<{ rows: { id: string; name: string }[] }>(`/api/teachers?page=1&perPage=200`);
+  const { data: teachers } = useFetch<{ rows: { id: string; name: string }[] }>(`/api/teachers?page=1&perPage=100`);
   const [classId, setClassId] = useState("");
   const [refresh, setRefresh] = useState(0);
   const { data, loading, error, reload } = useFetch<{ rows: SlotRow[] }>(
@@ -209,7 +213,7 @@ export default function TimetablePage() {
       accessorKey: "date",
       header: "Tanggal",
       cell: ({ row }) => (
-        <span style={{ fontWeight: 700 }}>{new Date(row.original.date).toISOString().slice(0, 10)}</span>
+        <span className="font-bold">{new Date(row.original.date).toISOString().slice(0, 10)}</span>
       ),
     },
     {
@@ -233,12 +237,12 @@ export default function TimetablePage() {
     <>
       <PageHead kicker="Akademik" title="Jadwal pelajaran" desc="Atur slot mapel per kelas per hari." />
       {dari === "mapel" && (
-        <Panel style={{ marginBottom: 16 }}>
-          <Note>Mapel kini dikelola dari Jadwal: daftar mapel tiap kelas diambil otomatis dari slot di bawah. Tambah slot untuk menambah mapel.</Note>
-        </Panel>
+        <Card className="mb-4">
+          <Alert>Mapel kini dikelola dari Jadwal: daftar mapel tiap kelas diambil otomatis dari slot di bawah. Tambah slot untuk menambah mapel.</Alert>
+        </Card>
       )}
-      <Panel style={{ marginBottom: 16 }}>
-        <Toolbar>
+      <Card className="mb-4">
+        <div className="mb-4 flex flex-wrap items-center gap-2.5">
           <Select value={classId} onValueChange={(v) => setClassId(v ?? "")}>
             <SelectTrigger><SelectValue placeholder="Pilih kelas" /></SelectTrigger>
             <SelectPositioner><SelectPopup>
@@ -247,65 +251,91 @@ export default function TimetablePage() {
           </Select>
           {classId && (
             <>
-              <a className="btn-sticker btn-ghost" style={{ textDecoration: "none" }} href={`/api/timetable/export?classId=${classId}`}>Unduh Excel</a>
-              <a className="btn-sticker btn-ghost" style={{ textDecoration: "none" }} href="/api/timetable/template">Unduh template</a>
+              <a className="btn-sticker btn-ghost no-underline" href={`/api/timetable/export?classId=${classId}`}>Unduh Excel</a>
+              <a className="btn-sticker btn-ghost no-underline" href="/api/timetable/template">Unduh template</a>
             </>
           )}
-        </Toolbar>
-        {loading && <Note>Memuat…</Note>}
-        {error && <Err>Error: {error}</Err>}
+        </div>
+        {loading && <Alert>Memuat…</Alert>}
+        {error && <Alert variant="destructive">Error: {error}</Alert>}
         {!classId && (
           <>
-            {allLoading && <Note>Memuat rekap…</Note>}
-            {allData && allData.rows.length === 0 && <Note>Belum ada slot jadwal. Pilih kelas lalu tambah slot.</Note>}
+            {allLoading && <Alert>Memuat rekap…</Alert>}
+            {allData && allData.rows.length === 0 && <Alert>Belum ada slot jadwal. Pilih kelas lalu tambah slot.</Alert>}
             {allData && allData.rows.length > 0 && (
-              <WarmTable head={["Hari", "Kelas", "Jam", "Mapel", "Guru"]}>
+                            <div className="warm-table overflow-x-auto rounded-2xl border border-line">
+                <Table className="text-[13.5px] min-w-[560px]">
+                  <TableHeader>
+                    <TableRow className="border-line bg-paper-deep hover:bg-paper-deep">
+                      <TableHead className="whitespace-nowrap text-[10px] tracking-[.09em]">{"Hari"}</TableHead>
+                      <TableHead className="whitespace-nowrap text-[10px] tracking-[.09em]">{"Kelas"}</TableHead>
+                      <TableHead className="whitespace-nowrap text-[10px] tracking-[.09em]">{"Jam"}</TableHead>
+                      <TableHead className="whitespace-nowrap text-[10px] tracking-[.09em]">{"Mapel"}</TableHead>
+                      <TableHead className="whitespace-nowrap text-[10px] tracking-[.09em]">{"Guru"}</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
                 {allData.rows.map((s) => (
-                  <tr key={s.id}>
-                    <td style={warmCell({ fontWeight: 700 })}>{DAY_FULL[s.dayOfWeek]}</td>
-                    <td style={warmCell()}>{s.className}</td>
-                    <td style={warmCell({ whiteSpace: "nowrap" })}>{s.startTime}–{s.endTime}</td>
-                    <td style={warmCell()}>{s.subjectName ?? "-"}</td>
-                    <td style={warmCell()}>{s.teacherName ?? "-"}</td>
-                  </tr>
+                  <TableRow key={s.id}>
+                    <TableCell className="font-bold">{DAY_FULL[s.dayOfWeek]}</TableCell>
+                    <TableCell>{s.className}</TableCell>
+                    <TableCell className="whitespace-nowrap">{s.startTime}–{s.endTime}</TableCell>
+                    <TableCell>{s.subjectName ?? "-"}</TableCell>
+                    <TableCell>{s.teacherName ?? "-"}</TableCell>
+                  </TableRow>
                 ))}
-              </WarmTable>
+                  </TableBody>
+                </Table>
+              </div>
             )}
           </>
         )}
-        {data && data.rows.length === 0 && <Note>Belum ada slot jadwal untuk kelas ini.</Note>}
+        {data && data.rows.length === 0 && <Alert>Belum ada slot jadwal untuk kelas ini.</Alert>}
         {data && data.rows.length > 0 && (
-          <WarmTable head={["Hari", "Jam", "Mapel", "Guru", "Aksi"]}>
+                    <div className="warm-table overflow-x-auto rounded-2xl border border-line">
+            <Table className="text-[13.5px] min-w-[560px]">
+              <TableHeader>
+                <TableRow className="border-line bg-paper-deep hover:bg-paper-deep">
+                  <TableHead className="whitespace-nowrap text-[10px] tracking-[.09em]">{"Hari"}</TableHead>
+                  <TableHead className="whitespace-nowrap text-[10px] tracking-[.09em]">{"Jam"}</TableHead>
+                  <TableHead className="whitespace-nowrap text-[10px] tracking-[.09em]">{"Mapel"}</TableHead>
+                  <TableHead className="whitespace-nowrap text-[10px] tracking-[.09em]">{"Guru"}</TableHead>
+                  <TableHead className="whitespace-nowrap text-[10px] tracking-[.09em]">{"Aksi"}</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
             {data.rows.map((s) => (
-              <tr key={s.id}>
-                <td style={warmCell({ fontWeight: 700 })}>{DAYS[s.dayOfWeek]}</td>
-                <td style={warmCell({ whiteSpace: "nowrap" })}>{s.startTime}–{s.endTime}</td>
-                <td style={warmCell()}>{s.subjectRef?.name ?? s.subjectName ?? "-"}</td>
-                <td style={warmCell()}>{s.teacher?.name ?? "-"}</td>
-                <td style={warmCell()}>
-                  <span style={{ display: "inline-flex", gap: 8 }}>
+              <TableRow key={s.id}>
+                <TableCell className="font-bold">{DAYS[s.dayOfWeek]}</TableCell>
+                <TableCell className="whitespace-nowrap">{s.startTime}–{s.endTime}</TableCell>
+                <TableCell>{s.subjectRef?.name ?? s.subjectName ?? "-"}</TableCell>
+                <TableCell>{s.teacher?.name ?? "-"}</TableCell>
+                <TableCell>
+                  <span className="inline-flex gap-2">
                     <Button variant="sticker-ghost" onClick={() => openEdit(s)}>Edit</Button>
                     <Button variant="sticker-ghost" onClick={() => setDeleteTarget(s.id)}>Hapus</Button>
                   </span>
-                </td>
-              </tr>
+                </TableCell>
+              </TableRow>
             ))}
-          </WarmTable>
+              </TableBody>
+            </Table>
+          </div>
         )}
-      </Panel>
+      </Card>
       {classId && (
         <>
-          <Panel style={{ marginBottom: 16 }}>
-            <h2 className="display" style={{ fontSize: 18, margin: "0 0 12px" }}>Tambah slot</h2>
-            <Toolbar>
+          <Card className="mb-4">
+            <h2 className="display text-[18px] mt-0 mr-0 mb-3 ml-0">Tambah slot</h2>
+            <div className="mb-4 flex flex-wrap items-center gap-2.5">
               <Select value={day} onValueChange={(v) => setDay(v ?? "1")}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectPositioner><SelectPopup>
                   {DAYS.map((d, i) => <SelectItem key={i} value={String(i)}>{d}</SelectItem>)}
                 </SelectPopup></SelectPositioner>
               </Select>
-              <TextInput type="time" value={start} onChange={(e) => setStart(e.target.value)} style={{ width: "auto" }} />
-              <TextInput type="time" value={end} onChange={(e) => setEnd(e.target.value)} style={{ width: "auto" }} />
+              <Input className="w-auto" type="time" value={start} onChange={(e) => setStart(e.target.value)} />
+              <Input className="w-auto" type="time" value={end} onChange={(e) => setEnd(e.target.value)} />
               <Select value={subjectId} onValueChange={(v) => setSubjectId(v ?? "")}>
                 <SelectTrigger><SelectValue placeholder="Pilih mapel" /></SelectTrigger>
                 <SelectPositioner><SelectPopup>
@@ -323,16 +353,16 @@ export default function TimetablePage() {
                 </SelectPopup></SelectPositioner>
               </Select>
               <Button variant="sticker" onClick={add}>Tambah</Button>
-            </Toolbar>
-            <Note>Mapel kelas ini ({mapelKelas?.subjects.length ?? 0}) diambil dari jadwal; bila kelas belum punya slot, daftar global dipakai.</Note>
-          </Panel>
+            </div>
+            <Alert>Mapel kelas ini ({mapelKelas?.subjects.length ?? 0}) diambil dari jadwal; bila kelas belum punya slot, daftar global dipakai.</Alert>
+          </Card>
         </>
       )}
-      <Panel style={{ marginTop: 16 }}>
-        <h2 className="display" style={{ fontSize: 18, margin: "0 0 12px" }}>Import dari Excel</h2>
-        <Note>Mode per-kelas: Hari|Mulai|Selesai|Mapel|Guru (pilih kelas di atas dulu). Mode semua-kelas: Kelas|Hari|Mulai|Selesai|Mapel|Guru (satu file untuk semua kelas, tanpa pilih kelas). Maks 10MB. Nama mapel baru otomatis dibuat; guru/kelas tak dikenal dilaporkan per baris.</Note>
-        <Toolbar>
-          <label style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 13 }}>
+      <Card className="mt-4">
+        <h2 className="display text-[18px] mt-0 mr-0 mb-3 ml-0">Import dari Excel</h2>
+        <Alert>Mode per-kelas: Hari|Mulai|Selesai|Mapel|Guru (pilih kelas di atas dulu). Mode semua-kelas: Kelas|Hari|Mulai|Selesai|Mapel|Guru (satu file untuk semua kelas, tanpa pilih kelas). Maks 10MB. Nama mapel baru otomatis dibuat; guru/kelas tak dikenal dilaporkan per baris.</Alert>
+        <div className="mb-4 flex flex-wrap items-center gap-2.5">
+          <label className="inline-flex items-center gap-[6px] text-[13px]">
             <input type="checkbox" checked={impIsAll} onChange={(e) => setImpIsAll(e.target.checked)} />
             Semua kelas
           </label>
@@ -343,41 +373,51 @@ export default function TimetablePage() {
               <SelectItem value="merge">Merge (tambah saja)</SelectItem>
             </SelectPopup></SelectPositioner>
           </Select>
-          <div style={{ flex: "1 1 280px", minWidth: 240 }}>
+          <div className="flex-[1_1_280px] min-w-[240px]">
             <UploadPopup key={impMsg} label="Pilih file .xlsx" hint="Maks 10MB · format .xlsx" maxMb={10} accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" onFile={setImpFile} />
           </div>
           <Button variant="sticker" onClick={upload}>Upload</Button>
-          <a className="btn-sticker btn-ghost" style={{ textDecoration: "none" }} href={impIsAll ? "/api/timetable/template?mode=all" : "/api/timetable/template"}>Unduh template</a>
-        </Toolbar>
-        {impMsg && <Note>{impMsg}</Note>}
+          <a className="btn-sticker btn-ghost no-underline" href={impIsAll ? "/api/timetable/template?mode=all" : "/api/timetable/template"}>Unduh template</a>
+        </div>
+        {impMsg && <Alert>{impMsg}</Alert>}
         {impErrors.length > 0 && (
-          <WarmTable head={["Baris", "Kesalahan"]}>
+                    <div className="warm-table overflow-x-auto rounded-2xl border border-line">
+            <Table className="text-[13.5px] min-w-[560px]">
+              <TableHeader>
+                <TableRow className="border-line bg-paper-deep hover:bg-paper-deep">
+                  <TableHead className="whitespace-nowrap text-[10px] tracking-[.09em]">{"Baris"}</TableHead>
+                  <TableHead className="whitespace-nowrap text-[10px] tracking-[.09em]">{"Kesalahan"}</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
             {impErrors.slice(0, 20).map((e, i) => (
-              <tr key={i}>
-                <td style={warmCell({ fontWeight: 700 })}>{e.baris}</td>
-                <td style={warmCell()}>{e.pesan}</td>
-              </tr>
+              <TableRow key={i}>
+                <TableCell className="font-bold">{e.baris}</TableCell>
+                <TableCell>{e.pesan}</TableCell>
+              </TableRow>
             ))}
-          </WarmTable>
+              </TableBody>
+            </Table>
+          </div>
         )}
-        {impErrors.length > 20 && <Note>…dan {impErrors.length - 20} kesalahan lain.</Note>}
-      </Panel>
-      <Panel style={{ marginTop: 16 }}>
-        <h2 className="display" style={{ fontSize: 18, margin: "0 0 12px" }}>Hari Libur Sekolah</h2>
-        <Note>Tambah rentang tanggal libur sekaligus untuk semua kelas, satu tingkatan, atau satu kelas. Saat hari libur, absensi otomatis nonaktif (rekap kosong, scan/input ditolak).</Note>
-        <Toolbar>
-          <label style={{ display: "grid", gap: 6, fontSize: 13, color: "#74746d" }}>
+        {impErrors.length > 20 && <Alert>…dan {impErrors.length - 20} kesalahan lain.</Alert>}
+      </Card>
+      <Card className="mt-4">
+        <h2 className="display text-[18px] mt-0 mr-0 mb-3 ml-0">Hari Libur Sekolah</h2>
+        <Alert>Tambah rentang tanggal libur sekaligus untuk semua kelas, satu tingkatan, atau satu kelas. Saat hari libur, absensi otomatis nonaktif (rekap kosong, scan/input ditolak).</Alert>
+        <div className="mb-4 flex flex-wrap items-center gap-2.5">
+          <label className="grid gap-[6px] text-[13px] text-muted">
             Dari:
-            <TextInput type="date" value={liburDari} onChange={(e) => setLiburDari(e.target.value)} style={{ width: "auto" }} />
+            <Input className="w-auto" type="date" value={liburDari} onChange={(e) => setLiburDari(e.target.value)} />
           </label>
-          <label style={{ display: "grid", gap: 6, fontSize: 13, color: "#74746d" }}>
+          <label className="grid gap-[6px] text-[13px] text-muted">
             Sampai:
-            <TextInput type="date" value={liburSampai} onChange={(e) => setLiburSampai(e.target.value)} style={{ width: "auto" }} />
+            <Input className="w-auto" type="date" value={liburSampai} onChange={(e) => setLiburSampai(e.target.value)} />
           </label>
-          <label style={{ display: "grid", gap: 6, fontSize: 13, color: "#74746d" }}>
+          <label className="grid gap-[6px] text-[13px] text-muted">
             Berlaku untuk:
             <Select value={liburScope} onValueChange={(v) => { setLiburScope(v ?? "semua"); setLiburRefresh((r) => r + 1); }}>
-              <SelectTrigger style={{ minWidth: 180 }}><SelectValue placeholder="Semua kelas" /></SelectTrigger>
+              <SelectTrigger className="min-w-[180px]"><SelectValue placeholder="Semua kelas" /></SelectTrigger>
               <SelectPositioner><SelectPopup>
                 <SelectItem value="semua">Semua kelas</SelectItem>
                 {[...new Set((classes?.rows ?? []).map((c) => c.gradeLevel).filter(Boolean))].map((g) => (
@@ -389,15 +429,15 @@ export default function TimetablePage() {
               </SelectPopup></SelectPositioner>
           </Select>
           </label>
-          <label style={{ display: "grid", gap: 6, fontSize: 13, color: "#74746d" }}>
+          <label className="grid gap-[6px] text-[13px] text-muted">
             Keterangan:
-            <TextInput placeholder="mis. Libur semester" value={liburNote} onChange={(e) => setLiburNote(e.target.value)} style={{ minWidth: 180 }} />
+            <Input className="min-w-[180px]" placeholder="mis. Libur semester" value={liburNote} onChange={(e) => setLiburNote(e.target.value)} />
           </label>
-          <div style={{ display: "flex", alignItems: "flex-end" }}>
+          <div className="flex items-end">
             <Button variant="sticker" onClick={tambahLibur}>Tambah Libur</Button>
           </div>
-        </Toolbar>
-        {liburMsg && <Note>{liburMsg}</Note>}
+        </div>
+        {liburMsg && <Alert>{liburMsg}</Alert>}
         <DataTable<LiburRow>
           columns={liburColumns}
           rows={liburData?.rows ?? []}
@@ -407,7 +447,7 @@ export default function TimetablePage() {
           ]}
           emptyText="Belum ada hari libur mendatang untuk cakupan ini."
         />
-      </Panel>
+      </Card>
       <Dialog open={edit !== null} onOpenChange={(o) => { if (!o) setEdit(null); }}>
         <DialogContent aria-label="Edit slot jadwal">
           <DialogHeader>
@@ -415,17 +455,17 @@ export default function TimetablePage() {
           </DialogHeader>
           {edit && (
           <>
-          <Toolbar>
+          <div className="mb-4 flex flex-wrap items-center gap-2.5">
               <Select value={edit.day} onValueChange={(v) => setEdit({ ...edit, day: v ?? "1" })}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectPositioner><SelectPopup>
                   {DAY_FULL.map((d, i) => <SelectItem key={i} value={String(i)}>{d}</SelectItem>)}
                 </SelectPopup></SelectPositioner>
               </Select>
-              <TextInput type="time" value={edit.start} onChange={(e) => setEdit({ ...edit, start: e.target.value })} style={{ width: "auto" }} />
-              <TextInput type="time" value={edit.end} onChange={(e) => setEdit({ ...edit, end: e.target.value })} style={{ width: "auto" }} />
-            </Toolbar>
-            <Toolbar>
+              <Input className="w-auto" type="time" value={edit.start} onChange={(e) => setEdit({ ...edit, start: e.target.value })} />
+              <Input className="w-auto" type="time" value={edit.end} onChange={(e) => setEdit({ ...edit, end: e.target.value })} />
+            </div>
+            <div className="mb-4 flex flex-wrap items-center gap-2.5">
               <Select value={edit.subjectId} onValueChange={(v) => setEdit({ ...edit, subjectId: v ?? "" })}>
                 <SelectTrigger><SelectValue placeholder="Pilih mapel" /></SelectTrigger>
                 <SelectPositioner><SelectPopup>
@@ -440,8 +480,8 @@ export default function TimetablePage() {
                   {teachers?.rows.map((t) => <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>)}
                 </SelectPopup></SelectPositioner>
               </Select>
-            </Toolbar>
-            {editMsg && <Err>{editMsg}</Err>}
+            </div>
+            {editMsg && <Alert variant="destructive">{editMsg}</Alert>}
             <DialogFooter>
               <Button variant="sticker-ghost" onClick={() => setEdit(null)}>Batal</Button>
               <Button variant="sticker" onClick={saveEdit}>Simpan</Button>

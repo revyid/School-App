@@ -9,16 +9,13 @@ function shouldRedirectSession(): boolean {
     p === "/" ||
     p === "/syarat" ||
     p === "/privasi" ||
-    p === "/perkakas/buku" ||
     p === "/buku" ||
     p === "/login" ||
     p === "/anonim" ||
     p === "/perkakas" ||
-    p === "/tools" ||
     p.startsWith("/portal") ||
     p.startsWith("/public") ||
-    p.startsWith("/perkakas/") ||
-    p.startsWith("/tools/")
+    p.startsWith("/perkakas/")
   );
 }
 

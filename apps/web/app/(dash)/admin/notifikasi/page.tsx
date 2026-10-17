@@ -2,8 +2,11 @@
 
 import { useState } from "react";
 import { api, useFetch } from "@/app/lib/api";
-import { PageHead, Panel, TextInput, Note } from "@/components/DashUI";
 import { Button } from "@/components/ui/button";
+import { PageHead } from "@/components/ui/page-header";
+import { Card } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Alert } from "@/components/ui/alert";
 
 interface KelasRow {
   id: string;
@@ -12,22 +15,9 @@ interface KelasRow {
 
 type PushTarget = "semua" | "guru" | "siswa" | "kelas";
 
-const selectStyle: React.CSSProperties = {
-  borderRadius: 14,
-  border: "1px solid rgba(23,23,22,.25)",
-  background: "#fffdf8",
-  padding: "10px 14px",
-  fontSize: 14,
-  width: "100%",
-  minHeight: 44,
-};
+const selectCls = "w-full min-h-[44px] rounded-[14px] border border-ink/25 bg-cream px-[14px] py-[10px] text-sm";
 
-const labelStyle: React.CSSProperties = {
-  display: "grid",
-  gap: 6,
-  fontSize: 13,
-  color: "#74746d",
-};
+const labelCls = "grid gap-[6px] text-[13px] text-muted";
 
 export default function NotifikasiAdminPage() {
   const { data: kelasData } = useFetch<{ rows: KelasRow[] }>("/api/classes?perPage=100");
@@ -131,12 +121,12 @@ export default function NotifikasiAdminPage() {
       />
 
       {/* Panel 1: Push */}
-      <Panel style={{ maxWidth: 640, marginBottom: 20 }}>
-        <h2 className="display" style={{ fontSize: 18, margin: "0 0 14px" }}>Push Notification</h2>
-        <form onSubmit={handlePush} style={{ display: "grid", gap: 14 }}>
-          <label style={labelStyle}>
+      <Card className="max-w-[640px] mb-5">
+        <h2 className="display text-[18px] mt-0 mr-0 mb-[14px] ml-0">Push Notification</h2>
+        <form className="grid gap-[14px]" onSubmit={handlePush}>
+          <label className={labelCls}>
             Target Penerima:
-            <select value={target} onChange={(e) => setTarget(e.target.value as PushTarget)} style={selectStyle}>
+            <select value={target} onChange={(e) => setTarget(e.target.value as PushTarget)} className={selectCls}>
               <option value="semua">Semua (Guru & Siswa)</option>
               <option value="guru">Khusus Guru</option>
               <option value="siswa">Khusus Siswa</option>
@@ -145,9 +135,9 @@ export default function NotifikasiAdminPage() {
           </label>
 
           {target === "kelas" && (
-            <label style={labelStyle}>
+            <label className={labelCls}>
               Kelas:
-              <select value={pushKelas} onChange={(e) => setPushKelas(e.target.value)} style={selectStyle}>
+              <select value={pushKelas} onChange={(e) => setPushKelas(e.target.value)} className={selectCls}>
                 <option value="">— Pilih kelas —</option>
                 {daftarKelas.map((k) => (
                   <option key={k.id} value={k.id}>{k.name}</option>
@@ -156,9 +146,9 @@ export default function NotifikasiAdminPage() {
             </label>
           )}
 
-          <label style={labelStyle}>
+          <label className={labelCls}>
             Judul:
-            <TextInput
+            <Input
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               placeholder="Contoh: Pengumuman Ujian Tengah Semester"
@@ -166,7 +156,7 @@ export default function NotifikasiAdminPage() {
             />
           </label>
 
-          <label style={labelStyle}>
+          <label className={labelCls}>
             Isi Pesan:
             <textarea
               value={body}
@@ -174,41 +164,30 @@ export default function NotifikasiAdminPage() {
               rows={4}
               placeholder="Tuliskan detail pengumuman…"
               required
-              style={{
-                borderRadius: 14,
-                border: "1px solid rgba(23,23,22,.25)",
-                background: "#fffdf8",
-                padding: "10px 14px",
-                fontSize: 14,
-                fontFamily: "inherit",
-                width: "100%",
-                minHeight: 110,
-                boxSizing: "border-box",
-                resize: "vertical",
-              }}
+              className="w-full min-h-[110px] box-border resize-y rounded-[14px] border border-ink/25 bg-cream px-[14px] py-[10px] text-sm"
             />
           </label>
 
-          <div style={{ display: "grid" }}>
-            <Button variant="sticker" type="submit" disabled={pushBusy} style={{ justifyContent: "center", width: "100%" }}>
+          <div className="grid">
+            <Button className="justify-center w-full" variant="sticker" type="submit" disabled={pushBusy}>
               {pushBusy ? "Mengirim…" : "Kirim Push"}
             </Button>
           </div>
         </form>
         {pushMsg && (
-          <div style={{ marginTop: 16 }}>
-            <Note>{pushMsg.text}</Note>
+          <div className="mt-4">
+            <Alert>{pushMsg.text}</Alert>
           </div>
         )}
-      </Panel>
+      </Card>
 
       {/* Panel 2: WA */}
-      <Panel style={{ maxWidth: 640 }}>
-        <h2 className="display" style={{ fontSize: 18, margin: "0 0 14px" }}>WhatsApp Massal</h2>
-        <form onSubmit={handleWa} style={{ display: "grid", gap: 14 }}>
-          <label style={labelStyle}>
+      <Card className="max-w-[640px]">
+        <h2 className="display text-[18px] mt-0 mr-0 mb-[14px] ml-0">WhatsApp Massal</h2>
+        <form className="grid gap-[14px]" onSubmit={handleWa}>
+          <label className={labelCls}>
             Kelas:
-            <select value={waKelas} onChange={(e) => setWaKelas(e.target.value)} style={selectStyle}>
+            <select value={waKelas} onChange={(e) => setWaKelas(e.target.value)} className={selectCls}>
               <option value="">— Pilih kelas —</option>
               {daftarKelas.map((k) => (
                 <option key={k.id} value={k.id}>{k.name}</option>
@@ -216,7 +195,7 @@ export default function NotifikasiAdminPage() {
             </select>
           </label>
 
-          <label style={labelStyle}>
+          <label className={labelCls}>
             Template Pesan (gunakan {"{nama}"} untuk nama siswa):
             <textarea
               value={template}
@@ -224,45 +203,28 @@ export default function NotifikasiAdminPage() {
               rows={5}
               placeholder="Contoh: Yth. orang tua {nama}, besok ada ujian matematika. Mohon pastikan ananda belajar."
               required
-              style={{
-                borderRadius: 14,
-                border: "1px solid rgba(23,23,22,.25)",
-                background: "#fffdf8",
-                padding: "10px 14px",
-                fontSize: 14,
-                fontFamily: "inherit",
-                width: "100%",
-                minHeight: 120,
-                boxSizing: "border-box",
-                resize: "vertical",
-              }}
+              className="w-full min-h-[120px] box-border resize-y rounded-[14px] border border-ink/25 bg-cream px-[14px] py-[10px] text-sm"
             />
           </label>
 
           {template && (
-            <div style={{
-              borderRadius: 14,
-              background: "#f0f4ec",
-              padding: "10px 14px",
-              fontSize: 13,
-              whiteSpace: "pre-wrap",
-            }}>
+            <div className="rounded-[14px] bg-sage pt-[10px] pr-[14px] pb-[10px] pl-[14px] text-[13px] whitespace-pre-wrap">
               <strong>Pratinjau:</strong>
-              <div style={{ marginTop: 6 }}>{preview}</div>
+              <div className="mt-1.5">{preview}</div>
             </div>
           )}
 
-          <div style={{ display: "grid" }}>
-            <Button variant="sticker" type="submit" disabled={waBusy} style={{ justifyContent: "center", width: "100%" }}>
+          <div className="grid">
+            <Button className="justify-center w-full" variant="sticker" type="submit" disabled={waBusy}>
               {waBusy ? "Mengantrekan…" : "Kirim WA"}
             </Button>
           </div>
         </form>
         {waMsg && (
-          <div style={{ marginTop: 16, display: "grid", gap: 8 }}>
-            <Note>{waMsg.text}</Note>
+          <div className="mt-4 grid gap-2">
+            <Alert>{waMsg.text}</Alert>
             {waMsg.skipped && waMsg.skipped.length > 0 && (
-              <ul style={{ fontSize: 13, color: "#74746d", margin: 0, paddingLeft: 20 }}>
+              <ul className="text-[13px] text-muted m-0 pl-5">
                 {waMsg.skipped.slice(0, 20).map((s, i) => (
                   <li key={i}>{s.name} — {s.reason}</li>
                 ))}
@@ -271,7 +233,7 @@ export default function NotifikasiAdminPage() {
             )}
           </div>
         )}
-      </Panel>
+      </Card>
     </>
   );
 }

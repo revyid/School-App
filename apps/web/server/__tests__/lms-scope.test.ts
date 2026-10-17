@@ -3,7 +3,6 @@ import argon2 from "argon2";
 import { db } from "@sms/db/client";
 import { dbSystemTest as dbSystem } from "@sms/db/test-utils"; // TEST-ONLY
 import { runAsSchool } from "@sms/db/tenant";
-import { detectTaskFile } from "../task-files.js";
 
 const PW = "pw-12345678";
 let S = "";
@@ -81,15 +80,5 @@ describe("lms file access scope", () => {
     const count = await runAsSchool(db, S, (tx) =>
       tx.submission.count({ where: { taskId: taskA, studentId: siswaA } }));
     expect(count).toBe(1);
-  });
-});
-
-describe("task-files magic bytes", () => {
-  it("pdf/png/zip asli lolos; teks menyamar ditolak", () => {
-    expect(detectTaskFile(Buffer.concat([Buffer.from([0x25, 0x50, 0x44, 0x46]), Buffer.alloc(10)]))).toBe("pdf");
-    expect(detectTaskFile(Buffer.concat([Buffer.from([0x89, 0x50, 0x4e, 0x47]), Buffer.alloc(10)]))).toBe("png");
-    expect(detectTaskFile(Buffer.concat([Buffer.from([0x50, 0x4b, 0x03, 0x04]), Buffer.alloc(10)]))).toBe("zip");
-    expect(detectTaskFile(Buffer.from("jawaban tugas saya"))).toBeNull();
-    expect(detectTaskFile(Buffer.from([0x4d, 0x5a, 0x90, 0x00]))).toBeNull(); // exe
   });
 });

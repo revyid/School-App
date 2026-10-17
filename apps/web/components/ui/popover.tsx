@@ -29,7 +29,7 @@ function PopoverContent({ className, children, ...props }: PopoverPrimitive.Popu
       <PopoverPrimitive.Popup
         data-slot="popover-content"
         className={cn(
-          "max-w-[min(92vw,24rem)] rounded-2xl border border-line bg-cream p-4 shadow-xl outline-none duration-150 data-ending-style:opacity-0 data-starting-style:opacity-0",
+          "max-w-[min(92vw,24rem)] rounded-2xl border border-line bg-cream p-4 shadow-xl outline-none menu-popup",
           className,
         )}
         {...props}

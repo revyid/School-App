@@ -5,11 +5,14 @@ import { use, useState } from "react";
 import Link from "next/link";
 import AssessChart from "@/components/AssessChart";
 import { api, useFetch } from "@/app/lib/api";
-import { PageHead, Panel, Toolbar, Note, Err } from "@/components/DashUI";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import ConfirmDialog from "@/components/ConfirmDialog";
 import { Glyph } from "@/components/Glyph";
+import { PageHead } from "@/components/ui/page-header";
+import { Card } from "@/components/ui/card";
+import { Alert } from "@/components/ui/alert";
+import { cn } from "@/lib/utils";
 
 interface Q {
   id: string; type: "MCQ" | "SORTING"; stem: string; imageUrl: string | null; videoUrl: string | null; options: string[];
@@ -95,8 +98,8 @@ export default function AsesmenKerjakanPage({ params }: { params: Promise<{ id: 
 
   return (
     <>
-      <PageHead kicker="Ujian" title={attempt.data?.assessment.title ?? "Asesmen"} desc="Kerjakan dengan jujur. Soal diacak per siswa, nilai keluar otomatis."
-        right={<Link href="/siswa/kelasku" style={{ fontWeight: 700, fontSize: 13 }}>Kembali ke Kelasku</Link>}
+      <PageHead className="font-bold text-[13px]" kicker="Ujian" title={attempt.data?.assessment.title ?? "Asesmen"} desc="Kerjakan dengan jujur. Soal diacak per siswa, nilai keluar otomatis."
+        right={<Link href="/siswa/kelasku">Kembali ke Kelasku</Link>}
       />
       {attempt.loading && !attempt.data && (
         <div className="divide-y divide-line">
@@ -111,50 +114,50 @@ export default function AsesmenKerjakanPage({ params }: { params: Promise<{ id: 
           ))}
         </div>
       )}
-      {attempt.error && <Err>Gagal: {attempt.error}</Err>}
+      {attempt.error && <Alert variant="destructive">Gagal: {attempt.error}</Alert>}
       {attempt.data && (
-        <Panel>
-          <Toolbar>
-            <h2 className="display" style={{ fontSize: 20, margin: 0, flex: 1 }}>{attempt.data.assessment.title}</h2>
-            {attempt.data.attempt.submittedAt && <Button variant="sticker" style={{ background: "#171716", color: "#fffdf8" }} type="button" onClick={() => window.print()}>Cetak PDF</Button>}
-          </Toolbar>
+        <Card>
+          <div className="mb-4 flex flex-wrap items-center gap-2.5">
+            <h2 className="display text-xl m-0 flex-1">{attempt.data.assessment.title}</h2>
+            {attempt.data.attempt.submittedAt && <Button className="bg-ink text-cream" variant="sticker"  type="button" onClick={() => window.print()}>Cetak PDF</Button>}
+          </div>
           {attempt.data.attempt.submittedAt ? (
             <>
-              <Note>Sudah dikumpulkan{attempt.data.attempt.score != null ? `, skor: ${attempt.data.attempt.score}` : ""}. Hasil di bawah read-only, tidak bisa diubah.</Note>
+              <Alert>Sudah dikumpulkan{attempt.data.attempt.score != null ? `, skor: ${attempt.data.attempt.score}` : ""}. Hasil di bawah read-only, tidak bisa diubah.</Alert>
               {result.data?.submitted && (
                 <>
                   {result.data.questions?.map((q, qi) => (
-                    <div key={q.id} style={{ marginBottom: 18, padding: 14, border: "1px solid rgba(23,23,22,.14)", borderRadius: 16, background: q.isCorrect ? "#f2f7ec" : "#fffdf8" }}>
-                      <p style={{ fontWeight: 700, margin: "0 0 10px" }}>{qi + 1}. {q.stem}</p>
+                    <div key={q.id} className={cn("mb-[18px] p-[14px] border border-line rounded-2xl", q.isCorrect ? "bg-sage" : "bg-cream")}>
+                      <p className="font-bold mt-0 mr-0 mb-[10px] ml-0">{qi + 1}. {q.stem}</p>
                       {q.imageUrl && (
                         // eslint-disable-next-line @next/next/no-img-element
-                        <img src={q.imageUrl} alt="gambar soal" style={{ maxWidth: "100%", borderRadius: 12, marginBottom: 10 }} />
+                        <img className="max-w-full rounded-xl mb-[10px]" src={q.imageUrl} alt="gambar soal" />
                       )}
                       {q.videoUrl && (
                         // eslint-disable-next-line jsx-a11y/media-has-caption
-                        <video src={q.videoUrl} controls preload="metadata" style={{ maxWidth: "100%", borderRadius: 12, marginBottom: 10 }} />
+                        <video className="max-w-full rounded-xl mb-[10px]" src={q.videoUrl} controls preload="metadata" />
                       )}
                       {q.type === "MCQ" ? (
-                        <ul style={{ listStyle: "none", margin: 0, padding: 0, display: "grid", gap: 6 }}>
+                        <ul className="list-none m-0 p-0 grid gap-[6px]">
                           {q.options.map((o, i) => {
                             const benar = i === q.correctIndex;
                             const dipilih = i === q.pickedIndex;
                             return (
-                              <li key={i} style={{
-                                padding: "9px 12px", borderRadius: 12,
-                                border: benar ? "2px solid #50643e" : "1px solid rgba(23,23,22,.14)",
-                                background: benar ? "#dcead0" : dipilih ? "#f6e8e3" : "#fffdf8",
-                                fontWeight: benar || dipilih ? 700 : 400,
-                              }}>
+                              <li key={i} className={cn(
+                                "rounded-xl px-3 py-[9px] border",
+                                benar ? "border-2 border-olive-deep bg-mint-soft font-bold"
+                                  : dipilih ? "border-line bg-blush font-bold"
+                                  : "border-line bg-cream",
+                              )}>
                                 <span>{o}</span>
-                                {benar && <span style={{ marginLeft: 8, fontSize: 12, color: "#50643e" }}>✓ benar</span>}
-                                {!benar && dipilih && <span style={{ marginLeft: 8, fontSize: 12, color: "#e85e43" }}>✗ jawabanmu</span>}
+                                {benar && <span className="ml-2 text-xs text-olive-deep">✓ benar</span>}
+                                {!benar && dipilih && <span className="ml-2 text-xs text-terracotta-deep">✗ jawabanmu</span>}
                               </li>
                             );
                           })}
                         </ul>
                       ) : (
-                        <div style={{ display: "grid", gap: 6, fontSize: 13 }}>
+                        <div className="grid gap-[6px] text-[13px]">
                           <div><strong>Urutan benar:</strong> {q.correctSeq.join(" → ")}</div>
                           <div><strong>Jawabanmu:</strong> {q.pickedSeq.join(" → ")}</div>
                         </div>
@@ -162,8 +165,8 @@ export default function AsesmenKerjakanPage({ params }: { params: Promise<{ id: 
                     </div>
                   ))}
                   {showChart && result.data.stats && result.data.stats.length > 0 && (
-                    <div style={{ marginTop: 8, maxWidth: 720 }}>
-                      <h3 className="display" style={{ fontSize: 16, margin: "0 0 8px" }}>Chart kelas: persentase benar per soal</h3>
+                    <div className="mt-2 max-w-[720px]">
+                      <h3 className="display text-base mt-0 mr-0 mb-2 ml-0">Chart kelas: persentase benar per soal</h3>
                       <AssessChart
                         labels={result.data.stats.map((_, i) => `Soal ${i + 1}`)}
                         pcts={result.data.stats.map((s) => s.pct)}
@@ -177,21 +180,21 @@ export default function AsesmenKerjakanPage({ params }: { params: Promise<{ id: 
           ) : (
             <>
               {attempt.data.questions.map((q, qi) => (
-                <div key={q.id} style={{ marginBottom: 18, padding: 14, border: "1px solid rgba(23,23,22,.14)", borderRadius: 16 }}>
-                  <p style={{ fontWeight: 700, margin: "0 0 10px" }}>{qi + 1}. {q.stem}</p>
+                <div className="mb-[18px] p-[14px] border border-solid border-line rounded-2xl" key={q.id}>
+                  <p className="font-bold mt-0 mr-0 mb-[10px] ml-0">{qi + 1}. {q.stem}</p>
                   {q.imageUrl && (
                     // eslint-disable-next-line @next/next/no-img-element
-                    <img src={q.imageUrl} alt="gambar soal" style={{ maxWidth: "100%", borderRadius: 12, marginBottom: 10 }} />
+                    <img className="max-w-full rounded-xl mb-[10px]" src={q.imageUrl} alt="gambar soal" />
                   )}
                   {q.videoUrl && (
                     // eslint-disable-next-line jsx-a11y/media-has-caption
-                    <video src={q.videoUrl} controls preload="metadata" style={{ maxWidth: "100%", borderRadius: 12, marginBottom: 10 }} />
+                    <video className="max-w-full rounded-xl mb-[10px]" src={q.videoUrl} controls preload="metadata" />
                   )}
                   {q.type === "MCQ" ? (
-                    <ul style={{ listStyle: "none", margin: 0, padding: 0, display: "grid", gap: 6 }}>
+                    <ul className="list-none m-0 p-0 grid gap-[6px]">
                       {q.options.map((o, i) => (
                         <li key={i}>
-                          <label style={{ display: "flex", gap: 10, alignItems: "flex-start", padding: "9px 12px", borderRadius: 12, border: "1px solid rgba(23,23,22,.14)", cursor: "pointer", background: mcq[q.id] === i ? "#eeeadd" : "#fffdf8" }}>
+                          <label className={cn("flex items-start gap-[10px] px-3 py-[9px] rounded-xl border border-line cursor-pointer", mcq[q.id] === i ? "bg-paper-deep" : "bg-cream")}>
                             <input
                               type="radio" name={q.id} checked={mcq[q.id] === i}
                               onChange={() => setMcq({ ...mcq, [q.id]: i })}
@@ -201,10 +204,10 @@ export default function AsesmenKerjakanPage({ params }: { params: Promise<{ id: 
                       ))}
                     </ul>
                   ) : (
-                    <ol style={{ margin: 0, paddingLeft: 20, display: "grid", gap: 6 }}>
+                    <ol className="m-0 pl-5 grid gap-[6px]">
                       {(sort[q.id] ?? q.options).map((o, i) => (
-                        <li key={`${o}-${i}`} style={{ display: "flex", gap: 8, alignItems: "center" }}>
-                          <span style={{ flex: 1 }}>{o}{" "}</span>
+                        <li className="flex gap-2 items-center" key={`${o}-${i}`}>
+                          <span className="flex-1">{o}{" "}</span>
                           <Button variant="sticker-ghost" type="button" onClick={() => move(q.id, q.options, i, -1)}><Glyph name="arrowUp" size={14} /></Button>
                           <Button variant="sticker-ghost" type="button" onClick={() => move(q.id, q.options, i, 1)}><Glyph name="arrowDown" size={14} /></Button>
                         </li>
@@ -213,14 +216,14 @@ export default function AsesmenKerjakanPage({ params }: { params: Promise<{ id: 
                   )}
                 </div>
               ))}
-              <Toolbar>
+              <div className="mb-4 flex flex-wrap items-center gap-2.5">
                 <Button variant="sticker" type="button" onClick={kumpul} disabled={submitting}>{submitting ? "Mengumpulkan…" : "Kumpulkan jawaban"}</Button>
-              </Toolbar>
+              </div>
             </>
           )}
-        </Panel>
+        </Card>
       )}
-      {msg && <p style={{ fontWeight: 700 }}>{msg}</p>}
+      {msg && <p className="font-bold">{msg}</p>}
       <ConfirmDialog
         open={confirmKumpul}
         title="Kumpulkan Jawaban"

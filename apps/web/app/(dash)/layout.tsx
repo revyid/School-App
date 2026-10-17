@@ -9,7 +9,6 @@ const MENUS: Record<string, { utama: MenuItem[]; lainnya: MenuItem[]; groups?: {
       { href: "/siswa", label: "Dasbor", icon: "dasbor" },
       { href: "/siswa/kelasku", label: "Kelasku", icon: "kelas" },
       { href: "/siswa/jadwal", label: "Jadwal", icon: "jadwal" },
-      { href: "/siswa/pengumuman", label: "Pengumuman", icon: "pengumuman" },
       { href: "/siswa/inbox", label: "Pesan", icon: "inbox" },
       { href: "/siswa/izin", label: "Izin", icon: "izin" },
     ],

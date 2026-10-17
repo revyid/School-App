@@ -260,7 +260,11 @@ export default function SiswaTugasDetail({ params }: { params: Promise<{ id: str
           )}
           {progress !== null && (
             <div className="h-2 w-full overflow-hidden rounded-full bg-paper-deep">
-              <div className="h-full bg-olive-deep transition-all" style={{ width: `${progress}%` }} />
+              <div
+                className="h-full bg-olive-deep transition-all"
+                // dynamic: lebar mengikuti progres pengumpulan
+                style={{ width: `${progress}%` }}
+              />
             </div>
           )}
           <Button
@@ -281,7 +285,7 @@ export default function SiswaTugasDetail({ params }: { params: Promise<{ id: str
 
       {/* 5. Hasil */}
       {detail.data.mySubmission && (
-        <section className="card p-5" style={{ background: "var(--color-paper-deep)" }}>
+        <section className="card p-5 bg-paper-deep">
           <div className="flex items-center gap-2">
             <CheckCircle2Icon className="size-5 text-olive-deep" />
             <h2 className="text-sm font-extrabold uppercase tracking-wide text-muted-strong">

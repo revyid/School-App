@@ -7,11 +7,15 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { io, type Socket } from "socket.io-client";
 import { api, useFetch } from "@/app/lib/api";
-import { PageHead, Panel, Toolbar, TextInput, Note } from "@/components/DashUI";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Badge, statusVariant } from "@/components/ui/badge";
 import SwipeToast from "@/components/SwipeToast";
 import { useCamera } from "@/components/useCamera";
+import { PageHead } from "@/components/ui/page-header";
+import { Card } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Alert } from "@/components/ui/alert";
+import { cn } from "@/lib/utils";
 
 interface ScanItem { token: string; at: number; tries: number }
 const QUEUE_KEY = "att-offline-queue";
@@ -287,24 +291,24 @@ export default function ScannerPage() {
         kicker="Absensi"
         title="Scanner kehadiran"
         desc="Arahkan kamera ke kartu QR siswa. Bisa offline, antrean terkirim otomatis."
-        right={<a className={buttonVariants({ variant: "sticker-ghost" })} style={{ textDecoration: "none" }} href="/guru/kehadiran">Lihat rekap hari ini</a>}
+        right={<a className={cn(buttonVariants({ variant: "sticker-ghost" }), "no-underline")} href="/guru/kehadiran">Lihat rekap hari ini</a>}
       />
-      <Panel style={{ maxWidth: 640 }}>
+      <Card className="max-w-[640px]">
         {offlineCount > 0 && (
-          <p style={{ margin: "0 0 12px" }}><Badge variant={statusVariant("PENDING")}>Antrean offline: {offlineCount} (otomatis dikirim saat online)</Badge></p>
+          <p className="mt-0 mr-0 mb-3 ml-0"><Badge variant={statusVariant("PENDING")}>Antrean offline: {offlineCount} (otomatis dikirim saat online)</Badge></p>
         )}
-        <Toolbar>
+        <div className="mb-4 flex flex-wrap items-center gap-2.5">
           {!cam.streaming
-            ? <Button variant="sticker" style={{ background: "#171716", color: "#fffdf8" }} type="button" onClick={() => { void startCamera(); }}>Nyalakan kamera</Button>
+            ? <Button className="bg-ink text-cream" variant="sticker"  type="button" onClick={() => { void startCamera(); }}>Nyalakan kamera</Button>
             : <Button variant="sticker-ghost" type="button" onClick={stopCamera}>Matikan kamera</Button>}
           <Button variant="sticker-ghost" type="button" onClick={warmVoice}>Aktifkan suara</Button>
-        </Toolbar>
+        </div>
 
         {/* KONTROL VOLUME & KECEPATAN SUARA TTS */}
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 14, background: "rgba(23,23,22,.04)", border: "1px solid rgba(23,23,22,.1)", borderRadius: 14, padding: "12px 16px", margin: "12px 0 16px" }}>
-          <label style={{ display: "grid", gap: 6, fontSize: 13, fontWeight: 700, color: "#171716" }}>
-            <span>Volume TTS: <span style={{ color: "#e85e43" }}>{vol}%</span></span>
-            <input
+        <div className="grid grid-cols-[repeat(auto-fit,_minmax(180px,_1fr))] gap-[14px] bg-ink/5 border border-solid border-line rounded-[14px] pt-3 pr-4 pb-3 pl-4 mt-3 mr-0 mb-4 ml-0">
+          <label className="grid gap-[6px] text-[13px] font-bold text-ink">
+            <span>Volume TTS: <span className="text-terracotta-deep">{vol}%</span></span>
+            <input className="accent-terracotta cursor-pointer"
               type="range"
               min="0"
               max="100"
@@ -316,13 +320,13 @@ export default function ScannerPage() {
                 voiceVol = nv / 100;
                 try { localStorage.setItem("tts-vol", String(nv)); } catch {}
               }}
-              style={{ accentColor: "#e85e43", cursor: "pointer" }}
+              
             />
           </label>
 
-          <label style={{ display: "grid", gap: 6, fontSize: 13, fontWeight: 700, color: "#171716" }}>
-            <span>Kecepatan: <span style={{ color: "#e85e43" }}>{rate}x</span></span>
-            <input
+          <label className="grid gap-[6px] text-[13px] font-bold text-ink">
+            <span>Kecepatan: <span className="text-terracotta-deep">{rate}x</span></span>
+            <input className="accent-terracotta cursor-pointer"
               type="range"
               min="0.5"
               max="2.0"
@@ -334,35 +338,35 @@ export default function ScannerPage() {
                 voiceRate = nr;
                 try { localStorage.setItem("tts-rate", String(nr)); } catch {}
               }}
-              style={{ accentColor: "#e85e43", cursor: "pointer" }}
+              
             />
           </label>
         </div>
-        <Note>Di iPhone: ketuk “Aktifkan suara” sekali agar nama terbaca lantang saat scan.</Note>
+        <Alert>Di iPhone: ketuk “Aktifkan suara” sekali agar nama terbaca lantang saat scan.</Alert>
         {cam.streaming && (
-          <p style={{ fontSize: 13, fontWeight: 700, color: scanState === "qr-asing" ? "#c94b35" : "#575752", margin: "8px 0 0" }}>
+          <p className={cn("mt-2 text-[13px] font-bold", scanState === "qr-asing" ? "text-terracotta-dark" : "text-muted-strong")}>
             {scanState === "mencari" && "Mencari QR — arahkan kamera ke kartu QR siswa…"}
             {scanState === "tanpa-decoder" && "Decoder tidak tersedia di browser ini — gunakan input token manual di bawah."}
             {scanState === "qr-asing" && `QR tak dikenal${scanDetail ? `: ${scanDetail}` : ""} — pastikan QR dari kartu siswa.`}
             {scanState === "idle" && ""}
           </p>
         )}
-        <video ref={videoRef} playsInline muted style={{ width: "100%", maxWidth: 480, background: "#171716", borderRadius: 16 }} />
-        <form onSubmit={(e) => { e.preventDefault(); if (manual.trim()) { void postToken(manual.trim()); setManual(""); } }} style={{ display: "grid", gap: 10, marginTop: 12, maxWidth: 480 }}>
-          <label style={{ display: "grid", gap: 6, fontSize: 13, color: "#74746d" }}>
+        <video className="w-full max-w-[480px] bg-ink rounded-2xl" ref={videoRef} playsInline muted  />
+        <form className="grid gap-[10px] mt-3 max-w-[480px]" onSubmit={(e) => { e.preventDefault(); if (manual.trim()) { void postToken(manual.trim()); setManual(""); } }}>
+          <label className="grid gap-[6px] text-[13px] text-muted">
             Token manual (bila kamera tak mendukung):
-            <TextInput value={manual} onChange={(e) => setManual(e.target.value)} placeholder="sms1-…" />
+            <Input value={manual} onChange={(e) => setManual(e.target.value)} placeholder="sms1-…" />
           </label>
-          <Toolbar><Button variant="sticker" type="submit">Catat hadir</Button></Toolbar>
+          <div className="mb-4 flex flex-wrap items-center gap-2.5"><Button variant="sticker" type="submit">Catat hadir</Button></div>
         </form>
-        {msg && <p style={{ fontWeight: 700 }}>{msg}</p>}
+        {msg && <p className="font-bold">{msg}</p>}
         {lastScan && (
-          <p style={{ padding: "10px 14px", borderRadius: 14, background: lastScan.duplicate ? "#eeeadd" : "#aec6a4", fontWeight: 700 }}>
+          <p className={cn("rounded-[14px] px-[14px] py-[10px] font-bold", lastScan.duplicate ? "bg-paper-deep" : "bg-mint")}>
             {lastScan.duplicate ? "Duplikat — " : "Hadir — "}
             {lastScan.name}{lastScan.className ? ` (${lastScan.className})` : ""}
           </p>
         )}
-      </Panel>
+      </Card>
 
       {/* TOAST POPUP NOTIFIKASI HASIL SCAN */}
       <SwipeToast
@@ -370,9 +374,9 @@ export default function ScannerPage() {
         onClose={() => setToastScan(null)}
         title={toastScan?.title ?? ""}
         description={toastScan?.desc ?? ""}
-        background={toastScan?.duplicate ? "#3d3215" : "#1a3b1e"}
-        color="#fff"
-        fuseColor={toastScan?.duplicate ? "#f5c94a" : "#4ade80"}
+        background={toastScan?.duplicate ? "var(--color-cocoa)" : "var(--color-forest)"}
+        color="var(--color-cream)"
+        fuseColor={toastScan?.duplicate ? "var(--color-sun)" : "var(--color-mint)"}
         width={360}
         radius={18}
         duration={4000}

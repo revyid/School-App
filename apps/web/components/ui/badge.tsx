@@ -12,7 +12,7 @@ const badgeVariants = cva(
         default: "border-transparent bg-primary text-primary-foreground",
         secondary: "border-transparent bg-secondary text-secondary-foreground",
         success: "border-transparent bg-olive/15 text-olive-deep",
-        warning: "border-transparent bg-sun/25 text-[#6b5010]",
+        warning: "border-transparent bg-sun/25 text-sun-deep",
         danger: "border-transparent bg-destructive/10 text-destructive",
         outline: "border-border text-ink",
       },
@@ -35,7 +35,7 @@ function Badge({
   );
 }
 
-// Status domain → varian (migrasi dari DashUI.Badge).
+// Status domain → varian.
 export function statusVariant(status: string): "success" | "warning" | "danger" | "outline" | "secondary" | "default" {
   switch (status.toUpperCase()) {
     case "HADIR": case "SUDAH": case "AKTIF": case "APPROVED": return "success";

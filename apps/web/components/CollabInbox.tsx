@@ -3,13 +3,18 @@
 // Inbox kolaborasi: kirim ke multi-guru via dropdown multiselect + toggle anonim + lampiran.
 import { useRef, useState } from "react";
 import { api, useFetch } from "@/app/lib/api";
-import { PageHead, Panel, Toolbar, TextInput, Note } from "@/components/DashUI";
+import { PageHead } from "@/components/ui/page-header";
+import { Card } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Alert } from "@/components/ui/alert";
 import { Badge, statusVariant } from "@/components/ui/badge";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import UploadPopup from "@/components/UploadPopup";
+import { cn } from "@/lib/utils";
 import { ChevronDownIcon, XIcon, CheckIcon } from "lucide-react";
 
 interface Msg { id: string; authorId: string | null; body: string; fileName: string | null; fileMime?: string | null; createdAt: string }
@@ -48,7 +53,7 @@ function GuruDropdown({ gurus, selected, onChange, loading }: {
             </span>
           ))}
         </span>
-        <ChevronDownIcon size={14} className="shrink-0 text-muted-strong" style={{ transform: open ? "rotate(180deg)" : undefined, transition: "transform .15s" }} />
+        <ChevronDownIcon size={14} className={cn("shrink-0 text-muted-strong transition-transform", open && "rotate-180")} />
       </button>
 
       {open && (
@@ -58,8 +63,8 @@ function GuruDropdown({ gurus, selected, onChange, loading }: {
             const checked = selected.includes(g.id);
             return (
               <button key={g.id} type="button" onClick={() => toggle(g.id)} className="flex w-full items-center gap-3 px-4 py-2.5 text-left text-[13px] transition-colors hover:bg-paper">
-                <span className="flex size-4 shrink-0 items-center justify-center rounded-md border-2" style={checked ? { background: "#171716", borderColor: "#171716" } : { borderColor: "rgba(23,23,22,.3)" }}>
-                  {checked && <CheckIcon size={10} color="#fff" strokeWidth={3} />}
+                <span className={cn("flex size-4 shrink-0 items-center justify-center rounded-md border-2", checked ? "border-ink bg-ink" : "border-input")}>
+                  {checked && <CheckIcon size={10} strokeWidth={3} className="text-cream" />}
                 </span>
                 <span className="flex-1 font-medium">{g.name}</span>
                 <span className="text-[11px] text-muted-strong">{g.email}</span>
@@ -114,8 +119,8 @@ export default function CollabPage({ role }: { role: "GURU" | "SISWA" }) {
   return (
     <>
       <PageHead kicker="Komunikasi" title="Inbox kolaborasi" desc="Kirim pesan ke guru dan lanjutkan percakapan dalam thread." />
-      <Toolbar><Button variant="sticker" onClick={() => setNewOpen(true)}>+ Pesan baru</Button></Toolbar>
-      {msg && <p className="mb-3 text-[13px] font-bold" style={{ color: msg.startsWith("Terkirim") ? "#50643e" : "#c94b35" }}>{msg}</p>}
+      <div className="mb-4 flex flex-wrap items-center gap-2.5"><Button variant="sticker" onClick={() => setNewOpen(true)}>+ Pesan baru</Button></div>
+      {msg && <Alert className={cn("mb-3", msg.startsWith("Terkirim") ? "text-olive-deep" : "text-terracotta-dark")}>{msg}</Alert>}
       <Dialog open={newOpen} onOpenChange={setNewOpen}>
         <DialogContent>
           <DialogHeader>
@@ -129,18 +134,17 @@ export default function CollabPage({ role }: { role: "GURU" | "SISWA" }) {
           </label>
           <label className="grid gap-1.5 text-[12px] font-bold uppercase tracking-wide text-muted-strong">
             Subjek
-            <TextInput value={subject} onChange={(e) => setSubject(e.target.value)} required maxLength={200} placeholder="Topik percakapan…" />
+            <Input value={subject} onChange={(e) => setSubject(e.target.value)} required maxLength={200} placeholder="Topik percakapan…" />
           </label>
           <label className="grid gap-1.5 text-[12px] font-bold uppercase tracking-wide text-muted-strong">
             Pesan
-            <textarea
+            <Textarea
               value={body}
               onChange={(e) => setBody(e.target.value)}
               required
               rows={4}
               maxLength={10000}
               placeholder="Tulis pesan di sini…"
-              className="rounded-2xl border border-line bg-cream px-3 py-2.5 text-[13px] leading-relaxed focus:outline-none focus:ring-1 focus:ring-ink/30"
             />
           </label>
           {role === "SISWA" && (
@@ -153,45 +157,45 @@ export default function CollabPage({ role }: { role: "GURU" | "SISWA" }) {
             Lampiran (opsional)
           </label>
           <UploadPopup label="Lampirkan file" onFile={setFile} />
-          <Toolbar><Button variant="sticker" type="submit">Kirim</Button></Toolbar>
+          <div className="mb-4 flex flex-wrap items-center gap-2.5"><Button variant="sticker" type="submit">Kirim</Button></div>
         </form>
         </DialogContent>
       </Dialog>
 
-      <Panel>
-        <h2 className="display" style={{ fontSize: 18, margin: "0 0 12px" }}>Thread</h2>
-        {loading && <Note>Memuat…</Note>}
-        {data && data.rows.length === 0 && <Note>Belum ada percakapan.</Note>}
+      <Card>
+        <h2 className="display mb-3 text-[18px]">Thread</h2>
+        {loading && <Alert>Memuat…</Alert>}
+        {data && data.rows.length === 0 && <Alert>Belum ada percakapan.</Alert>}
         {data && data.rows.length > 0 && (
-          <ul style={{ listStyle: "none", margin: 0, padding: 0, display: "grid", gap: 12 }}>
+          <ul className="m-0 grid list-none gap-3 p-0">
             {data.rows.map((t) => (
-              <li key={t.id} style={{ padding: 14, border: "1px solid rgba(23,23,22,.14)", borderRadius: 16 }}>
-                <p style={{ margin: "0 0 4px", display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+              <li key={t.id} className="rounded-2xl border border-line p-3.5">
+                <p className="m-0 mb-1 flex flex-wrap items-center gap-2">
                   <strong>{t.subject}</strong>
-                  <span style={{ fontSize: 12.5, color: "#74746d" }}>dari {t.sender}</span>
+                  <span className="text-[12.5px] text-muted">dari {t.sender}</span>
                   {t.anonymous && !t.revealed && <Badge variant={statusVariant("PENDING")}>anonim</Badge>}
                 </p>
-                <ul style={{ margin: "8px 0", paddingLeft: 18, display: "grid", gap: 4, fontSize: 14 }}>
+                <ul className="my-2 grid list-disc gap-1 pl-[18px] text-sm">
                   {t.messages.map((m) => (
                     <li key={m.id}>
                       {m.body}{" "}
                       {m.fileName && (
-                        <span style={{ display: "grid", gap: 6, marginTop: 8, maxWidth: "100%" }}>
+                        <span className="mt-2 grid max-w-full gap-1.5">
                           <a href={`/api/collab/${t.id}/file?m=${m.id}`} target="_blank" rel="noreferrer">Buka/unduh {m.fileName}</a>
                           {/* eslint-disable-next-line @next/next/no-img-element */}
-                          {m.fileMime?.startsWith("image/") && <img src={`/api/collab/${t.id}/file?m=${m.id}`} alt={`Lampiran ${m.fileName}`} style={{ maxWidth: "100%", width: "min(420px, 100%)", maxHeight: 360, objectFit: "contain", borderRadius: 10, border: "1px solid rgba(23,23,22,.14)" }} />}
-                          {m.fileMime === "application/pdf" && <iframe title={`Preview ${m.fileName}`} src={`/api/collab/${t.id}/file?m=${m.id}`} style={{ width: "100%", minHeight: 280, border: "1px solid rgba(23,23,22,.14)", borderRadius: 10 }} />}
+                          {m.fileMime?.startsWith("image/") && <img src={`/api/collab/${t.id}/file?m=${m.id}`} alt={`Lampiran ${m.fileName}`} className="max-h-[360px] w-[min(420px,100%)] rounded-[10px] border border-line object-contain" />}
+                          {m.fileMime === "application/pdf" && <iframe title={`Preview ${m.fileName}`} src={`/api/collab/${t.id}/file?m=${m.id}`} className="min-h-[280px] w-full rounded-[10px] border border-line" />}
                         </span>
                       )}
                     </li>
                   ))}
                 </ul>
-                <span style={{ display: "flex", gap: 6 }}>
-                  <TextInput
+                <span className="flex gap-1.5">
+                  <Input
                     value={replies[t.id] ?? ""}
                     onChange={(e) => setReplies({ ...replies, [t.id]: e.target.value })}
                     placeholder="balas…"
-                    style={{ flex: 1 }}
+                    className="flex-1"
                   />
                   <Button variant="sticker-ghost" type="button" onClick={() => balas(t.id)}>Balas</Button>
                 </span>
@@ -199,7 +203,7 @@ export default function CollabPage({ role }: { role: "GURU" | "SISWA" }) {
             ))}
           </ul>
         )}
-      </Panel>
+      </Card>
     </>
   );
 }

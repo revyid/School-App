@@ -1,7 +1,7 @@
 .swipe-toast {
-  --st-bg: #27272a;
-  --st-ink: #f5f5f5;
-  --st-fuse: #e85e43;
+  --st-bg: var(--color-ink);
+  --st-ink: var(--color-paper);
+  --st-fuse: var(--color-terracotta);
   --st-fuse-h: 2px;
   --st-w: 356px;
   --st-radius: 12px;

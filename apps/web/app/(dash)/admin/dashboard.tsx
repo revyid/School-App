@@ -6,6 +6,7 @@ import Image from "next/image";
 import Link from "next/link";
 import Reveal from "@/components/Reveal";
 import { useFetch } from "@/app/lib/api";
+import { cn } from "@/lib/utils";
 
 export default function AdminDashboard() {
   const students = useFetch<{ rows: unknown[]; total: number }>("/api/students?perPage=1");
@@ -19,107 +20,107 @@ export default function AdminDashboard() {
   const metric = (hook: { loading: boolean; error?: unknown; data?: { total?: number; rows?: unknown[] } | null }) => hook.loading ? "…" : hook.error ? "—" : (hook.data?.total ?? hook.data?.rows?.length ?? 0);
 
   return (
-    <div style={{ display: "grid", gap: 20 }}>
+    <div className="grid gap-5">
       <Reveal>
-        <section className="card" style={{ padding: "clamp(20px, 3vw, 32px)", background: "#171716", color: "#fffdf8", display: "flex", alignItems: "center", gap: 24, overflow: "hidden", position: "relative" }}>
-          <div style={{ flex: 1, minWidth: 0, position: "relative", zIndex: 2 }}>
-          <p className="kicker" style={{ color: "#f5c94a" }}>Pusat kendali sekolah</p>
-          <h1 className="display" style={{ fontSize: "clamp(28px, 4vw, 46px)", margin: "8px 0" }}>
+        <section className="card p-[clamp(20px,_3vw,_32px)] bg-ink text-cream flex items-center gap-[24px] overflow-hidden relative">
+          <div className="flex-1 min-w-[0px] relative z-[2]">
+          <p className="kicker text-sun-soft">Pusat kendali sekolah</p>
+          <h1 className="display text-[clamp(28px,_4vw,_46px)] mt-2 mr-0 mb-2 ml-0">
             Semua urusan,<br />satu meja.
           </h1>
-          <p style={{ opacity: 0.8, maxWidth: 460, margin: "0 0 16px" }}>
+          <p className="opacity-[0.8] max-w-[460px] mt-0 mr-0 mb-4 ml-0">
             {pendingIzin > 0
               ? `${pendingIzin} pengajuan izin menunggu keputusan.`
               : "Antrean izin bersih."}{" "}
             {wa.data && wa.data.connected === false ? "Sesi WhatsApp putus — sambungkan ulang di halaman WA." : ""}
           </p>
-          <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
-            <Link href="/admin/pengguna?tab=siswa" className="btn-sticker" style={{ background: "#f5c94a", color: "#171716", borderColor: "#f5c94a" }}>
+          <div className="flex gap-[10px] flex-wrap">
+            <Link href="/admin/pengguna?tab=siswa" className="btn-sticker bg-sun text-ink border-sun">
               Impor data
             </Link>
-            <Link href="/admin/wa" className="btn-sticker" style={{ background: "#fffdf8", color: "#171716", borderColor: "#fffdf8" }}>
+            <Link href="/admin/wa" className="btn-sticker bg-cream text-ink border-cream">
               Status WhatsApp
             </Link>
           </div>
           </div>
-          <div className="dash-hero-char" style={{ position: "relative", flexShrink: 0, width: 180, height: 180 }}>
+          <div className="dash-hero-char relative shrink-0 w-[180px] h-[180px]">
             <Image
               src="/assets/student-book.png"
               alt="Operasional sekolah"
               fill
-              className="anim-floaty"
-              style={{ objectFit: "contain", borderRadius: 16, zIndex: 1 }}
+              className="anim-floaty object-contain rounded-2xl z-[1]"
+             
               priority
             />
           </div>
         </section>
       </Reveal>
 
-      <section style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(148px, 1fr))", gap: 14 }} className="dash-metrics">
+      <section className="dash-metrics grid grid-cols-[repeat(auto-fit,minmax(148px,1fr))] gap-[14px]">
         <Reveal delay={60}>
-          <div className="card card-lift" style={{ padding: 18, minHeight: 148 }}>
-            <p style={{ fontSize: 12, color: "#74746d", margin: 0 }}>Siswa aktif</p>
-            <p className="display" style={{ fontSize: 40, margin: "6px 0" }}>
+          <div className="card card-lift p-[18px] min-h-[148px]">
+            <p className="text-xs text-muted m-0">Siswa aktif</p>
+            <p className="display text-[40px] mt-1.5 mr-0 mb-1.5 ml-0">
               {students.loading ? "…" : metric(students)}
             </p>
-            <p style={{ fontSize: 12, color: "#74746d", margin: 0 }}>
-              <Link href="/admin/pengguna?tab=siswa" style={{ fontWeight: 700, color: "#171716" }}>Kelola siswa</Link>
+            <p className="text-xs text-muted m-0">
+              <Link className="font-bold text-ink" href="/admin/pengguna?tab=siswa">Kelola siswa</Link>
             </p>
           </div>
         </Reveal>
         <Reveal delay={120}>
-          <div className="card card-lift" style={{ padding: 18, minHeight: 148 }}>
-            <p style={{ fontSize: 12, color: "#74746d", margin: 0 }}>Guru</p>
-            <p className="display" style={{ fontSize: 40, margin: "6px 0" }}>
+          <div className="card card-lift p-[18px] min-h-[148px]">
+            <p className="text-xs text-muted m-0">Guru</p>
+            <p className="display text-[40px] mt-1.5 mr-0 mb-1.5 ml-0">
               {teachers.loading ? "…" : metric(teachers)}
             </p>
-            <p style={{ fontSize: 12, color: "#74746d", margin: 0 }}>
-              <Link href="/admin/pengguna?tab=guru" style={{ fontWeight: 700, color: "#171716" }}>Kelola guru</Link>
+            <p className="text-xs text-muted m-0">
+              <Link className="font-bold text-ink" href="/admin/pengguna?tab=guru">Kelola guru</Link>
             </p>
           </div>
         </Reveal>
         <Reveal delay={180}>
-          <div className="card card-lift" style={{ background: "#97c4db", padding: 18, minHeight: 148 }}>
-            <p style={{ fontSize: 12, margin: 0 }}>Kelas</p>
-            <p className="display" style={{ fontSize: 40, margin: "6px 0" }}>
+          <div className="card card-lift bg-sky p-[18px] min-h-[148px]">
+            <p className="text-xs m-0">Kelas</p>
+            <p className="display text-[40px] mt-1.5 mr-0 mb-1.5 ml-0">
               {classes.loading ? "…" : metric(classes)}
             </p>
-            <p style={{ fontSize: 12, margin: 0 }}>
-              <Link href="/admin/kelas" style={{ fontWeight: 700, color: "#171716" }}>Kelola kelas</Link>
+            <p className="text-xs m-0">
+              <Link className="font-bold text-ink" href="/admin/kelas">Kelola kelas</Link>
             </p>
           </div>
         </Reveal>
         <Reveal delay={240}>
-          <div className="card card-lift" style={{ background: pendingIzin > 0 ? "#e85e43" : "#aec6a4", color: pendingIzin > 0 ? "#fffdf8" : "#171716", padding: 18, minHeight: 148 }}>
-            <p style={{ fontSize: 12, margin: 0, opacity: 0.9 }}>Izin pending</p>
-            <p className="display" style={{ fontSize: 40, margin: "6px 0" }}>
+          <div className={cn("card card-lift p-[18px] min-h-[148px]", pendingIzin > 0 ? "bg-terracotta-deep text-cream" : "bg-mint text-ink")}>
+            <p className="text-xs m-0 opacity-[0.9]">Izin pending</p>
+            <p className="display text-[40px] mt-1.5 mr-0 mb-1.5 ml-0">
               {leave.loading ? "…" : leave.error ? "—" : pendingIzin}
             </p>
-            <p style={{ fontSize: 12, margin: 0 }}>
+            <p className="text-xs m-0">
               {pendingIzin > 0 ? "Perlu perhatian" : "Semua beres"}
             </p>
           </div>
         </Reveal>
       </section>
 
-      <section style={{ display: "grid", gridTemplateColumns: "1.2fr 1fr", gap: 14 }} className="dash-bottom">
+      <section className="dash-bottom grid grid-cols-[1.2fr_1fr] gap-[14px]">
         <Reveal>
-          <div className="card" style={{ padding: 20 }}>
-            <h2 style={{ fontSize: 17, fontWeight: 800, margin: "0 0 12px" }}>Pengumuman terbaru</h2>
+          <div className="card p-5">
+            <h2 className="text-[17px] font-extrabold mt-0 mr-0 mb-3 ml-0">Pengumuman terbaru</h2>
             {ann.loading ? (
-              <p style={{ color: "#74746d" }}>Memuat…</p>
+              <p className="text-muted">Memuat…</p>
             ) : ann.error ? (
-              <p role="alert" style={{ color: "#c94b35" }}>Pengumuman gagal dimuat. Muat ulang halaman.</p>
+              <p className="text-terracotta-dark" role="alert">Pengumuman gagal dimuat. Muat ulang halaman.</p>
             ) : !ann.data ? (
-              <p style={{ color: "#74746d" }}>Pengumuman belum tersedia.</p>
+              <p className="text-muted">Pengumuman belum tersedia.</p>
             ) : ann.data.rows.length === 0 ? (
-              <p style={{ color: "#74746d" }}>
-                Belum ada pengumuman. <Link href="/admin/pengumuman" style={{ fontWeight: 700, color: "#171716" }}>Buat pengumuman</Link>
+              <p className="text-muted">
+                Belum ada pengumuman. <Link className="font-bold text-ink" href="/admin/pengumuman">Buat pengumuman</Link>
               </p>
             ) : (
-              <ul style={{ listStyle: "none", margin: 0, padding: 0, display: "grid", gap: 10 }}>
+              <ul className="list-none m-0 p-0 grid gap-[10px]">
                 {ann.data.rows.slice(0, 4).map((a) => (
-                  <li key={a.id} style={{ borderTop: "1px solid rgba(23,23,22,.14)", paddingTop: 10, fontWeight: 700 }}>
+                  <li className="border-t border-line pt-[10px] font-bold" key={a.id}>
                     {a.title}
                   </li>
                 ))}
@@ -128,13 +129,13 @@ export default function AdminDashboard() {
           </div>
         </Reveal>
         <Reveal delay={100}>
-          <div className="card" style={{ padding: 20, background: "#f5c94a" }}>
-            <h2 style={{ fontSize: 17, fontWeight: 800, margin: "0 0 12px" }}>Operasional</h2>
-            <ul style={{ listStyle: "none", margin: 0, padding: 0, display: "grid", gap: 10, fontSize: 14 }}>
-              <li><Link href="/admin/kehadiran" style={{ fontWeight: 700, color: "#171716" }}>Kehadiran hari ini</Link></li>
-              <li><Link href="/admin/jadwal" style={{ fontWeight: 700, color: "#171716" }}>Jadwal pelajaran</Link></li>
-              <li><Link href="/admin/pengaturan" style={{ fontWeight: 700, color: "#171716" }}>Pengaturan sekolah</Link></li>
-              <li><Link href="/admin/audit" style={{ fontWeight: 700, color: "#171716" }}>Log audit</Link></li>
+          <div className="card p-5 bg-sun">
+            <h2 className="text-[17px] font-extrabold mt-0 mr-0 mb-3 ml-0">Operasional</h2>
+            <ul className="list-none m-0 p-0 grid gap-[10px] text-sm">
+              <li><Link className="font-bold text-ink" href="/admin/kehadiran">Kehadiran hari ini</Link></li>
+              <li><Link className="font-bold text-ink" href="/admin/jadwal">Jadwal pelajaran</Link></li>
+              <li><Link className="font-bold text-ink" href="/admin/pengaturan">Pengaturan sekolah</Link></li>
+              <li><Link className="font-bold text-ink" href="/admin/audit">Log audit</Link></li>
             </ul>
           </div>
         </Reveal>

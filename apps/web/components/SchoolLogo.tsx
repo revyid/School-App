@@ -6,6 +6,7 @@
 // custom ada maupun tidak (perubahan: dulu teks hilang saat gambar gagal).
 import { useState } from "react";
 import Logo from "./Logo";
+import { cn } from "@/lib/utils";
 
 export default function SchoolLogo({ compact = false, light = false, name }: { compact?: boolean; light?: boolean; name?: string }) {
   const [ok, setOk] = useState(true);
@@ -16,26 +17,17 @@ export default function SchoolLogo({ compact = false, light = false, name }: { c
   if (!ok) return <Logo compact={compact} light={light} name={displayText} />;
 
   return (
-    <span style={{ display: "inline-flex", alignItems: "center", gap: 8, color: light ? "#fffdf8" : "#171716", minWidth: 0 }}>
+    <span className={cn("inline-flex min-w-0 items-center gap-2", light ? "text-cream" : "text-ink")}>
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
         src="/api/portal/logo"
         alt={displayText}
         width={compact ? 24 : 28}
         height={compact ? 24 : 28}
-        style={{ borderRadius: 8, objectFit: "cover", flexShrink: 0 }}
+        className="shrink-0 rounded-lg object-cover"
         onError={() => setOk(false)}
       />
-      <span
-        style={{
-          fontWeight: 800,
-          letterSpacing: "-0.04em",
-          fontSize: compact ? 16 : 18,
-          overflow: "hidden",
-          textOverflow: "ellipsis",
-          whiteSpace: "nowrap",
-        }}
-      >
+      <span className={cn("overflow-hidden text-ellipsis whitespace-nowrap font-extrabold tracking-[-0.04em]", compact ? "text-base" : "text-[18px]")}>
         {displayText}
       </span>
     </span>

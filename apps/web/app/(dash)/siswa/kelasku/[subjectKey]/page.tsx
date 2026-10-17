@@ -6,8 +6,10 @@
 import { use, useMemo, type ReactNode } from "react";
 import Link from "next/link";
 import { useFetch } from "@/app/lib/api";
-import { PageHead, Panel, Note, Err } from "@/components/DashUI";
 import { Skeleton } from "@/components/ui/skeleton";
+import { PageHead } from "@/components/ui/page-header";
+import { Card } from "@/components/ui/card";
+import { Alert } from "@/components/ui/alert";
 
 const HARI = ["Min", "Sen", "Sel", "Rab", "Kam", "Jum", "Sab"];
 
@@ -71,10 +73,9 @@ function fmtTgl(d: string | null): string {
 function Badge({ bg, children }: { bg: string; children: ReactNode }) {
   return (
     <span
-      style={{
-        flexShrink: 0, fontSize: 11, fontWeight: 800, padding: "2px 8px", borderRadius: 999,
-        background: bg, border: "1px solid rgba(23,23,22,.2)", whiteSpace: "nowrap",
-      }}
+      // dynamic: warna badge dari state tugas
+      style={{ background: bg }}
+      className="shrink-0 whitespace-nowrap rounded-full border border-ink/20 px-2 py-[2px] text-[11px] font-extrabold"
     >
       {children}
     </span>
@@ -132,7 +133,7 @@ export default function KelaskuMapelPage({ params }: { params: Promise<{ subject
 
   return (
     <>
-      <Link href="/siswa/kelasku" style={{ fontSize: 13, fontWeight: 700, color: "#171716" }}>
+      <Link className="text-[13px] font-bold text-ink" href="/siswa/kelasku">
         ← Kelasku
       </Link>
       <PageHead
@@ -147,65 +148,65 @@ export default function KelaskuMapelPage({ params }: { params: Promise<{ subject
           ))}
         </div>
       )}
-      {galat && <Err>Gagal: {galat}</Err>}
+      {galat && <Alert variant="destructive">Gagal: {galat}</Alert>}
       {!galat && (!memuat || tugas.data || asesmen.data) && (
         <>
-          <h2 className="display" style={{ fontSize: 16, margin: "14px 0 8px" }}>
+          <h2 className="display text-base mt-[14px] mr-0 mb-2 ml-0">
             Tugas ({view.daftarTugas.length})
           </h2>
           {view.daftarTugas.length === 0 ? (
-            <Panel>
-              <Note>Belum ada tugas mapel ini.</Note>
-            </Panel>
+            <Card>
+              <Alert>Belum ada tugas mapel ini.</Alert>
+            </Card>
           ) : (
-            <Panel>
-              <div style={{ display: "grid", gap: 10 }}>
+            <Card>
+              <div className="grid gap-[10px]">
                 {view.daftarTugas.map((t) => (
-                  <div key={t.id} style={{ display: "flex", gap: 8, alignItems: "baseline", fontSize: 14 }}>
+                  <div className="flex gap-2 items-baseline text-sm" key={t.id}>
                     <Badge
-                      bg={t.state === "SUDAH" ? "#dcead0" : t.state === "TERLAMBAT" || t.state === "TUTUP" ? "#f6e8e3" : "#eeeadd"}
+                      bg={t.state === "SUDAH" ? "var(--color-mint-soft)" : t.state === "TERLAMBAT" || t.state === "TUTUP" ? "var(--color-blush)" : "var(--color-paper-deep)"}
                     >
                       {labelTugas(t)}
                     </Badge>
-                    <Link href={`/siswa/kelasku/tugas/${t.id}`} style={{ fontWeight: 600, color: "#171716" }}>
+                    <Link className="font-semibold text-ink" href={`/siswa/kelasku/tugas/${t.id}`}>
                       {t.title}
                     </Link>
                     {fmtTgl(t.deadline) && (
-                      <span style={{ marginLeft: "auto", fontSize: 12, color: "#74746d", flexShrink: 0 }}>
+                      <span className="ml-auto text-xs text-muted shrink-0">
                         {fmtTgl(t.deadline)}
                       </span>
                     )}
                   </div>
                 ))}
               </div>
-            </Panel>
+            </Card>
           )}
 
-          <h2 className="display" style={{ fontSize: 16, margin: "14px 0 8px" }}>
+          <h2 className="display text-base mt-[14px] mr-0 mb-2 ml-0">
             Asesmen ({view.daftarAsesmen.length})
           </h2>
           {view.daftarAsesmen.length === 0 ? (
-            <Panel>
-              <Note>Belum ada asesmen mapel ini.</Note>
-            </Panel>
+            <Card>
+              <Alert>Belum ada asesmen mapel ini.</Alert>
+            </Card>
           ) : (
-            <Panel>
-              <div style={{ display: "grid", gap: 10 }}>
+            <Card>
+              <div className="grid gap-[10px]">
                 {view.daftarAsesmen.map((a) => (
-                  <div key={a.id} style={{ display: "flex", gap: 8, alignItems: "baseline", fontSize: 14 }}>
-                    <Badge bg={a.submitted ? "#dcead0" : "#eeeadd"}>{labelAsesmen(a)}</Badge>
-                    <Link href={`/siswa/kelasku/asesmen/${a.id}`} style={{ fontWeight: 600, color: "#171716" }}>
+                  <div className="flex gap-2 items-baseline text-sm" key={a.id}>
+                    <Badge bg={a.submitted ? "var(--color-mint-soft)" : "var(--color-paper-deep)"}>{labelAsesmen(a)}</Badge>
+                    <Link className="font-semibold text-ink" href={`/siswa/kelasku/asesmen/${a.id}`}>
                       {a.title}
                     </Link>
                     {fmtTgl(a.deadline) && (
-                      <span style={{ marginLeft: "auto", fontSize: 12, color: "#74746d", flexShrink: 0 }}>
+                      <span className="ml-auto text-xs text-muted shrink-0">
                         {fmtTgl(a.deadline)}
                       </span>
                     )}
                   </div>
                 ))}
               </div>
-            </Panel>
+            </Card>
           )}
         </>
       )}

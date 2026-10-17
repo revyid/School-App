@@ -158,14 +158,9 @@ export function GlyphBadge({
 }) {
   return (
     <div
-      style={{
-        display: "grid",
-        placeItems: "center",
-        width: box,
-        height: box,
-        border,
-        borderRadius: "50%",
-      }}
+      className="grid place-items-center rounded-full"
+      // dynamic: ukuran kotak + border dari prop runtime
+      style={{ width: box, height: box, border }}
     >
       <Glyph name={name} size={size} />
     </div>

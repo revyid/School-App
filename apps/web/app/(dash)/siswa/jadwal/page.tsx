@@ -3,8 +3,10 @@
 // Jadwal siswa: slot kelas sendiri per hari Senin–Sabtu + Minggu.
 import { useMemo } from "react";
 import { useFetch } from "@/app/lib/api";
-import { PageHead, Panel, Note, Err } from "@/components/DashUI";
 import { Skeleton } from "@/components/ui/skeleton";
+import { PageHead } from "@/components/ui/page-header";
+import { Card } from "@/components/ui/card";
+import { Alert } from "@/components/ui/alert";
 
 const HARI = ["Minggu", "Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu"];
 const ORDER = [1, 2, 3, 4, 5, 6, 0];
@@ -61,59 +63,41 @@ export default function SiswaJadwalPage() {
           ))}
         </div>
       )}
-      {error && <Err>Gagal: {error}</Err>}
+      {error && <Alert variant="destructive">Gagal: {error}</Alert>}
       {!loading && !error && total === 0 && (
-        <Panel>
-          <Note>Belum ada jadwal.</Note>
-        </Panel>
+        <Card>
+          <Alert>Belum ada jadwal.</Alert>
+        </Card>
       )}
-      <div style={{ display: "grid", gap: 12 }}>
+      <div className="grid gap-3">
         {ORDER.map((hari) => {
           const daftar = perHari.get(hari) ?? [];
           if (daftar.length === 0) return null;
           return (
-            <Panel key={hari}>
-              <h2 className="display" style={{ fontSize: 17, margin: "0 0 8px" }}>{HARI[hari] ?? `Hari ${hari}`}</h2>
-              <div style={{ display: "grid", gap: 0 }}>
-                <div
-                  style={{
-                    display: "grid",
-                    gridTemplateColumns: "110px 1fr 1fr",
-                    gap: 8,
-                    fontSize: 12,
-                    fontWeight: 800,
-                    textTransform: "uppercase",
-                    letterSpacing: ".04em",
-                    color: "#74746d",
-                    padding: "6px 0",
-                    borderBottom: "1px solid rgba(23,23,22,.14)",
-                  }}
+            <Card key={hari}>
+              <h2 className="display text-[17px] mt-0 mr-0 mb-2 ml-0">{HARI[hari] ?? `Hari ${hari}`}</h2>
+              <div className="grid gap-[0px]">
+                <div className="grid grid-cols-[110px_1fr_1fr] gap-2 text-xs font-extrabold uppercase tracking-[.04em] text-muted pt-1.5 pr-0 pb-1.5 pl-0 border-b border-line"
+                  
                 >
                   <span>Jam</span>
                   <span>Mapel</span>
                   <span>Guru</span>
                 </div>
                 {daftar.map((s) => (
-                  <div
+                  <div className="grid grid-cols-[110px_1fr_1fr] gap-2 text-[13.5px] pt-2 pr-0 pb-2 pl-0 border-b border-line"
                     key={s.id}
-                    style={{
-                      display: "grid",
-                      gridTemplateColumns: "110px 1fr 1fr",
-                      gap: 8,
-                      fontSize: 13.5,
-                      padding: "8px 0",
-                      borderBottom: "1px solid rgba(23,23,22,.08)",
-                    }}
+                    
                   >
-                    <span style={{ fontWeight: 600 }}>
+                    <span className="font-semibold">
                       {s.startTime.slice(0, 5)}–{s.endTime.slice(0, 5)}
                     </span>
                     <span>{namaMapel(s)}</span>
-                    <span style={{ color: "#74746d" }}>{s.teacher?.name ?? "-"}</span>
+                    <span className="text-muted">{s.teacher?.name ?? "-"}</span>
                   </div>
                 ))}
               </div>
-            </Panel>
+            </Card>
           );
         })}
       </div>

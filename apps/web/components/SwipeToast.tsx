@@ -59,9 +59,9 @@ export default function SwipeToast({
   onAction,
   open = true,
   onClose,
-  background = '#27272a',
-  color = '#f5f5f5',
-  fuseColor = '#e85e43',
+  background = 'var(--color-ink)',
+  color = 'var(--color-paper)',
+  fuseColor = 'var(--color-terracotta)',
   width = 356,
   radius = 12,
   slideMs = 400,
@@ -312,6 +312,7 @@ export default function SwipeToast({
           <motion.div
             ref={cardRef}
             className="swipe-toast__card"
+            // dynamic: transform & opacity animasi geser (framer-motion)
             style={{ y: transform, opacity: fade }}
             onPointerDown={onPointerDown}
             onPointerMove={onPointerMove}
@@ -415,9 +416,9 @@ export function NotifToast({
           icon={<BellIcon size={18} strokeWidth={2} className="text-terracotta" aria-hidden="true" />}
           actionLabel="Buka"
           onAction={() => onOpen(n)}
-          background="#fffdf8"
-          color="#171716"
-          fuseColor="#e85e43"
+          background="var(--color-cream)"
+          color="var(--color-ink)"
+          fuseColor="var(--color-terracotta)"
           width={360}
           radius={18}
           duration={6000}
