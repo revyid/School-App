@@ -324,19 +324,19 @@ async function publicSiteInfo(schoolId: string, schoolName: string): Promise<Pub
 
 function honestError(kind: string): { error: string; status: number } {
   if (kind.includes("429"))
-    return { error: "Model AI sedang penuh (antrean habis). Tunggu ±1 menit lalu coba lagi.", status: 502 };
+    return { error: "RAI R1 sedang penuh. Tunggu ±1 menit lalu coba lagi.", status: 502 };
   if (kind === "timeout")
-    return { error: "Model AI lambat merespons (>25 dtk). Coba pertanyaan lebih pendek.", status: 504 };
+    return { error: "RAI R1 lambat merespons. Coba pertanyaan yang lebih pendek.", status: 504 };
   if (kind.includes("empty-choices"))
-    return { error: "Model AI mengembalikan jawaban kosong. Coba lagi atau ganti model di AI_ROUTER_MODEL.", status: 502 };
+    return { error: "RAI R1 belum bisa menjawab. Coba lagi sebentar.", status: 502 };
   if (kind.includes("401") || kind.includes("403"))
-    return { error: "Kunci API AI ditolak server. Hubungi admin untuk periksa key.", status: 502 };
-  return { error: "Layanan AI gagal merespons. Coba lagi sebentar.", status: 502 };
+    return { error: "Layanan RAI R1 sedang bermasalah. Hubungi admin.", status: 502 };
+  return { error: "RAI R1 gagal merespons. Coba lagi sebentar.", status: 502 };
 }
 
 export async function POST(req: NextRequest) {
   if (!AI_CHAT_ENABLED) {
-    return NextResponse.json({ error: "Chat AI dinonaktifkan oleh konfigurasi layanan." }, { status: 503 });
+    return NextResponse.json({ error: "RAI R1 dinonaktifkan oleh konfigurasi layanan." }, { status: 503 });
   }
   const body = await req.json().catch(() => null);
   const userMsgRaw = typeof body?.message === "string" ? body.message : "";
@@ -348,7 +348,7 @@ export async function POST(req: NextRequest) {
 
   if (!AI_ROUTER_KEY) {
     return NextResponse.json(
-      { error: "Layanan AI belum dikonfigurasi server (AI_ROUTER_API_KEY kosong). Hubungi admin." },
+      { error: "RAI R1 belum diaktifkan di server ini. Hubungi admin." },
       { status: 503 }
     );
   }
@@ -361,7 +361,7 @@ export async function POST(req: NextRequest) {
     const rl = await hit(`rl:ai:${a.school.id}:${a.userId}`, 20, 3600);
     if (!rl.ok) {
       return NextResponse.json(
-        { error: "Batas pesan AI tercapai (maks 20 pesan/jam). Coba lagi nanti." },
+        { error: "Batas pesan RAI R1 tercapai (maks 20 pesan/jam). Coba lagi nanti." },
         { status: 429 }
       );
     }
@@ -373,7 +373,7 @@ export async function POST(req: NextRequest) {
     }),
   );
   if (!aiSettings?.aiChatEnabled) {
-    return NextResponse.json({ error: "Chat AI belum diaktifkan administrator sekolah." }, { status: 503 });
+    return NextResponse.json({ error: "RAI R1 belum diaktifkan administrator sekolah." }, { status: 503 });
   }
 
   // AI tahu SELURUH website (panduan per peran + info publik) tapi TIDAK PERNAH baca data pribadi:
@@ -416,7 +416,7 @@ export async function POST(req: NextRequest) {
     tx.schoolSettings.findUnique({ where: { schoolId: school.id }, select: { aiChatEnabled: true } }),
   );
   if (!guestSettings?.aiChatEnabled) {
-    return NextResponse.json({ error: "Chat AI belum diaktifkan administrator sekolah." }, { status: 503 });
+    return NextResponse.json({ error: "RAI R1 belum diaktifkan administrator sekolah." }, { status: 503 });
   }
 
   const ip = req.headers.get("x-real-ip")?.split(",")[0].trim() || "unknown";
