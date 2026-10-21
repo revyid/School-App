@@ -18,7 +18,7 @@ export async function GET(req: NextRequest) {
   if (!a.ok) return NextResponse.json({ error: a.error }, { status: a.status });
 
   const root = getRootDb();
-  const [user, student, teacher, classCount, submission, task, attendance, leaveRequest, announcement, byDay] =
+  const [user, student, teacher, classCount, submission, task, attendance, leaveRequest, announcement, attendanceByDay, newUsersByDay] =
     await Promise.all([
       root.user.count({ where: { role: { not: "SUPER_ADMIN" } } }),
       root.studentProfile.count(),
@@ -29,6 +29,15 @@ export async function GET(req: NextRequest) {
       root.attendanceRecord.count(),
       root.leaveRequest.count(),
       root.announcement.count(),
+      // Absensi nyata per hari (bukan pengguna baru).
+      root.$queryRaw<{ date: string; value: number; present: number }[]>`
+        SELECT to_char(date_trunc('day', "date"), 'YYYY-MM-DD') AS date,
+               COUNT(*)::int AS value,
+               COUNT(*) FILTER (WHERE status = 'HADIR')::int AS present
+        FROM "AttendanceRecord"
+        WHERE "date" >= current_date - interval '29 days'
+        GROUP BY 1 ORDER BY 1`,
+      // Pengguna baru per hari (dipisah dari absensi).
       root.$queryRaw<{ date: string; value: number }[]>`
         SELECT to_char(date_trunc('day', "createdAt"), 'YYYY-MM-DD') AS date, COUNT(*)::int AS value
         FROM "User"
@@ -49,6 +58,7 @@ export async function GET(req: NextRequest) {
       leaveRequest,
       announcement,
     },
-    byDay,
+    attendanceByDay,
+    newUsersByDay,
   });
 }

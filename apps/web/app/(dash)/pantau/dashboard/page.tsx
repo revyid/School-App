@@ -10,12 +10,14 @@ import { Alert } from "@/components/ui/alert";
 interface DayRow {
   date: string;
   value?: number;
+  present?: number;
 }
 
 interface Analytics {
   period?: string;
   counts?: Totals;
-  byDay?: DayRow[];
+  attendanceByDay?: DayRow[];
+  newUsersByDay?: DayRow[];
 }
 
 interface Totals {
@@ -44,7 +46,7 @@ interface SchoolsResponse {
 const fmt = (v: number | undefined) => (v == null ? "–" : v.toLocaleString("id-ID"));
 
 // Line chart CSS/SVG tanpa library; nilai 0..max dipetakan ke tinggi tetap.
-function LineChart({ rows }: { rows: DayRow[] }) {
+function LineChart({ rows, label, unit = "puncak" }: { rows: DayRow[]; label: string; unit?: string }) {
   const values = rows.map((r) => r.value ?? 0);
   const max = Math.max(1, ...values);
   const w = 720;
@@ -59,7 +61,7 @@ function LineChart({ rows }: { rows: DayRow[] }) {
     <div>
       <svg
         role="img"
-        aria-label={`Grafik kehadiran ${values.length} hari terakhir`}
+        aria-label={`Grafik ${label} ${values.length} hari terakhir`}
         viewBox={`0 0 ${w} ${h}`}
         preserveAspectRatio="none"
         style={{ width: "100%", height: 180, display: "block" }}
@@ -77,7 +79,9 @@ function LineChart({ rows }: { rows: DayRow[] }) {
       </svg>
       <div className="mt-2 flex justify-between font-meta text-[10px] text-muted">
         <span>{rows[0]?.date?.slice(0, 10) ?? "–"}</span>
-        <span>puncak {max.toLocaleString("id-ID")}</span>
+        <span>
+          {unit} {max.toLocaleString("id-ID")}
+        </span>
         <span>{rows[rows.length - 1]?.date?.slice(0, 10) ?? "–"}</span>
       </div>
     </div>
@@ -88,8 +92,11 @@ export default function PantauDashboardPage() {
   const analytics = useFetch<Analytics>("/api/root/analytics");
   const schools = useFetch<SchoolsResponse>("/api/root/schools");
   const t = analytics.data?.counts ?? {};
-  const byDay = analytics.data?.byDay ?? [];
+  const attendanceByDay = analytics.data?.attendanceByDay ?? [];
+  const newUsersByDay = analytics.data?.newUsersByDay ?? [];
   const schoolCount = t.class ?? schools.data?.total ?? schools.data?.schools?.length;
+  const presentTotal = attendanceByDay.reduce((a, r) => a + (r.present ?? 0), 0);
+  const recordTotal = attendanceByDay.reduce((a, r) => a + (r.value ?? 0), 0);
 
   return (
     <>
@@ -111,15 +118,32 @@ export default function PantauDashboardPage() {
           { label: "Submission", value: fmt(t.submission), accent: "var(--color-blush)" },
           { label: "Tugas", value: fmt(t.task), accent: "var(--color-sage)" },
           { label: "Sekolah", value: fmt(schoolCount), accent: "var(--color-terracotta)" },
+          { label: "Absensi (total)", value: fmt(t.attendance), accent: "var(--color-sage)" },
+          { label: "Izin (total)", value: fmt(t.leaveRequest), accent: "var(--color-sun)" },
+          { label: "Pengumuman", value: fmt(t.announcement), accent: "var(--color-blush)" },
         ]}
       />
 
       <Card>
         <h2 className="display m-0 text-[18px]">Kehadiran 30 hari</h2>
-        {byDay.length === 0 ? (
+        <p className="mt-1 mb-0 font-meta text-[11px] text-muted">
+          {recordTotal > 0
+            ? `${presentTotal.toLocaleString("id-ID")} hadir dari ${recordTotal.toLocaleString("id-ID")} catatan absensi`
+            : "Belum ada data kehadiran."}
+        </p>
+        {attendanceByDay.length === 0 ? (
           <Alert>Belum ada data kehadiran.</Alert>
         ) : (
-          <LineChart rows={byDay} />
+          <LineChart rows={attendanceByDay} label="kehadiran" unit="puncak" />
+        )}
+      </Card>
+
+      <Card>
+        <h2 className="display m-0 text-[18px]">Pengguna baru 30 hari</h2>
+        {newUsersByDay.length === 0 ? (
+          <Alert>Belum ada pengguna baru.</Alert>
+        ) : (
+          <LineChart rows={newUsersByDay} label="pengguna baru" unit="puncak" />
         )}
       </Card>
     </>
