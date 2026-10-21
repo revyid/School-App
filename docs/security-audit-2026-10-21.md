@@ -76,25 +76,48 @@ Semua temuan yang bisa dieksploitasi sudah diperbaiki dan diverifikasi ulang di 
 
 ## Performa (hasil ukur)
 
-### Latensi TTFB (halaman `/beranda`)
+### Arsitektur final (22 Okt 2026): Cloudflare proxy → origin HTTPS langsung
+```
+browser → edge Cloudflare (SIN) → 139.190.103.107:443 (TLS, cert Let's Encrypt) → nginx → Next.js
+```
+Tunnel cloudflared sudah **dimatikan & dinonaktifkan** (`inactive / disabled`).
+
+### Latensi & throughput
 | Jalur | TTFB | Throughput (conc 20) | p50 | p95 |
 |---|---|---|---|---|
-| Origin langsung (via IP, tanpa CF) | **15–32 ms** | **46,8 req/s** | 293 ms | 1.310 ms |
-| Lewat Cloudflare tunnel | **0,2–1,4 s** | **13,2 req/s** | 959 ms | 2.398 ms |
+| Tunnel cloudflared (lama) | 0,2–1,4 s | 13,2 req/s | 959 ms | 2.398 ms |
+| **CF proxy → origin 443 (sekarang)** | **0,08–0,22 s** | 17,3 req/s | 404 ms | 5.174 ms |
+| Langsung ke IP (tanpa CF) | 0,13–0,32 s | 39,6 req/s | 444 ms | 735 ms |
 
-**Cloudflare menambah ~0,6–1,1 s dan menurunkan throughput ~3,5×** pada halaman dinamis.
+**Peningkatan ~5–8× pada TTFB** dibanding tunnel, dan halaman publik kini dilayani dari
+cache edge (`cf-cache-status: HIT`) sehingga sebagian besar kunjungan tidak menyentuh origin.
 
-### Penyebab
-1. Tunnel: edge CF → `cloudflared` → nginx. RTT VPS→edge CF hanya 13,8 ms, tapi hop CF menambah ~0,6–1,1 s (terobservasi bimodal: sebagian 0,2 s, sebagian 1,1 s).
-2. Koneksi tunnel terdaftar di 2 PoP: `sin13/sin14` **dan** `cgk03` (Kolkata) → permintaan yang dialokasikan ke PoP jauh menambah ~1 s. (Percobaan pin `--edge-ip` gagal: format flag tidak diterima cloudflared 2026.10.1 → tunnel sempat mati dan sempat menghasilkan HTTP 530; sudah dikembalikan ke kondisi awal.)
-3. HTML dinamis selalu `cf-cache-status: DYNAMIC` → tiap kunjungan penetrate tunnel. Aset statis **sudah** cached di edge (`HIT`, age > 13 jam) — jadi bottleneck-nya bukan aset.
+Penyebab awalnya lambat: tunnel menambah 2 hop (edge CF → cloudflared → nginx) dan
+4 koneksinya terbagi di 2 PoP (SIN + Kolkata) → sebagian request kena ~1 s. Cloudflare
+proxy ke origin 443 menghapus hop itu. P95 yang masih tinggi pada uji konkurensi berasal
+dari antrean render origin (2 vCPU) saat 20 request paralel dari 1 klien.
 
-### Rekomendasi performa (urut impact)
-1. **Cache HTML di edge** untuk halaman publik (`/beranda`, `/buku`, halaman legal): Cache Rules "Eligible for cache" + TTL 60–300 dtk, dan purge otomatis saat RootSettings berubah. Ini memotong sebagian besar latency tunnel.
-2. **Tunnel:** coba `--edge-ip` dengan format yang benar (comma-separated: `--edge-ip 1.2.3.4,5.6.7.8`) agar semua koneksi ke PoP SIN; atau upgrade cloudflared 2026.10.1 → 2026.10.2.
-3. **Cache render di app** (`unstable_cache`/`revalidate`) untuk `/beranda` — render saat ini ~20 ms tapi memonopoli 1 vCPU saat concurrency tinggi.
-4. **Kalau kecepatan lebih penting dari WAF/DDoS:** arahkan DNS ke IP VPS dan sajikan nginx langsung di 443 (butuh sertifikat; setup acme sudah ada tapi belum ada sertifikat terbit). Trade-off: kehilangan WAF/DDoS CF dan membocorkan IP origin.
-5. **Batas memori:** `lacakedu-web` memakai 367 MB saat render paralel; `MemoryMax` belum di-set untuk web → aman di 4 GB, tapi perlu diawasi.
+### Cache edge
+- Cache Rule `Landing & katalog publik` aktif: `/beranda`, `/privasi`, `/syarat`, `/buku`.
+- Verifikasi: `cf-cache-status: HIT` (age naik), dan setelah root mengubah setting →
+  purge otomatis (token CF Cache Purge) → `MISS` + isi baru tampil **tanpa** tunggu TTL.
+- Rate limit edge Cloudflare: 5 request/10 dtk per IP pada endpoint login → `429` + `retry-after`.
+- WAF custom rules (Free): `/.git/HEAD`, `/.env`, `/wp-login.php`, `/xmlrpc.php`, `/cgi-bin/*` → `403`.
+
+### Catatan TLS
+- Edge: TLS 1.0/1.1 ditolak (Minimum TLS = 1.2), TLS 1.2 & 1.3 aktif, `http://` → 301.
+- Origin: sertifikat Let's Encrypt ECC wildcard `*.lacakedu.web.id` (berlaku s.d. 19 Jan 2027),
+  renewal otomatis 20 Des 2026 via `acme-renew.timer` → `renew-cert.sh`.
+
+### Rekomendasi performa (sisa)
+1. **Cache Rule untuk halaman sekolah** (`smansa.lacakedu.web.id/buku` dsb) — saat ini
+   cache key sudah memisahkan host, aman.
+2. **Render cache di origin**: `unstable_cache` sudah dipakai untuk data publik; untuk
+   HTML, `force-dynamic` + CSP nonce membuat halaman tidak bisa di-cache Next.
+3. **Naikkan vCPU** kalau concurrency nyata naik — render `/pantau/*` (7 halaman chart)
+   adalah bagian paling berat (34% CPU saat 10 render paralel).
+4. Kalau mau p95 turun: cache `/pantau/*` per-user via `unstable_cache` + tag per sesi
+   (hati-hati: data per-user, jangan pernah di-cache bersama).
 
 ---
 
