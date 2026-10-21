@@ -428,6 +428,15 @@ export async function POST(req: NextRequest) {
       { status: 429 }
     );
   }
+  // Kuota harian per sekolah: XFF bisa dipalsukan/rotasi, jadi batas per-IP di atas
+  // saja tidak cukup. 300/hari = ~30 tamu wajar x 10 pesan, masih aman untuk biaya AI.
+  const rlSchool = await hit(`rl:ai:guest:${school.id}`, 300, 86400);
+  if (!rlSchool.ok) {
+    return NextResponse.json(
+      { error: "Kuota pesan AI tamu sekolah ini habis untuk hari ini. Coba lagi besok." },
+      { status: 429 }
+    );
+  }
 
   const pub = await publicSiteInfo(school.id, school.name);
   const guestPrompt = siteGuidePrompt({ ...pub, announcements: pub.announcements }, "TAMU");

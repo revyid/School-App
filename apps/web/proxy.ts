@@ -1,6 +1,6 @@
 // Next 16: Proxy. Auth penuh di authorize(); proxy hanya routing kasar + nonce CSP.
 import { NextResponse, type NextRequest } from "next/server";
-import { schoolSlugFromHost } from "@sms/shared/school";
+import { schoolSlugFromHost, isRootHost } from "@sms/shared/school";
 import { SESSION_COOKIE } from "@sms/shared/auth";
 
 const apex = process.env.APEX_DOMAIN ?? "domainmu.id";
@@ -33,7 +33,7 @@ export function proxy(req: NextRequest) {
   const host = req.headers.get("host") ?? "";
   const bare = host.split(":")[0].trim().toLowerCase();
   // Apex = konsol admin platform (login /admin). Subdomain = satu sekolah.
-  const isRoot = bare === apex || bare === "localtest.me" || bare === "dev.revy.my.id";
+  const isRoot = isRootHost(bare, apex);
   const slug = isRoot ? null : schoolSlugFromHost(host, apex);
   if (!isRoot && !slug) return new NextResponse("not found", { status: 404 });
   // Nama cookie tergantung env (prod __Host-session, dev sms-session-dev).

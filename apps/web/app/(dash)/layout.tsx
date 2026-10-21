@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { headers } from "next/headers";
 import { getPageAuth } from "@/app/lib/require-page";
 import DashShell, { type MenuItem } from "@/components/DashShell";
+import { isRootHost } from "@sms/shared/school";
 
 // U1: menu per peran — maks 7 item utama, ikon via string key MENU_ICONS (bukan komponen langsung).
 const MENUS: Record<string, { utama: MenuItem[]; lainnya: MenuItem[]; groups?: { label: string; items: MenuItem[] }[] }> = {
@@ -68,7 +69,7 @@ export default async function DashLayout({ children }: { children: React.ReactNo
   const path = h.get("x-pathname") ?? "";
   const apex = process.env.APEX_DOMAIN ?? "domainmu.id";
   const bare = (h.get("host") ?? "").split(":")[0].trim().toLowerCase();
-  const isRoot = bare === apex || bare === "localtest.me" || bare === "dev.revy.my.id";
+  const isRoot = isRootHost(bare, apex);
   if (isRoot && (path === "/admin" || path.startsWith("/admin/"))) return <>{children}</>;
   if (path === "/pantau" || path.startsWith("/pantau/")) return <>{children}</>;
 

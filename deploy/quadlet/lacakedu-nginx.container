@@ -7,6 +7,9 @@ Image=docker.io/library/nginx:stable-alpine
 ContainerName=lacakedu-nginx
 Network=lacakedu.network
 PublishPort=127.0.0.1:8080:80
+# SEMENTARA: listener tes performa via IP (blok server listen 8080 di nginx.conf).
+# Cabut PublishPort ini + blok 8080 di nginx.conf setelah selesai.
+PublishPort=8090:8080
 Volume=%h/lacakedu/nginx/nginx.conf:/etc/nginx/nginx.conf:ro,Z
 HealthCmd=CMD-SHELL wget -qO- http://127.0.0.1/healthz | grep -q ok
 HealthInterval=30s

@@ -47,6 +47,14 @@ export async function GET(req: NextRequest) {
 
   const hasMore = rows.length > take;
   const page = hasMore ? rows.slice(0, take) : rows;
+
+  // Percobaan login level platform (akun root tidak punya sekolah).
+  const rootAttempts = await getRootDb().$queryRaw<{ id: string; email: string; action: string; ip: string | null; createdAt: Date }[]>`
+    SELECT id, email, action, ip, "createdAt"
+    FROM "RootAuthAttempt"
+    ORDER BY "createdAt" DESC
+    LIMIT 25`;
+
   return NextResponse.json({
     rows: page.map((r) => ({
       id: r.id,
@@ -54,6 +62,13 @@ export async function GET(req: NextRequest) {
       actor: { name: r.actorName ?? "?", role: r.actorRole ?? "?" },
       entity: r.entity,
       entityId: r.entityId,
+      ip: r.ip,
+      createdAt: r.createdAt,
+    })),
+    rootAttempts: rootAttempts.map((r) => ({
+      id: r.id,
+      email: r.email,
+      action: r.action,
       ip: r.ip,
       createdAt: r.createdAt,
     })),

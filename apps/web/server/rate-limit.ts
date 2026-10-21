@@ -20,5 +20,9 @@ export async function loginRateLimit(ip: string, acct: string) {
   if (!r2.ok) return { blocked: true as const, ...r2 };
   const r3 = await hit(`rl:login:acct:${acct}`, 5, 300);
   if (!r3.ok) return { blocked: true as const, ...r3 };
+  // Jendela jam: batasi tebakan per akun meski IP dirotasi (XFF kini tak bisa
+  // dipalsukan, tapi multi-perangkat tetap perlu plafon per akun).
+  const r4 = await hit(`rl:login:acct:hr:${acct}`, 20, 3600);
+  if (!r4.ok) return { blocked: true as const, ...r4 };
   return { blocked: false as const, retryAfter: 0 };
 }

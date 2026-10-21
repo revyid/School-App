@@ -32,9 +32,11 @@ export function originOk(origin: string | null, referer: string | null, slug: st
     if (got === apexHost && schoolSlugFromHost(apexHost, apex()) === target) return true;
     return (
       got === `${target}.${apex()}`.toLowerCase() ||
-      got === `${target}.revy.my.id` ||
-      got === `${target}.dev.revy.my.id` ||
-      got === `${target}.localtest.me`
+      // Alias dev hanya saat NODE_ENV !== "production".
+      (process.env.NODE_ENV !== "production" &&
+        (got === `${target}.revy.my.id` ||
+          got === `${target}.dev.revy.my.id` ||
+          got === `${target}.localtest.me`))
     );
   } catch {
     return false;
@@ -56,7 +58,7 @@ export async function authorize(o: GateInput) {
   // Verifikasi via RPC definer (app_user tak bisa SELECT baris NULL).
   const hostbare = o.host.split(":")[0].trim().toLowerCase();
   const rootHost = apex().toLowerCase();
-  if (hostbare === rootHost || hostbare === "localtest.me" || hostbare === "dev.revy.my.id") {
+  if (hostbare === rootHost || (process.env.NODE_ENV !== "production" && (hostbare === "localtest.me" || hostbare === "dev.revy.my.id"))) {
     if (!o.token) return err(401, "unauthorized");
     const sess = await readSession(o.token);
     if (!sess || sess.sch !== "admin" || sess.schoolId !== "" || sess.role !== "SUPER_ADMIN") {

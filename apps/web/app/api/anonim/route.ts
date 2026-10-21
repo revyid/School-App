@@ -4,40 +4,27 @@ import { db } from "@sms/db/client";
 import { runAsSchool } from "@sms/db/tenant";
 import { logAuth } from "@/server/audit";
 import { ipOf } from "@/server/request-ip";
+import { hit } from "@/server/rate-limit";
 
 const apex = () => process.env.APEX_DOMAIN ?? "localtest.me";
 
-// In-memory rate limiter per IP (maks 5 kirim per jam)
-const ipHits = new Map<string, { count: number; reset: number }>();
-
-function isRateLimited(ip: string): boolean {
-  const now = Date.now();
-  const rec = ipHits.get(ip);
-  if (!rec || now > rec.reset) {
-    ipHits.set(ip, { count: 1, reset: now + 3600000 });
-    return false;
-  }
-  if (rec.count >= 5) return true;
-  rec.count += 1;
-  return false;
-}
-
 // POST /api/anonim — Kirim pesan anonim publik tanpa login
 export async function POST(req: NextRequest) {
-  const ip = ipOf(req);
-  if (isRateLimited(ip)) {
-    return NextResponse.json(
-      { error: "Terlalu banyak pesan dari perangkat ini. Coba lagi dalam 1 jam." },
-      { status: 429 }
-    );
-  }
-
   const host = req.headers.get("host") ?? "";
   const slug = schoolSlugFromHost(host, apex());
   if (!slug) return NextResponse.json({ error: "Sekolah tidak ditemukan" }, { status: 404 });
 
   const school = await db.school.findFirst({ where: { slug } });
   if (!school) return NextResponse.json({ error: "Sekolah tidak ditemukan" }, { status: 404 });
+
+  // Maks 5 kirim per jam per IP per sekolah (Redis, entri kedaluwarsa otomatis).
+  const rl = await hit(`rl:anonim:${school.id}:${ipOf(req)}`, 5, 3600);
+  if (!rl.ok) {
+    return NextResponse.json(
+      { error: "Terlalu banyak pesan dari perangkat ini. Coba lagi dalam 1 jam." },
+      { status: 429 }
+    );
+  }
 
   const body = await req.json().catch(() => null);
   if (!body || typeof body !== "object") {
@@ -48,6 +35,12 @@ export async function POST(req: NextRequest) {
 
   if (!subject?.trim() || !message?.trim()) {
     return NextResponse.json({ error: "Subjek dan isi pesan wajib diisi" }, { status: 400 });
+  }
+  if (subject.trim().length > 200) {
+    return NextResponse.json({ error: "Subjek maksimal 200 karakter" }, { status: 400 });
+  }
+  if (message.trim().length > 2000) {
+    return NextResponse.json({ error: "Isi pesan maksimal 2000 karakter" }, { status: 400 });
   }
 
   const created = await runAsSchool(db, school.id, async (tx) => {

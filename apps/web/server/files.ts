@@ -1,7 +1,7 @@
 // F6: SATU modul penyimpanan & penyajian file — streaming, magic-bytes,
 // batas per tipe dari env (D6), penghapusan file lama saat diganti.
 import { createReadStream } from "node:fs";
-import { mkdir, stat, unlink, writeFile } from "node:fs/promises";
+import { appendFile, mkdir, stat, unlink, writeFile } from "node:fs/promises";
 import { Readable } from "node:stream";
 import { randomBytes } from "node:crypto";
 import path from "node:path";
@@ -104,6 +104,7 @@ export async function saveFileStream(
   const chunks: Buffer[] = [];
   let total = 0;
   let kind: FileKind | null = null;
+  let written = false;
 
   for (;;) {
     const { done, value } = await reader.read();
@@ -123,20 +124,18 @@ export async function saveFileStream(
     }
     chunks.push(chunk);
     // Stream tulis bertahap: tulis tiap ~8MB agar memori tetap rendah.
+    // writeFile mem-truncate, jadi chunk berikutnya wajib appendFile.
     if (total >= 8 * MB) {
-      await writeFile(target, Buffer.concat(chunks.splice(0)));
+      const buf = Buffer.concat(chunks.splice(0));
+      await (written ? appendFile(target, buf) : writeFile(target, buf));
+      written = true;
     }
   }
   if (total === 0) throw new Error("file kosong");
   if (!kind) throw new Error("tipe file tidak didukung");
-  // Sisa chunk: append atau tulis baru.
   const rest = Buffer.concat(chunks);
-  const exists = await stat(target).then(() => true, () => false);
-  if (exists && rest.length) {
-    const { appendFile } = await import("node:fs/promises");
-    await appendFile(target, rest);
-  } else if (rest.length) {
-    await writeFile(target, rest);
+  if (rest.length) {
+    await (written ? appendFile(target, rest) : writeFile(target, rest));
   }
   return { fileName, originalName: safe, mime: MIME[kind], size: total };
 }
