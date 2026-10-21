@@ -1,7 +1,7 @@
 import argon2 from "argon2";
-import { db } from "@sms/db/client";
-import { runAsSchool } from "@sms/db/tenant";
-import { changePasswordSchema } from "@sms/shared/auth";
+import { db } from "@lacakedu/db/client";
+import { runAsSchool } from "@lacakedu/db/tenant";
+import { changePasswordSchema } from "@lacakedu/shared/auth";
 import { authorize } from "./auth-gate";
 import { hit } from "./rate-limit";
 import { redis } from "./redis";

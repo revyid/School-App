@@ -1,15 +1,15 @@
 {
-  "name": "@sms/cli",
+  "name": "@lacakedu/cli",
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "bin": { "sms-admin": "./dist/index.js" },
+  "bin": { "lacakedu-admin": "./dist/index.js" },
   "exports": { "./package.json": "./package.json" },
   "scripts": { "build": "tsc -p tsconfig.json" },
   "dependencies": {
     "@prisma/adapter-pg": "7.10.0",
-    "@sms/db": "workspace:*",
-    "@sms/shared": "workspace:*",
+    "@lacakedu/db": "workspace:*",
+    "@lacakedu/shared": "workspace:*",
     "argon2": "0.45.1"
   },
   "devDependencies": {

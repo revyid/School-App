@@ -1,4 +1,4 @@
-// Panduan website SMS-LMS untuk AI chat — pengetahuan umum, TANPA data pribadi.
+// Panduan website lacakedu untuk AI chat — pengetahuan umum, TANPA data pribadi.
 // AI memakai ini agar paham cara membantu; HANYA blok PUBLIK yang boleh dikirim ke model.
 
 export interface PublicSiteInfo {

@@ -1,6 +1,6 @@
 import { randomBytes, timingSafeEqual } from "node:crypto";
 import { redis } from "./redis";
-import { SESSION_COOKIE, COOKIE_SECURE } from "@sms/shared/auth";
+import { SESSION_COOKIE, COOKIE_SECURE } from "@lacakedu/shared/auth";
 
 const SESSION_TTL = 7 * 24 * 3600; // 7 hari, sliding
 

@@ -1,6 +1,6 @@
 import { randomBytes } from "node:crypto";
-import { db } from "@sms/db/client";
-import { runAsSchool } from "@sms/db/tenant";
+import { db } from "@lacakedu/db/client";
+import { runAsSchool } from "@lacakedu/db/tenant";
 
 // Password awal akun mengikuti setting admin `defaultPasswordMode`:
 // - "nisn": pakai NISN/NIP bila panjangnya >= 4, fallback acak.

@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
-import { SESSION_COOKIE } from "@sms/shared/auth";
+import { SESSION_COOKIE } from "@lacakedu/shared/auth";
 import { requireRole } from "@/server/auth-gate";
-import { db } from "@sms/db/client";
-import { runAsSchool } from "@sms/db/tenant";
+import { db } from "@lacakedu/db/client";
+import { runAsSchool } from "@lacakedu/db/tenant";
 import { logAuth } from "@/server/audit";
-import { consentSchema } from "@sms/shared/leave";
+import { consentSchema } from "@lacakedu/shared/leave";
 import { guruClassIds } from "@/server/lms-scope";
 
 async function gate(req: NextRequest, roles: ("ADMIN" | "GURU")[]) {

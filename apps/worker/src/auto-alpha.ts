@@ -1,9 +1,9 @@
 // Auto-Alpha cron: tiap tick, untuk tiap sekolah tentukan apakah cutoffTime
 // hari ini sudah lewat; bila ya, tandai ALPHA siswa tanpa record.
 // Gagal satu sekolah tidak menghentikan sekolah lain.
-import { db } from "@sms/db/client";
-import { runAsSchool } from "@sms/db/tenant";
-import { todayWib, pickAutoAlpha } from "@sms/shared/attendance";
+import { db } from "@lacakedu/db/client";
+import { runAsSchool } from "@lacakedu/db/tenant";
+import { todayWib, pickAutoAlpha } from "@lacakedu/shared/attendance";
 import { sendAlphaAlerts } from "./reminders.js";
 
 function cutoffPassed(cutoff: string, nowWib: Date): boolean {

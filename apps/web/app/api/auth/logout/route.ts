@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { SESSION_COOKIE } from "@sms/shared/auth";
+import { SESSION_COOKIE } from "@lacakedu/shared/auth";
 import { authorize } from "@/server/auth-gate";
 import { revokeSession, clearCookieHeader } from "@/server/session";
 import { logAuth } from "@/server/audit";

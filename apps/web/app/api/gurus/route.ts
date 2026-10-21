@@ -1,12 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
-import { db } from "@sms/db/client";
-import { runAsSchool } from "@sms/db/tenant";
+import { db } from "@lacakedu/db/client";
+import { runAsSchool } from "@lacakedu/db/tenant";
 
 // GET /api/gurus — publik: daftar guru aktif + mapel + email (tanpa login).
 // Dipakai halaman /anonim untuk memilih penerima "Pesan baru".
 export async function GET(req: NextRequest) {
   const host = req.headers.get("host") ?? "";
-  const slug = (await import("@sms/shared/school")).schoolSlugFromHost(host, process.env.APEX_DOMAIN ?? "localtest.me");
+  const slug = (await import("@lacakedu/shared/school")).schoolSlugFromHost(host, process.env.APEX_DOMAIN ?? "localtest.me");
   if (!slug) return NextResponse.json({ error: "not found" }, { status: 404 });
 
   const school = await db.school.findFirst({ where: { slug }, select: { id: true } });

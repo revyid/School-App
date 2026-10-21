@@ -1,8 +1,8 @@
 // Outbox WA milik web: tulis baris + enqueue BullMQ ( TANPA mengimpor kode worker).
 import { Queue } from "bullmq";
 import { Redis } from "ioredis";
-import { db } from "@sms/db/client";
-import { runAsSchool } from "@sms/db/tenant";
+import { db } from "@lacakedu/db/client";
+import { runAsSchool } from "@lacakedu/db/tenant";
 
 let _q: Queue | null = null;
 function q(): Queue {

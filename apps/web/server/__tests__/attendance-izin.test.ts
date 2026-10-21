@@ -1,8 +1,8 @@
 import { describe, it, expect, beforeAll, afterAll, vi } from "vitest";
 import { NextRequest } from "next/server";
-import { db } from "@sms/db/client";
-import { dbSystemTest as dbSystem } from "@sms/db/test-utils"; // TEST-ONLY
-import { runAsSchool } from "@sms/db/tenant";
+import { db } from "@lacakedu/db/client";
+import { dbSystemTest as dbSystem } from "@lacakedu/db/test-utils"; // TEST-ONLY
+import { runAsSchool } from "@lacakedu/db/tenant";
 
 // Gate dive-mock: tes fokus pada efek DB. Auth asli butuh Redis (mati di CI lokal).
 const auth = vi.hoisted(() => ({ schoolId: "", userId: "", role: "ADMIN" as "ADMIN" | "GURU" | "SISWA" }));

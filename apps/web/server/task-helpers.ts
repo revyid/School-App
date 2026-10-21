@@ -1,6 +1,6 @@
 // T2: helper bersama API tugas v2 — akses, pengecekan kategori, XP & notifikasi.
-import { db } from "@sms/db/client";
-import { runAsSchool } from "@sms/db/tenant";
+import { db } from "@lacakedu/db/client";
+import { runAsSchool } from "@lacakedu/db/tenant";
 import { guruClassIds } from "@/server/lms-scope";
 import { notifyUser } from "@/server/notify";
 import { awardExp } from "@/server/exp";

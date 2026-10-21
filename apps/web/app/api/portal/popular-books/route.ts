@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { schoolSlugFromHost } from "@sms/shared/school";
+import { schoolSlugFromHost } from "@lacakedu/shared/school";
 import { getPublicSchool } from "@/lib/public-cache";
 
 // GET /api/portal/popular-books — daftar buku pelajaran gratis semua mapel

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { apiGate } from "@/server/api-gate";
-import { db } from "@sms/db/client";
-import { runAsSchool } from "@sms/db/tenant";
+import { db } from "@lacakedu/db/client";
+import { runAsSchool } from "@lacakedu/db/tenant";
 
 // GET /api/assignments?teacherId&classId — ADMIN/GURU (READ-ONLY).
 // Penugasan dibaca LIVE dari TimetableSlot (shared data): distinct pasangan

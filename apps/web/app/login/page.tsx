@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { Eye, EyeOff } from "lucide-react";
-import { ROLE_HOME } from "@sms/shared/auth";
+import { ROLE_HOME } from "@lacakedu/shared/auth";
 import PublicLogo from "@/components/PublicLogo";
 
 export default function LoginPage() {

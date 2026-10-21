@@ -4,7 +4,7 @@
 --   sms        : superuser (dibuat image postgres dari POSTGRES_USER). DDL + migrate.
 --                Superuser MELEWATI semua RLS termasuk FORCE — migrasi tidak buta.
 --                Password-nya TIDAK PERNAH masuk ke env aplikasi.
---   app_system : LOGIN + BYPASSRLS. HANYA untuk test lintas-sekolah + @sms/cli
+--   app_system : LOGIN + BYPASSRLS. HANYA untuk test lintas-sekolah + @lacakedu/cli
 --                (operasi manual host). Bukan untuk request biasa.
 --   app_user   : runtime tenant. Tanpa SET LOCAL app.school_id → buta total,
 --                kecuali SELECT publik tabel School (by design).

@@ -317,7 +317,7 @@ export default function PortalPage() {
           </div>
           <div style={{ display: "flex", justifyContent: "space-between", gap: 20, paddingTop: 19, borderTop: "1px solid rgba(255,255,255,.15)", color: "rgba(255,253,248,.6)", fontFamily: "var(--font-meta)", fontSize: 10, textTransform: "uppercase" }}>
             <span>{nama}</span>
-            <span>SMS-LMS</span>
+            <span>Lacakedu</span>
           </div>
         </footer>
       </main>

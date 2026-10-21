@@ -15,10 +15,10 @@
     ]
   },
   "scripts": {
-    "build": "pnpm --filter @sms/db exec prisma generate && pnpm -r --if-present run build",
-    "test": "pnpm --filter @sms/shared exec vitest run && pnpm --filter @sms/db exec vitest run src/tests/tenant-isolation.test.ts && pnpm --filter @sms/web exec vitest run server/__tests__/ && pnpm --filter @sms/worker exec vitest run src/",
+    "build": "pnpm --filter @lacakedu/db exec prisma generate && pnpm -r --if-present run build",
+    "test": "pnpm --filter @lacakedu/shared exec vitest run && pnpm --filter @lacakedu/db exec vitest run src/tests/tenant-isolation.test.ts && pnpm --filter @lacakedu/web exec vitest run server/__tests__/ && pnpm --filter @lacakedu/worker exec vitest run src/",
     "lint": "sh scripts/lint-imports.sh",
-    "check": "pnpm --filter '@sms/*' exec tsc --noEmit"
+    "check": "pnpm --filter '@lacakedu/*' exec tsc --noEmit"
   },
   "devDependencies": {
     "typescript": "5.9.3"

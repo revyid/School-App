@@ -1,5 +1,5 @@
 // FakeProvider untuk tes otomatis: merekam kiriman tanpa jaringan WA.
-import type { MessageProvider } from "@sms/shared/notify";
+import type { MessageProvider } from "@lacakedu/shared/notify";
 
 export class FakeProvider implements MessageProvider {
   readonly name = "fake";

@@ -1,7 +1,7 @@
 // Helper notifikasi in-app: kanal utama. Push web sekunder (fire-and-forget).
 // N5: notifyUser menerima href tujuan + kind; kolom Notification sudah ada.
-import { db } from "@sms/db/client";
-import { runAsSchool } from "@sms/db/tenant";
+import { db } from "@lacakedu/db/client";
+import { runAsSchool } from "@lacakedu/db/tenant";
 import { sendPushToUser } from "./push";
 import { Redis } from "ioredis";
 

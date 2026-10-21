@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
-import { SESSION_COOKIE } from "@sms/shared/auth";
+import { SESSION_COOKIE } from "@lacakedu/shared/auth";
 import { requireRole } from "@/server/auth-gate";
-import { db } from "@sms/db/client";
-import { runAsSchool } from "@sms/db/tenant";
+import { db } from "@lacakedu/db/client";
+import { runAsSchool } from "@lacakedu/db/tenant";
 import { logAuth } from "@/server/audit";
-import { categoryInputSchema } from "@sms/shared/lms";
+import { categoryInputSchema } from "@lacakedu/shared/lms";
 import { canManageTask } from "@/server/task-helpers";
 import { removeFile } from "@/server/files";
 

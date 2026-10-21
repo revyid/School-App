@@ -1,7 +1,7 @@
 // Helper scope LMS: guru hanya kelas yang diajar/diampu wali.
 // "Diajar" dibaca LIVE dari TimetableSlot (shared data — tidak ada tabel cache).
-import { db } from "@sms/db/client";
-import { runAsSchool } from "@sms/db/tenant";
+import { db } from "@lacakedu/db/client";
+import { runAsSchool } from "@lacakedu/db/tenant";
 
 export async function guruSlotClasses(schoolId: string, guruId: string): Promise<Set<string>> {
   const rows = await runAsSchool(db, schoolId, (tx) =>

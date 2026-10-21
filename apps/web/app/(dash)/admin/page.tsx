@@ -1,7 +1,7 @@
 import { headers } from "next/headers";
 import AdminDashboard from "./dashboard";
 import AdminLoginPage from "@/app/admin-login/page";
-import { isRootHost } from "@sms/shared/school";
+import { isRootHost } from "@lacakedu/shared/school";
 
 // /admin: di subdomain sekolah = dasbor admin sekolah, di apex = login root.
 export default async function AdminPage() {

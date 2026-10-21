@@ -1,6 +1,6 @@
 import { headers } from "next/headers";
 import LegalShell from "@/components/LegalShell";
-import { schoolSlugFromHost } from "@sms/shared/school";
+import { schoolSlugFromHost } from "@lacakedu/shared/school";
 import { getPublicSchool } from "@/lib/public-cache";
 
 // Syarat layanan. Sengaja DIPISAH dari kebijakan privasi (Pasal 22 UU PDP):

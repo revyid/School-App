@@ -1,12 +1,12 @@
 #!/usr/bin/env node
 import argon2 from "argon2";
 import { randomBytes } from "node:crypto";
-import { isValidSlug } from "@sms/shared/school";
+import { isValidSlug } from "@lacakedu/shared/school";
 import { dbSystem } from "./system.js";
 
-const usage = `pakai: sms-admin create-school <slug> <nama>
-       sms-admin create-admin <schoolSlug> <email> <nama>
-       sms-admin reset-password <schoolSlug> <email-atau-nisn>`;
+const usage = `pakai: lacakedu-admin create-school <slug> <nama>
+       lacakedu-admin create-admin <schoolSlug> <email> <nama>
+       lacakedu-admin reset-password <schoolSlug> <email-atau-nisn>`;
 
 async function audit(schoolId: string, action: string, meta: object) {
   await dbSystem.auditLog.create({ data: { schoolId, actorId: null, action, meta } });

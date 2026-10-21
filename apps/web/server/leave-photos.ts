@@ -4,7 +4,7 @@
 import { mkdir, writeFile, unlink } from "node:fs/promises";
 import { randomBytes } from "node:crypto";
 import path from "node:path";
-import { MAX_LEAVE_PHOTO } from "@sms/shared/leave";
+import { MAX_LEAVE_PHOTO } from "@lacakedu/shared/leave";
 
 export function detectLeavePhoto(buf: Buffer): "jpg" | "png" | null {
   if (buf.length < 4) return null;

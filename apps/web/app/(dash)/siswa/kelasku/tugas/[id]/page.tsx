@@ -13,7 +13,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { TASK_TYPE_LABEL, SUBMIT_STATE_LABEL, UPLOAD_ACCEPT_LABEL } from "@sms/shared/lms";
+import { TASK_TYPE_LABEL, SUBMIT_STATE_LABEL, UPLOAD_ACCEPT_LABEL } from "@lacakedu/shared/lms";
 import UploadPopup from "@/components/UploadPopup";
 import { ArrowLeftIcon, FileTextIcon, ImageIcon, FileUpIcon, UsersIcon, CheckCircle2Icon, XCircleIcon } from "lucide-react";
 

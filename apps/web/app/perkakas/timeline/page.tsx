@@ -1,12 +1,12 @@
-import { schoolSlugFromHost } from "@sms/shared/school";
-import { db } from "@sms/db/client";
-import { runAsSchool } from "@sms/db/tenant";
+import { schoolSlugFromHost } from "@lacakedu/shared/school";
+import { db } from "@lacakedu/db/client";
+import { runAsSchool } from "@lacakedu/db/tenant";
 import { headers } from "next/headers";
 import PublicHeader from "@/components/PublicHeader";
 import TimelineLoader from "./TimelineLoader";
 
 export const metadata = {
-  title: "Generator Timeline PNG — Tools SMS-LMS",
+  title: "Generator Timeline PNG — Tools Lacakedu",
   description:
     "Buat infografis timeline vertikal atau horizontal (terang/gelap, transparan) lalu unduh sebagai gambar PNG resolusi tinggi.",
 };

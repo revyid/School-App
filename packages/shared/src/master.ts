@@ -60,6 +60,24 @@ export const settingsSchema = z.object({
   expRules: expRulesSchema.optional().nullable(),
 });
 
+// Setelan yang boleh diubah SUPER_ADMIN untuk sebuah sekolah.
+// Partial (semua opsional) + kolom branding. Dipakai juga oleh API sekolah.
+export const rootSchoolSettingsSchema = settingsSchema.partial().extend({
+  characterImageUrl: z.string().trim().max(255).optional().nullable(),
+  heroImageUrl: z.string().trim().max(255).optional().nullable(),
+  dashboardBannerUrl: z.string().trim().max(255).optional().nullable(),
+  brandColor: z
+    .string()
+    .trim()
+    .regex(/^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/, "warna harus format hex")
+    .optional()
+    .nullable(),
+  portalTheme: z.string().trim().max(32).optional(),
+  timezone: z.string().trim().max(64).optional(),
+});
+
+export type RootSchoolSettings = z.infer<typeof rootSchoolSettingsSchema>;
+
 export const teacherCreateSchema = z.object({
   email: z.string().trim().email().max(128),
   name: z.string().trim().min(1).max(128),

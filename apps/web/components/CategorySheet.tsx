@@ -10,7 +10,7 @@ import {
 } from "@/components/ui/sheet";
 import { Trash2Icon } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { UPLOAD_ACCEPT_LABEL } from "@sms/shared/lms";
+import { UPLOAD_ACCEPT_LABEL } from "@lacakedu/shared/lms";
 
 export interface CatItem {
   id?: string;

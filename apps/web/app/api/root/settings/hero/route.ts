@@ -2,9 +2,9 @@ import { NextRequest, NextResponse } from "next/server";
 import { revalidateTag } from "next/cache";
 import { purgeEdge } from "@/server/cf-purge";
 import { readFile } from "node:fs/promises";
-import { SESSION_COOKIE } from "@sms/shared/auth";
+import { SESSION_COOKIE } from "@lacakedu/shared/auth";
 import { requireRole } from "@/server/auth-gate";
-import { getRootDb } from "@sms/db/root";
+import { getRootDb } from "@lacakedu/db/root";
 import { saveBrandImage } from "@/server/images";
 import { ROOT_SETTINGS_TAG } from "@/lib/public-cache";
 

@@ -1,7 +1,7 @@
 // Next 16: Proxy. Auth penuh di authorize(); proxy hanya routing kasar + nonce CSP.
 import { NextResponse, type NextRequest } from "next/server";
-import { schoolSlugFromHost, isRootHost } from "@sms/shared/school";
-import { SESSION_COOKIE } from "@sms/shared/auth";
+import { schoolSlugFromHost, isRootHost } from "@lacakedu/shared/school";
+import { SESSION_COOKIE } from "@lacakedu/shared/auth";
 
 const apex = process.env.APEX_DOMAIN ?? "domainmu.id";
 

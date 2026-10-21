@@ -1,6 +1,6 @@
-import { db } from "@sms/db/client";
-import { runAsSchool } from "@sms/db/tenant";
-import { schoolSlugFromHost } from "@sms/shared/school";
+import { db } from "@lacakedu/db/client";
+import { runAsSchool } from "@lacakedu/db/tenant";
+import { schoolSlugFromHost } from "@lacakedu/shared/school";
 import { readSession, csrfOk } from "./session";
 
 const apex = () => process.env.APEX_DOMAIN ?? "domainmu.id";

@@ -30,5 +30,7 @@ for i in $(seq 1 25); do
   sleep 2
 done
 
-ssh "$VPS" 'SID=$(curl -s -D - -o /dev/null -X POST http://127.0.0.1:8080/api/auth/admin-login -H "Host: lacakedu.web.id" -H "Origin: https://lacakedu.web.id" -H "Content-Type: application/json" -d "{\"email\":\"admin@lacakedu.web.id\",\"password\":\"qeB-srzOcSPl-Hit\"}" | grep -o "__Host-session=[^;]*" | cut -d= -f2); echo "  /api/auth/me => $(curl -s -b "Cookie: __Host-session=$SID" -H "Host: lacakedu.web.id" http://127.0.0.1:8080/api/auth/me | head -c 90)"; echo "  /api/root/users => $(curl -s -o /dev/null -w %{http_code} -b "Cookie: __Host-session=$SID" -H "Host: lacakedu.web.id" http://127.0.0.1:8080/api/root/users?perPage=200")"'
+# Verifikasi tanpa kredensial: cek halaman publik + pastikan API root hidup & TERGATE.
+# (Password root tidak pernah ditulis di repo.)
+ssh "$VPS" 'for p in /beranda /api/health /privasi; do printf "  %-16s => " "$p"; curl -s -o /dev/null -w "%{http_code}\n" -m 10 -H "Host: lacakedu.web.id" http://127.0.0.1:8080$p; done; printf "  %-16s => " "/api/root/users"; curl -s -o /dev/null -w "%{http_code} (401 = hidup & digate)\n" -m 10 -H "Host: lacakedu.web.id" "http://127.0.0.1:8080/api/root/users?perPage=5"; printf "  %-16s => " "/api/books"; curl -s -o /dev/null -w "%{http_code} (401 = hidup & digate)\n" -m 10 -H "Host: lacakedu.web.id" http://127.0.0.1:8080/api/books'
 echo "deploy selesai ✓"

@@ -1,9 +1,9 @@
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
 import { mkdir, writeFile } from "node:fs/promises";
 import * as XLSX from "xlsx";
-import { db } from "@sms/db/client";
-import { runAsSchool } from "@sms/db/tenant";
-import { dbSystemTest as dbSystem } from "@sms/db/test-utils"; // TEST-ONLY
+import { db } from "@lacakedu/db/client";
+import { runAsSchool } from "@lacakedu/db/tenant";
+import { dbSystemTest as dbSystem } from "@lacakedu/db/test-utils"; // TEST-ONLY
 import { processImportBatch } from "./import-processor.js";
 
 const UPLOADS = process.env.UPLOADS_ROOT ?? "/home/revy/Projects/me/sms-lms/data/uploads";

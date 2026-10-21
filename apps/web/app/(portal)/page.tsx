@@ -1,7 +1,7 @@
 import { headers } from "next/headers";
 import PortalHome from "./PortalHome";
 import LandingPage from "../beranda/page";
-import { isRootHost } from "@sms/shared/school";
+import { isRootHost } from "@lacakedu/shared/school";
 
 // "/" milik sekolah; di apex "/" = landing platform.
 export default async function Page() {

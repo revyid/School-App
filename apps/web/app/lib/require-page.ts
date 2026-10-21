@@ -6,9 +6,9 @@
 // satu query user + satu query settings (sebelumnya 2× karena dipanggil
 // layout (dash) DAN layout peran).
 import { cache } from "react";
-import { db } from "@sms/db/client";
-import { runAsSchool } from "@sms/db/tenant";
-import { ROLE_HOME, SESSION_COOKIE } from "@sms/shared/auth";
+import { db } from "@lacakedu/db/client";
+import { runAsSchool } from "@lacakedu/db/tenant";
+import { ROLE_HOME, SESSION_COOKIE } from "@lacakedu/shared/auth";
 import { authorize, type Role } from "@/server/auth-gate";
 
 export interface PageInput {

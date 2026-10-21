@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { apiGate } from "@/server/api-gate";
-import { db } from "@sms/db/client";
-import { runAsSchool } from "@sms/db/tenant";
+import { db } from "@lacakedu/db/client";
+import { runAsSchool } from "@lacakedu/db/tenant";
 import { logAuth } from "@/server/audit";
-import { timetableSlotSchema } from "@sms/shared/master";
+import { timetableSlotSchema } from "@lacakedu/shared/master";
 import { siswaClassId } from "@/server/lms-scope";
 import { validateSlotRefs } from "@/server/timetable-subjects";
 
@@ -131,7 +131,7 @@ export async function DELETE(req: NextRequest) {
   return NextResponse.json({ ok: true });
 }
 
-import { timetableSlotInputSchema } from "@sms/shared/master";
+import { timetableSlotInputSchema } from "@lacakedu/shared/master";
 
 export const bulkSchema = z.object({
   classId: z.string().min(1).max(64),

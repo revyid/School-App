@@ -1,6 +1,6 @@
 import { createReadStream, promises as fsp } from "node:fs";
 import { NextRequest, NextResponse } from "next/server";
-import { schoolSlugFromHost } from "@sms/shared/school";
+import { schoolSlugFromHost } from "@lacakedu/shared/school";
 import { getPublicSchool } from "@/lib/public-cache";
 
 const root = () => process.env.UPLOADS_ROOT ?? "/data/uploads";

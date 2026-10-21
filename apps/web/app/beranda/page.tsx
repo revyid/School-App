@@ -52,7 +52,7 @@ export default function LandingPage() {
             borderBottom: "1px solid rgba(23,23,22,.14)",
           }}
         >
-          <span className="display" style={{ fontSize: 20, letterSpacing: "-0.04em" }}>SMS-LMS</span>
+          <span className="display" style={{ fontSize: 20, letterSpacing: "-0.04em" }}>Lacakedu</span>
           <nav style={{ display: "flex", gap: "clamp(18px, 3vw, 44px)", marginLeft: "auto", fontSize: 12, fontWeight: 600 }}>
             <a href="#fitur" style={{ color: "#575752", textDecoration: "none" }}>Fitur</a>
             <a href="#sekolah" style={{ color: "#575752", textDecoration: "none" }}>Sekolah</a>
@@ -170,7 +170,7 @@ export default function LandingPage() {
         <footer style={{ padding: "80px clamp(24px, 7vw, 112px) 25px", color: "#fffdf8", background: "#171716" }}>
           <div style={{ display: "flex", justifyContent: "space-between", gap: 50, flexWrap: "wrap", paddingBottom: 60 }}>
             <div>
-              <span className="display" style={{ fontSize: 22, letterSpacing: "-0.04em" }}>SMS-LMS</span>
+              <span className="display" style={{ fontSize: 22, letterSpacing: "-0.04em" }}>Lacakedu</span>
               <p style={{ marginTop: 16, color: "rgba(255,253,248,.62)", fontSize: 14, lineHeight: 1.6, maxWidth: 320 }}>
                 Platform manajemen sekolah terpadu. Menghubungkan guru, siswa, dan orang tua dalam satu ekosistem digital.
               </p>
@@ -194,7 +194,7 @@ export default function LandingPage() {
             </div>
           </div>
           <div style={{ display: "flex", justifyContent: "space-between", gap: 20, paddingTop: 19, borderTop: "1px solid rgba(255,255,255,.15)", color: "rgba(255,253,248,.6)", fontFamily: "var(--font-meta)", fontSize: 10, textTransform: "uppercase" as const }}>
-            <span>SMS-LMS &copy; {new Date().getFullYear()}</span>
+            <span>Lacakedu &copy; {new Date().getFullYear()}</span>
             <span>Dibangun untuk sekolah</span>
           </div>
         </footer>

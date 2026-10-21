@@ -2,7 +2,7 @@
 
 // Tombol masuk adaptif: guest -> "/login" bertuliskan Masuk,
 // user login -> dasbor perannya bertuliskan "Buka dasbor".
-import { ROLE_HOME } from "@sms/shared/auth";
+import { ROLE_HOME } from "@lacakedu/shared/auth";
 import { useFetch } from "@/app/lib/api";
 
 const HOME: Record<string, string> = { ...(ROLE_HOME as Record<string, string>), SUPER_ADMIN: "/pantau/dashboard" };

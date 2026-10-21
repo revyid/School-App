@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 import { headers } from "next/headers";
 import { getPageAuth } from "@/app/lib/require-page";
-import { isRootHost } from "@sms/shared/school";
+import { isRootHost } from "@lacakedu/shared/school";
 
 // F4: hanya membaca hasil cache getPageAuth + cek peran (tanpa query ulang).
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {

@@ -1,6 +1,6 @@
 import argon2 from "argon2";
-import { db } from "@sms/db/client";
-import { runAsSchool } from "@sms/db/tenant";
+import { db } from "@lacakedu/db/client";
+import { runAsSchool } from "@lacakedu/db/tenant";
 import { loginRateLimit } from "./rate-limit";
 import { createSession } from "./session";
 import { logAuth } from "./audit";

@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { cookies, headers } from "next/headers";
-import { SESSION_COOKIE } from "@sms/shared/auth";
+import { SESSION_COOKIE } from "@lacakedu/shared/auth";
 import { authorize } from "@/server/auth-gate";
 
 // Root-admin: semua halaman di segmen ini dirender dinamis (sesi per request).
@@ -45,7 +45,7 @@ export default async function PantauLayout({ children }: { children: React.React
         >
           <Link href="/pantau/dashboard" style={{ textDecoration: "none", color: "inherit" }}>
             <span className="kicker" style={{ display: "block" }}>Root admin</span>
-            <span className="display" style={{ fontSize: 20 }}>SMS-LMS · Pantau</span>
+            <span className="display" style={{ fontSize: 20 }}>Lacakedu · Pantau</span>
           </Link>
           <nav aria-label="Navigasi root" style={{ display: "flex", flexWrap: "wrap", gap: 4 }}>
             {TABS.map((t) => {

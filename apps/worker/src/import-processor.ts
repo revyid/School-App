@@ -4,9 +4,9 @@ import argon2 from "argon2";
 import { randomBytes } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import * as XLSX from "xlsx";
-import { db } from "@sms/db/client";
-import { runAsSchool } from "@sms/db/tenant";
-import { validateImportRow, type ImportRowOk } from "@sms/shared/master";
+import { db } from "@lacakedu/db/client";
+import { runAsSchool } from "@lacakedu/db/tenant";
+import { validateImportRow, type ImportRowOk } from "@lacakedu/shared/master";
 
 const CHUNK = 50;
 const TX_OPTS = { timeout: 120_000, maxWait: 15_000 };

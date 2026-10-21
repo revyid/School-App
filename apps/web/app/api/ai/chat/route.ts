@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
-import { SESSION_COOKIE } from "@sms/shared/auth";
+import { SESSION_COOKIE } from "@lacakedu/shared/auth";
 import { requireRole } from "@/server/auth-gate";
 import { hit } from "@/server/rate-limit";
-import { db } from "@sms/db/client";
-import { runAsSchool } from "@sms/db/tenant";
-import { schoolSlugFromHost } from "@sms/shared/school";
+import { db } from "@lacakedu/db/client";
+import { runAsSchool } from "@lacakedu/db/tenant";
+import { schoolSlugFromHost } from "@lacakedu/shared/school";
 import { siteGuidePrompt, type PublicSiteInfo } from "@/server/ai-site-guide";
 import { ipOf } from "@/server/request-ip";
 

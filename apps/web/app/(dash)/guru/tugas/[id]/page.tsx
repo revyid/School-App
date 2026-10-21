@@ -22,7 +22,7 @@ import { Switch } from "@/components/ui/switch";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
 } from "@/components/ui/dialog";
-import { TASK_TYPE_LABEL, SUBMIT_STATE_LABEL } from "@sms/shared/lms";
+import { TASK_TYPE_LABEL, SUBMIT_STATE_LABEL } from "@lacakedu/shared/lms";
 import { ArrowLeftIcon, BellIcon, FileTextIcon, UsersIcon, Trash2Icon, PlusIcon } from "lucide-react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { cn } from "@/lib/utils";

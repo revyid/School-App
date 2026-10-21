@@ -9,7 +9,7 @@ import { Suspense, useState } from "react";
 import { useFetch } from "@/app/lib/api";
 import { Select, SelectTrigger, SelectValue, SelectPositioner, SelectPopup, SelectItem } from "@/components/ui/select";
 import { PlusIcon } from "lucide-react";
-import { TASK_TYPE_LABEL } from "@sms/shared/lms";
+import { TASK_TYPE_LABEL } from "@lacakedu/shared/lms";
 import { Skeleton } from "@/components/ui/skeleton";
 import { PageHead } from "@/components/ui/page-header";
 import { Card } from "@/components/ui/card";

@@ -1,10 +1,10 @@
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
 import { NextRequest } from "next/server.js";
 import argon2 from "argon2";
-import { SESSION_COOKIE } from "@sms/shared/auth";
-import { db } from "@sms/db/client";
-import { dbSystemTest as dbSystem } from "@sms/db/test-utils"; // TEST-ONLY
-import { runAsSchool } from "@sms/db/tenant";
+import { SESSION_COOKIE } from "@lacakedu/shared/auth";
+import { db } from "@lacakedu/db/client";
+import { dbSystemTest as dbSystem } from "@lacakedu/db/test-utils"; // TEST-ONLY
+import { runAsSchool } from "@lacakedu/db/tenant";
 import { createSession } from "../session.js";
 import { redis } from "../redis.js";
 import { GET } from "../../app/api/timetable/route.js";

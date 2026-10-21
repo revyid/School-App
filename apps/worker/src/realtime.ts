@@ -2,10 +2,10 @@
 // worker (Socket.io, room per sekolah) broadcast ke browser guru.
 import { Server as SocketServer } from "socket.io";
 import { Redis } from "ioredis";
-import { db } from "@sms/db/client";
-import { runAsSchool } from "@sms/db/tenant";
+import { db } from "@lacakedu/db/client";
+import { runAsSchool } from "@lacakedu/db/tenant";
 import { authorizeSocket } from "./socket-auth.js";
-import { SESSION_COOKIE } from "@sms/shared/auth";
+import { SESSION_COOKIE } from "@lacakedu/shared/auth";
 
 const apex = () => process.env.APEX_DOMAIN ?? "domainmu.id";
 const sub = new Redis(process.env.REDIS_URL ?? "redis://127.0.0.1:6379", {

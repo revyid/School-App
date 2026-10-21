@@ -1,5 +1,5 @@
 {
-  "name": "@sms/worker",
+  "name": "@lacakedu/worker",
   "version": "0.1.0",
   "private": true,
   "type": "module",
@@ -8,8 +8,8 @@
     "start": "node dist/index.js"
   },
   "dependencies": {
-    "@sms/db": "workspace:*",
-    "@sms/shared": "workspace:*",
+    "@lacakedu/db": "workspace:*",
+    "@lacakedu/shared": "workspace:*",
     "@whiskeysockets/baileys": "7.0.0-rc14",
     "argon2": "0.45.1",
     "bullmq": "6.3.11",

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { schoolSlugFromHost } from "@sms/shared/school";
+import { schoolSlugFromHost } from "@lacakedu/shared/school";
 import { getPortalInfo } from "@/lib/public-cache";
 
 // GET /api/portal/info — publik (tanpa login): nama, lat/lng, CTA, pengumuman ALL.

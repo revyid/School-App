@@ -4,14 +4,14 @@ import argon2 from "argon2";
 import { apiGate } from "@/server/api-gate";
 import { hit } from "@/server/rate-limit";
 import { ipOf } from "@/server/request-ip";
-import { db } from "@sms/db/client";
-import { runAsSchool } from "@sms/db/tenant";
+import { db } from "@lacakedu/db/client";
+import { runAsSchool } from "@lacakedu/db/tenant";
 import { logAuth } from "@/server/audit";
 import { resolveDefaultPassword } from "@/server/password";
 import { saveImportFile } from "@/server/uploads";
 import { enqueueImport } from "@/server/queue";
 import { guruClassIds } from "@/server/lms-scope";
-import { paginationSchema, studentCreateSchema, normalizePhone } from "@sms/shared/master";
+import { paginationSchema, studentCreateSchema, normalizePhone } from "@lacakedu/shared/master";
 
 const ip = ipOf;
 

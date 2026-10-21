@@ -126,7 +126,7 @@ async function renderCardCanvas(
   ctx.fillRect(28, 775, 544, 45);
   ctx.fillStyle = "#171716";
   ctx.font = "bold 13px sans-serif";
-  ctx.fillText("SMS-LMS • PRESENSI & PORTAL SISWA DIGITAL", 300, 803);
+  ctx.fillText("Lacakedu • PRESENSI & PORTAL SISWA DIGITAL", 300, 803);
 
   return new Promise((resolve) => {
     canvas.toBlob((blob) => resolve(blob!), "image/png");

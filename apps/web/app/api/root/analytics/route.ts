@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import { SESSION_COOKIE } from "@sms/shared/auth";
+import { SESSION_COOKIE } from "@lacakedu/shared/auth";
 import { requireRole } from "@/server/auth-gate";
-import { getRootDb } from "@sms/db/root";
+import { getRootDb } from "@lacakedu/db/root";
 
 // GET /api/root/analytics — SUPER_ADMIN: agregat platform 30 hari terakhir.
 export async function GET(req: NextRequest) {

@@ -1,4 +1,4 @@
-// Helper enqueue BullMQ dari web. Web TIDAK mengimpor @sms/worker;
+// Helper enqueue BullMQ dari web. Web TIDAK mengimpor @lacakedu/worker;
 // antrean diakses langsung via Redis yang sama. Nama antrean + jobId
 // harus sinkron dengan apps/worker/src/queues.ts.
 import { Queue } from "bullmq";

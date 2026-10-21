@@ -1,11 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createHash } from "node:crypto";
-import { SESSION_COOKIE } from "@sms/shared/auth";
+import { SESSION_COOKIE } from "@lacakedu/shared/auth";
 import { requireRole } from "@/server/auth-gate";
 import { hit } from "@/server/rate-limit";
-import { db } from "@sms/db/client";
-import { runAsSchool } from "@sms/db/tenant";
-import { normalizePhone } from "@sms/shared/notify";
+import { db } from "@lacakedu/db/client";
+import { runAsSchool } from "@lacakedu/db/tenant";
+import { normalizePhone } from "@lacakedu/shared/notify";
 import { enqueueOutbox } from "@/server/outbox";
 
 async function gate(req: NextRequest) {

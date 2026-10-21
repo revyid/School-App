@@ -1,4 +1,4 @@
-import { schoolSlugFromHost } from "@sms/shared/school";
+import { schoolSlugFromHost } from "@lacakedu/shared/school";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { getPublicSchool } from "@/lib/public-cache";

@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
-import { dbSystemTest as dbSystem } from "@sms/db/test-utils"; // TEST-ONLY
-import { runAsSchool } from "@sms/db/tenant";
-import { db } from "@sms/db/client";
+import { dbSystemTest as dbSystem } from "@lacakedu/db/test-utils"; // TEST-ONLY
+import { runAsSchool } from "@lacakedu/db/tenant";
+import { db } from "@lacakedu/db/client";
 
 let S = "";
 

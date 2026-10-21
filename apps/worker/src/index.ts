@@ -40,7 +40,7 @@ app.get("/wa-status-all", async (req, res) => {
     res.status(403).send("forbidden");
     return;
   }
-  const { db } = await import("@sms/db/client");
+  const { db } = await import("@lacakedu/db/client");
   const schools = await db.school.findMany({ select: { id: true, slug: true } });
   const rows: { schoolId: string; slug: string; connected: boolean; detail: string }[] = [];
   for (const s of schools) {

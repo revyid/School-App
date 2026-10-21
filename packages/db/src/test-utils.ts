@@ -1,4 +1,4 @@
-// Helper TEST-ONLY. Tidak ada dependensi ke @sms/cli.
+// Helper TEST-ONLY. Tidak ada dependensi ke @lacakedu/cli.
 import { PrismaPg } from "@prisma/adapter-pg";
 import { PrismaClient } from "./prisma.js";
 

@@ -1,12 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
-import { SESSION_COOKIE } from "@sms/shared/auth";
+import { SESSION_COOKIE } from "@lacakedu/shared/auth";
 import { requireRole } from "@/server/auth-gate";
 import { hit } from "@/server/rate-limit";
-import { db } from "@sms/db/client";
-import { runAsSchool } from "@sms/db/tenant";
+import { db } from "@lacakedu/db/client";
+import { runAsSchool } from "@lacakedu/db/tenant";
 import { logAuth } from "@/server/audit";
 import { guruClassIds, siswaClassId } from "@/server/lms-scope";
-import { groupCreateSchema } from "@sms/shared/lms";
+import { groupCreateSchema } from "@lacakedu/shared/lms";
 import { notifyUser } from "@/server/notify";
 import { groupLockState } from "@/server/task-helpers";
 

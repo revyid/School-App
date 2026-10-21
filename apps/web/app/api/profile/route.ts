@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
-import { SESSION_COOKIE } from "@sms/shared/auth";
+import { SESSION_COOKIE } from "@lacakedu/shared/auth";
 import { requireRole } from "@/server/auth-gate";
-import { db } from "@sms/db/client";
-import { runAsSchool } from "@sms/db/tenant";
-import { profilePatchSchema } from "@sms/shared/master";
+import { db } from "@lacakedu/db/client";
+import { runAsSchool } from "@lacakedu/db/tenant";
+import { profilePatchSchema } from "@lacakedu/shared/master";
 
 async function gate(req: NextRequest, roles: ("ADMIN" | "GURU" | "SISWA")[]) {
   return requireRole({

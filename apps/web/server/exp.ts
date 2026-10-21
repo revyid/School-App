@@ -1,7 +1,7 @@
 // EXP: poin per aksi siswa, aturan configurable per sekolah (settings.expRules JSON).
 // Idempoten via dedupeKey (gagal duplikat = sudah diberi, bukan error).
-import { db } from "@sms/db/client";
-import { runAsSchool } from "@sms/db/tenant";
+import { db } from "@lacakedu/db/client";
+import { runAsSchool } from "@lacakedu/db/tenant";
 
 type Rules = {
   submitTepat?: number;

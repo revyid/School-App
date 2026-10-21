@@ -1,5 +1,5 @@
 import type { NextRequest } from "next/server";
-import { SESSION_COOKIE } from "@sms/shared/auth";
+import { SESSION_COOKIE } from "@lacakedu/shared/auth";
 import { requireRole, type SuperAuth, type TenantAuth } from "./auth-gate";
 
 // Pengganti fungsi gate() yang di-copy di tiap route.ts — perilaku auth identik.

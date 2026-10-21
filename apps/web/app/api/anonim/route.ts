@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import { schoolSlugFromHost } from "@sms/shared/school";
-import { db } from "@sms/db/client";
-import { runAsSchool } from "@sms/db/tenant";
+import { schoolSlugFromHost } from "@lacakedu/shared/school";
+import { db } from "@lacakedu/db/client";
+import { runAsSchool } from "@lacakedu/db/tenant";
 import { logAuth } from "@/server/audit";
 import { ipOf } from "@/server/request-ip";
 import { hit } from "@/server/rate-limit";

@@ -1,12 +1,12 @@
-import { schoolSlugFromHost } from "@sms/shared/school";
-import { db } from "@sms/db/client";
-import { runAsSchool } from "@sms/db/tenant";
+import { schoolSlugFromHost } from "@lacakedu/shared/school";
+import { db } from "@lacakedu/db/client";
+import { runAsSchool } from "@lacakedu/db/tenant";
 import { headers } from "next/headers";
 import PublicHeader from "@/components/PublicHeader";
 import PetaLoader from "./PetaLoader";
 
 export const metadata = {
-  title: "Pembuat Peta Digital — Tools SMS-LMS",
+  title: "Pembuat Peta Digital — Tools Lacakedu",
   description:
     "Buat peta rute animasi: kamera ikuti kendaraan atau pas di layar, jalur darat atau air, kendaraan per lokasi, ekspor MP4/PNG.",
 };

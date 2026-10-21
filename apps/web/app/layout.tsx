@@ -9,7 +9,7 @@ import "./globals.css";
 export const dynamic = "force-dynamic";
 
 export const metadata = {
-  title: "SMS-LMS",
+  title: "Lacakedu",
   description: "Sistem Manajemen Sekolah + LMS",
   manifest: "/manifest.webmanifest",
   robots: { index: true, follow: true },

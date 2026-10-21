@@ -3,7 +3,7 @@
 // otomatis — cara uji manual ada di docs/wa-manual.md.
 import { mkdir, readdir } from "node:fs/promises";
 import path from "node:path";
-import type { MessageProvider } from "@sms/shared/notify";
+import type { MessageProvider } from "@lacakedu/shared/notify";
 
 const waRoot = () => process.env.WA_SESSIONS_ROOT ?? "/data/wa-sessions";
 

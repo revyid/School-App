@@ -1,8 +1,8 @@
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
 import { Redis } from "ioredis";
-import { db } from "@sms/db/client";
-import { runAsSchool } from "@sms/db/tenant";
-import { dbSystemTest as dbSystem } from "@sms/db/test-utils"; // TEST-ONLY
+import { db } from "@lacakedu/db/client";
+import { runAsSchool } from "@lacakedu/db/tenant";
+import { dbSystemTest as dbSystem } from "@lacakedu/db/test-utils"; // TEST-ONLY
 import { authorizeSocket, parseCookies } from "./socket-auth.js";
 import { createTestSession } from "./test-session.js";
 

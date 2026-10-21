@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
-import { SESSION_COOKIE } from "@sms/shared/auth";
+import { SESSION_COOKIE } from "@lacakedu/shared/auth";
 import { requireRole } from "@/server/auth-gate";
-import { db } from "@sms/db/client";
-import { runAsSchool } from "@sms/db/tenant";
+import { db } from "@lacakedu/db/client";
+import { runAsSchool } from "@lacakedu/db/tenant";
 import { logAuth } from "@/server/audit";
-import { taskPatchSchema, taskTargetPatchSchema, isVisibleToStudent, submitState } from "@sms/shared/lms";
+import { taskPatchSchema, taskTargetPatchSchema, isVisibleToStudent, submitState } from "@lacakedu/shared/lms";
 import { guruClassIds, siswaClassId } from "@/server/lms-scope";
 import { canManageTask, notifyTaskChange } from "@/server/task-helpers";
 import { removeFile } from "@/server/files";

@@ -2,7 +2,7 @@ import { redirect } from "next/navigation";
 import { headers } from "next/headers";
 import { getPageAuth } from "@/app/lib/require-page";
 import DashShell, { type MenuItem } from "@/components/DashShell";
-import { isRootHost } from "@sms/shared/school";
+import { isRootHost } from "@lacakedu/shared/school";
 
 // U1: menu per peran — maks 7 item utama, ikon via string key MENU_ICONS (bukan komponen langsung).
 const MENUS: Record<string, { utama: MenuItem[]; lainnya: MenuItem[]; groups?: { label: string; items: MenuItem[] }[] }> = {

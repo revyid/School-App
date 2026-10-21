@@ -1,4 +1,4 @@
-// Wordmark SMS-LMS / Nama Sekolah: matahari kecil + teks (teks di HTML, bukan gambar).
+// Wordmark lacakedu / Nama Sekolah: matahari kecil + teks (teks di HTML, bukan gambar).
 // Bila `src` diisi (logo sekolah dari /api/portal/logo), gambar logo dipakai.
 import { cn } from "@/lib/utils";
 
@@ -37,7 +37,7 @@ export default function Logo({
           displayText
         ) : (
           <>
-            sms<span className="text-terracotta">-lms</span>
+            lacakedu
           </>
         )}
       </span>

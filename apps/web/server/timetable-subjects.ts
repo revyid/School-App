@@ -1,5 +1,5 @@
-import { db } from "@sms/db/client";
-import { runAsSchool } from "@sms/db/tenant";
+import { db } from "@lacakedu/db/client";
+import { runAsSchool } from "@lacakedu/db/tenant";
 // Resolve nama mapel bebas → Subject.id (find-or-create per sekolah).
 // Dipakai POST/PATCH/import timetable agar format Excel bebas (kolom Mapel teks)
 // tetap terhubung ke tabel Subject (dropdown guru + auto-mapping).

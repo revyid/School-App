@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
-import { SESSION_COOKIE } from "@sms/shared/auth";
+import { SESSION_COOKIE } from "@lacakedu/shared/auth";
 import { requireRole } from "@/server/auth-gate";
-import { db } from "@sms/db/client";
-import { runAsSchool } from "@sms/db/tenant";
-import { itemAnalysis, type QRow } from "@sms/shared/assess";
+import { db } from "@lacakedu/db/client";
+import { runAsSchool } from "@lacakedu/db/tenant";
+import { itemAnalysis, type QRow } from "@lacakedu/shared/assess";
 
 // GET /api/assessments/[id]/analysis — GURU (miliknya)/ADMIN: kesulitan + distraktor.
 // Kunci jawaban TIDAK dikirim (hanya stem + statistik).

@@ -3,9 +3,9 @@
 // Retry + backoff; tanpa fallback kanal lain.
 import { Queue, Worker, type Job } from "bullmq";
 import { Redis } from "ioredis";
-import { db } from "@sms/db/client";
-import { runAsSchool } from "@sms/db/tenant";
-import type { MessageProvider } from "@sms/shared/notify";
+import { db } from "@lacakedu/db/client";
+import { runAsSchool } from "@lacakedu/db/tenant";
+import type { MessageProvider } from "@lacakedu/shared/notify";
 import { BaileysProvider } from "./baileys-provider.js";
 import { FakeProvider } from "./fake-provider.js";
 

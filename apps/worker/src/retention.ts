@@ -2,8 +2,8 @@
 // Cron harian worker; gagal satu sekolah tidak menghentikan yang lain.
 import { unlink } from "node:fs/promises";
 import path from "node:path";
-import { db } from "@sms/db/client";
-import { runAsSchool } from "@sms/db/tenant";
+import { db } from "@lacakedu/db/client";
+import { runAsSchool } from "@lacakedu/db/tenant";
 
 async function deleteLeaveFile(schoolId: string, name: string): Promise<void> {
   const root = process.env.UPLOADS_ROOT ?? "/data/uploads";

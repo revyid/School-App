@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
 import argon2 from "argon2";
-import { dbSystemTest as dbSystem } from "@sms/db/test-utils"; // TEST-ONLY
-import { db } from "@sms/db/client";
+import { dbSystemTest as dbSystem } from "@lacakedu/db/test-utils"; // TEST-ONLY
+import { db } from "@lacakedu/db/client";
 import { createSession, readSession } from "../session";
 
 let saId = "";

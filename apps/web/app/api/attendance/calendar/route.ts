@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { apiGate } from "@/server/api-gate";
-import { db } from "@sms/db/client";
-import { runAsSchool } from "@sms/db/tenant";
+import { db } from "@lacakedu/db/client";
+import { runAsSchool } from "@lacakedu/db/tenant";
 import { logAuth } from "@/server/audit";
-import { calendarSchema, parseDay } from "@sms/shared/attendance";
+import { calendarSchema, parseDay } from "@lacakedu/shared/attendance";
 
 // GET /api/attendance/calendar[?month=YYYY-MM][?scope=semua|kelas:<id>|tingkat:<lvl>]
 // Tanpa month: daftar mendatang (hari ini ke depan, maks 200). Month tetap didukung untuk kompatibilitas.

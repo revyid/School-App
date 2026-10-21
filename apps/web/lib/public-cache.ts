@@ -1,7 +1,7 @@
 import { unstable_cache } from "next/cache";
-import { db } from "@sms/db/client";
-import { runAsSchool } from "@sms/db/tenant";
-import { getRootDb } from "@sms/db/root";
+import { db } from "@lacakedu/db/client";
+import { runAsSchool } from "@lacakedu/db/tenant";
+import { getRootDb } from "@lacakedu/db/root";
 
 // Cache data PUBLIK (tanpa sesi) lintas request. Kunci cache selalu memuat
 // slug sekolah: multi-tenant, jangan sampai data sekolah lain ikut terpakai.

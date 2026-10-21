@@ -3,11 +3,11 @@ import { randomBytes } from "node:crypto";
 import { NextRequest, NextResponse } from "next/server";
 import { apiGate } from "@/server/api-gate";
 import { hit } from "@/server/rate-limit";
-import { db } from "@sms/db/client";
-import { runAsSchool } from "@sms/db/tenant";
+import { db } from "@lacakedu/db/client";
+import { runAsSchool } from "@lacakedu/db/tenant";
 import { logAuth } from "@/server/audit";
 import { resolveDefaultPassword } from "@/server/password";
-import { teacherCreateSchema, teacherPatchSchema, paginationSchema } from "@sms/shared/master";
+import { teacherCreateSchema, teacherPatchSchema, paginationSchema } from "@lacakedu/shared/master";
 import { ipOf } from "@/server/request-ip";
 
 const ip = ipOf;

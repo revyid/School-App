@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { apiGate } from "@/server/api-gate";
 import { hit } from "@/server/rate-limit";
-import { db } from "@sms/db/client";
-import { runAsSchool } from "@sms/db/tenant";
+import { db } from "@lacakedu/db/client";
+import { runAsSchool } from "@lacakedu/db/tenant";
 import { logAuth } from "@/server/audit";
-import { taskInputSchema, isVisibleToStudent, submitState } from "@sms/shared/lms";
+import { taskInputSchema, isVisibleToStudent, submitState } from "@lacakedu/shared/lms";
 import { assertClassAccess, guruClassIds, siswaClassId } from "@/server/lms-scope";
 import { notifyTaskChange } from "@/server/task-helpers";
 

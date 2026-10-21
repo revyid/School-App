@@ -1,7 +1,7 @@
 {
-  "name": "SMS-LMS",
-  "short_name": "SMS",
-  "description": "Sistem Manajemen Sekolah + LMS",
+  "name": "Lacakedu",
+  "short_name": "Lacakedu",
+  "description": "Lacakedu — platform sekolah untuk belajar,-absen, danBerkarya",
   "start_url": "/login",
   "display": "standalone",
   "background_color": "#ffffff",

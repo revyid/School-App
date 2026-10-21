@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
-import { SESSION_COOKIE } from "@sms/shared/auth";
+import { SESSION_COOKIE } from "@lacakedu/shared/auth";
 import { requireRole } from "@/server/auth-gate";
-import { db } from "@sms/db/client";
-import { runAsSchool } from "@sms/db/tenant";
+import { db } from "@lacakedu/db/client";
+import { runAsSchool } from "@lacakedu/db/tenant";
 
 // GET /api/timetable/subjects?classId= — daftar mapel + guru per kelas
 // dari slot jadwal (auto-mapping). Dipakai dropdown form guru + sinkron penugasan.

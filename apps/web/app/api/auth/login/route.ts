@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import { loginSchema } from "@sms/shared/auth";
-import { schoolSlugFromHost } from "@sms/shared/school";
-import { db } from "@sms/db/client";
+import { loginSchema } from "@lacakedu/shared/auth";
+import { schoolSlugFromHost } from "@lacakedu/shared/school";
+import { db } from "@lacakedu/db/client";
 import { attemptLogin, AuthError } from "@/server/login";
 import { originOk } from "@/server/auth-gate";
 import { cookieHeader } from "@/server/session";

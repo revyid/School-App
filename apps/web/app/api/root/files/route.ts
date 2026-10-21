@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import { SESSION_COOKIE } from "@sms/shared/auth";
+import { SESSION_COOKIE } from "@lacakedu/shared/auth";
 import { requireRole } from "@/server/auth-gate";
-import { getRootDb } from "@sms/db/root";
+import { getRootDb } from "@lacakedu/db/root";
 
 // GET /api/root/files?schoolId= — SUPER_ADMIN: manifest file lintas sekolah
 // (dari DB, bukan dari disk). Byte file tetap diserve route per-sekolah.

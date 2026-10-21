@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
-import { SESSION_COOKIE } from "@sms/shared/auth";
+import { SESSION_COOKIE } from "@lacakedu/shared/auth";
 import { requireRole } from "@/server/auth-gate";
-import { db } from "@sms/db/client";
-import { runAsSchool } from "@sms/db/tenant";
+import { db } from "@lacakedu/db/client";
+import { runAsSchool } from "@lacakedu/db/tenant";
 import { logAuth } from "@/server/audit";
-import { collabInputSchema, collabSenderShown } from "@sms/shared/portal";
+import { collabInputSchema, collabSenderShown } from "@lacakedu/shared/portal";
 import { saveCollabFile } from "@/server/collab-files";
 
 async function teacherSubjects(schoolId: string, guruIds: string[]) {

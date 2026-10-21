@@ -4,10 +4,10 @@
 // Idempotent via dedupeKey outbox; gagal satu sekolah tidak menghentikan yang lain.
 import { Queue } from "bullmq";
 import { Redis } from "ioredis";
-import { db } from "@sms/db/client";
-import { runAsSchool } from "@sms/db/tenant";
-import { renderTemplate, DEFAULT_TEMPLATES } from "@sms/shared/notify";
-import { todayWib, dayKey } from "@sms/shared/attendance";
+import { db } from "@lacakedu/db/client";
+import { runAsSchool } from "@lacakedu/db/tenant";
+import { renderTemplate, DEFAULT_TEMPLATES } from "@lacakedu/shared/notify";
+import { todayWib, dayKey } from "@lacakedu/shared/attendance";
 
 let _q: Queue | null = null;
 function q(): Queue {

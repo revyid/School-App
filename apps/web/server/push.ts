@@ -1,7 +1,7 @@
 // Server utility: kirim push notification ke semua subscription user.
 // Dipanggil dari notifyUser() — bukan route publik.
 import webpush from "web-push";
-import { db } from "@sms/db/client";
+import { db } from "@lacakedu/db/client";
 import { createHash } from "node:crypto";
 
 // Prisma 7 generated client pakai @ts-nocheck sehingga model baru tidak

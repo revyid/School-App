@@ -8,7 +8,7 @@ import { api, useFetch } from "@/app/lib/api";
 import { Select, SelectTrigger, SelectValue, SelectPositioner, SelectPopup, SelectItem } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import CategorySheet from "@/components/CategorySheet";
-import { TASK_TYPE_LABEL } from "@sms/shared/lms";
+import { TASK_TYPE_LABEL } from "@lacakedu/shared/lms";
 import { PlusIcon, Trash2Icon } from "lucide-react";
 import { PageHead } from "@/components/ui/page-header";
 import { Card } from "@/components/ui/card";

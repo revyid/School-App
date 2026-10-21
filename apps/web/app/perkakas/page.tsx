@@ -1,6 +1,6 @@
-import { schoolSlugFromHost } from "@sms/shared/school";
-import { db } from "@sms/db/client";
-import { runAsSchool } from "@sms/db/tenant";
+import { schoolSlugFromHost } from "@lacakedu/shared/school";
+import { db } from "@lacakedu/db/client";
+import { runAsSchool } from "@lacakedu/db/tenant";
 import { headers } from "next/headers";
 import Link from "next/link";
 import PublicHeader from "@/components/PublicHeader";

@@ -1,8 +1,8 @@
 import { describe, it, expect, beforeAll, afterAll, afterEach } from "vitest";
 import argon2 from "argon2";
-import { db } from "@sms/db/client";
-import { dbSystemTest as dbSystem } from "@sms/db/test-utils"; // TEST-ONLY
-import { runAsSchool } from "@sms/db/tenant";
+import { db } from "@lacakedu/db/client";
+import { dbSystemTest as dbSystem } from "@lacakedu/db/test-utils"; // TEST-ONLY
+import { runAsSchool } from "@lacakedu/db/tenant";
 import { attemptLogin } from "../login.js";
 import { authorize, requireRole } from "../auth-gate.js";
 import { doChangePassword } from "../change-password.js";

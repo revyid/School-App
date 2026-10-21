@@ -1,6 +1,6 @@
 import argon2 from "argon2";
-import { db } from "@sms/db/client";
-import { getRootDb } from "@sms/db/root";
+import { db } from "@lacakedu/db/client";
+import { getRootDb } from "@lacakedu/db/root";
 import { loginRateLimit } from "./rate-limit";
 import { createSession } from "./session";
 

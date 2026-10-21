@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { revalidateTag } from "next/cache";
 import { purgeEdge } from "@/server/cf-purge";
-import { SESSION_COOKIE } from "@sms/shared/auth";
+import { SESSION_COOKIE } from "@lacakedu/shared/auth";
 import { requireRole } from "@/server/auth-gate";
-import { getRootDb } from "@sms/db/root";
+import { getRootDb } from "@lacakedu/db/root";
 import { getRootSettings, ROOT_SETTINGS_TAG } from "@/lib/public-cache";
 
 // GET /api/root/settings — SUPER_ADMIN: hero + meta platform dari RootSettings.

@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { apiGate } from "@/server/api-gate";
 import { hit } from "@/server/rate-limit";
-import { db } from "@sms/db/client";
-import { runAsSchool } from "@sms/db/tenant";
+import { db } from "@lacakedu/db/client";
+import { runAsSchool } from "@lacakedu/db/tenant";
 import { logAuth } from "@/server/audit";
-import { assessmentInputSchema } from "@sms/shared/assess";
+import { assessmentInputSchema } from "@lacakedu/shared/assess";
 import { assertClassAccess } from "@/server/lms-scope";
 
 function stripKeys<T extends { correctIndex?: unknown; correctOrder?: unknown }>(q: T): Omit<T, "correctIndex" | "correctOrder"> {

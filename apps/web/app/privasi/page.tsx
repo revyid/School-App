@@ -1,6 +1,6 @@
 import { headers } from "next/headers";
 import LegalShell from "@/components/LegalShell";
-import { schoolSlugFromHost } from "@sms/shared/school";
+import { schoolSlugFromHost } from "@lacakedu/shared/school";
 import { getPublicLegal } from "@/lib/public-cache";
 
 // Teks mengikuti UU No. 27/2022 (UU PDP). Yang ditulis HANYA yang benar-benar

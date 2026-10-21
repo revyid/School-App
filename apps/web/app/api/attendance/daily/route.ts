@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { apiGate } from "@/server/api-gate";
-import { db } from "@sms/db/client";
-import { runAsSchool } from "@sms/db/tenant";
-import { parseDay } from "@sms/shared/attendance";
+import { db } from "@lacakedu/db/client";
+import { runAsSchool } from "@lacakedu/db/tenant";
+import { parseDay } from "@lacakedu/shared/attendance";
 import { assertClassAccess } from "@/server/lms-scope";
 
 // GET /api/attendance/daily?date=YYYY-MM-DD&classId= — rekap harian per kelas.

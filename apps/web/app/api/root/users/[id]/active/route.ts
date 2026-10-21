@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import { SESSION_COOKIE } from "@sms/shared/auth";
+import { SESSION_COOKIE } from "@lacakedu/shared/auth";
 import { requireRole } from "@/server/auth-gate";
-import { getRootDb } from "@sms/db/root";
+import { getRootDb } from "@lacakedu/db/root";
 
 // POST /api/root/users/[id]/active — SUPER_ADMIN: aktif/nonaktifkan pengguna lintas sekolah.
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {

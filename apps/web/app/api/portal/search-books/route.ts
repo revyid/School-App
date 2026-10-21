@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { schoolSlugFromHost } from "@sms/shared/school";
-import { db } from "@sms/db/client";
+import { schoolSlugFromHost } from "@lacakedu/shared/school";
+import { db } from "@lacakedu/db/client";
 import { hit } from "@/server/rate-limit";
 import { ipOf } from "@/server/request-ip";
 
@@ -29,7 +29,7 @@ export async function GET(req: NextRequest) {
   try {
     const query = encodeURIComponent(`(title:(${q}) OR description:(${q})) AND mediatype:texts`);
     const qUrl = `https://archive.org/advancedsearch.php?q=${query}&fl[]=identifier,title,creator,description,year&rows=16&output=json`;
-    const res = await fetch(qUrl, { headers: { "User-Agent": "SMS-LMS/1.0" } });
+    const res = await fetch(qUrl, { headers: { "User-Agent": "Lacakedu/1.0" } });
     if (!res.ok) throw new Error("Gagal cari buku");
 
     const data = await res.json();
