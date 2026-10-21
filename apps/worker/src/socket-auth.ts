@@ -44,6 +44,9 @@ export async function authorizeSocket(o: {
   const slug = schoolSlugFromHost(o.host, o.apex);
   if (!slug) throw new Error("unknown host");
   const want = `${slug}.${o.apex}`.toLowerCase();
+  // Mode satu sekolah: socket dari root (apex) juga sah.
+  const okHosts = new Set([want]);
+  if (schoolSlugFromHost(o.apex, o.apex) === slug) okHosts.add(o.apex.toLowerCase());
   if (!o.origin) throw new Error("missing origin");
   let originHost = "";
   try {
@@ -51,7 +54,7 @@ export async function authorizeSocket(o: {
   } catch {
     throw new Error("bad origin");
   }
-  if (originHost !== want) throw new Error(`bad origin (want https://${want})`);
+  if (!okHosts.has(originHost)) throw new Error(`bad origin (want https://${want})`);
   const sid = parseCookies(o.cookieHeader)[o.sessionCookie ?? "__Host-session"];
   if (!sid || !/^[0-9a-f]{64}$/.test(sid)) throw new Error("no session");
   const s = await redis.hgetall(`sess:${sid}`);

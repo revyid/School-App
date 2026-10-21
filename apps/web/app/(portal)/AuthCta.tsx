@@ -5,7 +5,7 @@
 import { ROLE_HOME } from "@sms/shared/auth";
 import { useFetch } from "@/app/lib/api";
 
-const HOME: Record<string, string> = { ...(ROLE_HOME as Record<string, string>), SUPER_ADMIN: "/pantau" };
+const HOME: Record<string, string> = { ...(ROLE_HOME as Record<string, string>), SUPER_ADMIN: "/pantau/dashboard" };
 
 export default function AuthCta({
   className,

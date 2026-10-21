@@ -199,6 +199,19 @@ input, select, button, textarea {
     border: 1px solid var(--color-line);
     border-radius: 24px;
   }
+
+  /* Halaman legal (syarat, privasi): tipografi artikel di dalam .card */
+  .legal { font-size: 14.5px; line-height: 1.8; color: var(--color-muted-strong); }
+  .legal h2 { font-size: 18px; line-height: 1.4; color: var(--color-ink); margin: 28px 0 8px; }
+  .legal h3 { font-size: 15px; color: var(--color-ink); margin: 18px 0 6px; }
+  .legal p + p { margin-top: 10px; }
+  .legal ul, .legal ol { margin: 8px 0 8px 20px; }
+  .legal ul { list-style: disc; }
+  .legal ol { list-style: decimal; }
+  .legal li { margin: 4px 0; }
+  .legal li > strong:first-child { color: var(--color-ink); }
+  .legal strong { color: var(--color-ink); }
+  .legal a { color: var(--color-terracotta-deep); text-decoration: underline; text-underline-offset: 2px; }
   .card-lift {
     transition: transform 0.25s ease, box-shadow 0.25s ease;
   }

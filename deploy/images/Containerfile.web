@@ -7,6 +7,8 @@ RUN pnpm install --frozen-lockfile
 RUN MIGRATE_URL=postgresql://dummy:***@localhost:5432/dummy pnpm --filter @sms/db exec prisma generate
 RUN pnpm --filter @sms/shared run build
 RUN pnpm --filter @sms/db run build
+# Rewrite /socket.io dibekukan saat build, jadi port worker harus benar di sini.
+ENV WORKER_PORT=3001
 RUN pnpm --filter @sms/web exec next build
 # Salin aset statis + public ke standalone:
 RUN cp -r apps/web/.next/static apps/web/.next/standalone/apps/web/.next/static && \

@@ -1,8 +1,8 @@
 [Unit]
-Description=sms-lms uploads (file sekolah, di luar webroot)
+Description=lacakedu uploads (file sekolah, di luar webroot)
 
 [Volume]
-Label=app=sms-lms
+Label=app=lacakedu
 
 [Install]
 WantedBy=default.target

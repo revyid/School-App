@@ -9,7 +9,7 @@ import { cn } from "@/lib/utils";
 
 export default function PublicLogo({ compact = false, light = false, name }: { compact?: boolean; light?: boolean; name?: string }) {
   const [ok, setOk] = useState(true);
-  const displayText = name || "sms-lms";
+  const displayText = name || "lacakedu";
 
   // Logo default sudah menyertakan teks; jangan render teks dua kali.
   if (!ok) return <Logo compact={compact} light={light} name={displayText} />;

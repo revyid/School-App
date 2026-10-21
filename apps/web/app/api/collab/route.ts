@@ -7,6 +7,26 @@ import { logAuth } from "@/server/audit";
 import { collabInputSchema, collabSenderShown } from "@sms/shared/portal";
 import { saveCollabFile } from "@/server/collab-files";
 
+async function teacherSubjects(schoolId: string, guruIds: string[]) {
+  if (guruIds.length === 0) return new Map<string, string[]>();
+  const slots = await runAsSchool(db, schoolId, (tx) =>
+    tx.timetableSlot.findMany({
+      where: { teacherId: { in: guruIds } },
+      select: { teacherId: true, subjectName: true, subjectRef: { select: { name: true } } },
+    }));
+  const map = new Map<string, string[]>();
+  for (const s of slots) {
+    if (!s.teacherId) continue;
+    const nm = (s.subjectRef?.name ?? s.subjectName ?? "").trim();
+    if (!nm) continue;
+    let list = map.get(s.teacherId);
+    if (!list) { list = []; map.set(s.teacherId, list); }
+    if (!list.includes(nm)) list.push(nm);
+  }
+  for (const list of map.values()) list.sort();
+  return map;
+}
+
 async function gate(req: NextRequest, roles: ("ADMIN" | "GURU" | "SISWA")[]) {
   return requireRole({
     host: req.headers.get("host") ?? "",

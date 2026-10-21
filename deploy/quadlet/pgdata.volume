@@ -1,8 +1,8 @@
 [Unit]
-Description=sms-lms pgdata
+Description=lacakedu pgdata
 
 [Volume]
-Label=app=sms-lms
+Label=app=lacakedu
 
 [Install]
 WantedBy=default.target

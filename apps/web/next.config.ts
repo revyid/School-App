@@ -5,6 +5,8 @@ import { fileURLToPath } from "node:url";
 const dirname = path.dirname(fileURLToPath(import.meta.url));
 
 const nextConfig: NextConfig = {
+  // Containerfile.web menyalin .next/standalone + .next/static. Tanpa ini build image gagal.
+  output: "standalone",
   serverExternalPackages: ["argon2", "ioredis"],
   // Dev via subdomain *.localtest.me: izinkan HMR/dev resource lintas-origin ini.
   // (Prod tidak pakai next dev, jadi ini tidak berpengaruh di deploy.)

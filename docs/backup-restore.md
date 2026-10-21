@@ -1,7 +1,14 @@
 # Backup & restore drill (Postgres + uploads)
 
-Jadwal produksi: systemd timer harian (lihat `deploy/quadlet/`).
-Variabel: `BACKUP_DIR=/var/backups/sms` (volume `backups`), retensi 7 harian.
+Jadwal produksi: systemd timer harian (`deploy/quadlet/backup*.{service,timer}`).
+
+## Variabel & retensi
+
+- `BACKUP_DIR=/var/backups/sms` (volume `backups`)
+- Retensi dump: **90 hari** → `find /var/backups/sms -name 'smsdb-*.dump' -mtime +90 -delete`
+- Uploads disimpan sebagai **mirror terakhir (90 hari)**. Ruang kosong sensorik
+  (media still, gambar paud, sketsa, dsb) bisa langsung dihapus dari volume tanpa
+  mengganggu data aplikasi, atau perlu sinkronisasi eksternal ke luar server.
 
 ## Backup manual
 
@@ -14,27 +21,28 @@ Variabel: `BACKUP_DIR=/var/backups/sms` (volume `backups`), retensi 7 harian.
 /usr/bin/rsync -a --delete /data/uploads/ /var/backups/sms/uploads/
 
 # 3. Catat hasil untuk dashboard super-admin (dibaca /api/admin/health)
-echo "BACKUP_LAST_AT=$(date -u +%FT%TZ) BACKUP_LAST_RESULT=ok" >> /etc/sms-lms/backup.env
+echo "BACKUP_LAST_AT=$(date -u +%FT%TZ) BACKUP_LAST_RESULT=ok" >> /etc/lacakedu/backup.env
 ```
 
 ## Restore drill (mesin bersih)
 
 ```sh
-# 1. Siapkan volume kosong + jalankan pod (lihat docs/host-setup.md)
-# 2. Restore DB ke database KOSONG (jangan timpa produksi!)
+# Siapkan volume kosong + jalankan pod (lihat docs/host-setup.md)
+# 1. Restore DB ke database KOSONG (jangan timpa produksi!)
 /usr/bin/pg_restore -C -d "postgresql://sms:***@127.0.0.1:5432/postgres" \
   /var/backups/sms/smsdb-YYYY-MM-DD.dump
 
-# 3. Restore uploads
+# 2. Restore uploads
 /usr/bin/rsync -a /var/backups/sms/uploads/ /data/uploads/
 
-# 4. Verifikasi
+# 3. Verifikasi
 #   - login tiap peran di 1 sekolah sampel
 #   - GET /api/admin/health (super-admin): schoolCount > 0, queues.failed = 0
 #   - 1 scan QR + 1 submit tugas (idempoten, aman diulang)
 ```
 
-## Retensi
+## Retensi langganan push
 
-Hapus dump > 7 hari: `find /var/backups/sms -name 'smsdb-*.dump' -mtime +7 -delete`.
-Uploads mirror tidak di-prune (mirror = kondisi terakhir).
+- Endpoint push perangkat (browser/WhatsApp) **tidak otomatis dihapus** saat
+  akun dihapus. API admin menyediakan cancel langganan yang bersih (Pasal 8 UU PDP),
+  bukan mengandalkan ulang menjatuhkan aplikasi.

@@ -3,20 +3,21 @@ import { z } from "zod";
 import { originOk } from "@/server/auth-gate";
 import { cookieHeader } from "@/server/session";
 import { attemptSuperAdminLogin, AuthError } from "@/server/super-login";
+import { ipOf } from "@/server/request-ip";
 
 const apex = () => process.env.APEX_DOMAIN ?? "domainmu.id";
-const ip = (r: NextRequest) => r.headers.get("x-real-ip")?.split(",")[0].trim() || "unknown";
+const ip = ipOf;
 
 const bodySchema = z.object({
   email: z.string().trim().email().max(128),
   password: z.string().min(1).max(256),
 });
 
-// POST /api/auth/admin-login — HANYA via Host admin.<apex>.
+// POST /api/auth/admin-login — HANYA via Host apex (lacakedu.web.id).
 export async function POST(req: NextRequest) {
   const host = req.headers.get("host") ?? "";
   const h = host.split(":")[0].trim().toLowerCase();
-  if (h !== `admin.${apex()}`.toLowerCase()) {
+  if (h !== apex().toLowerCase()) {
     return NextResponse.json({ error: "not found" }, { status: 404 });
   }
   if (!originOk(req.headers.get("origin"), req.headers.get("referer"), "admin")) {

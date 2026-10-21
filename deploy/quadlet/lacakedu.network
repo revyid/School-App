@@ -1,0 +1,14 @@
+# SATU deployment, SEMUA sekolah. Routing = subdomain: <slug>.domainmu.id
+# Semua container web/worker/postgres/redis/nginx berbagi network ini.
+# Nama container dipakai sebagai hostname (aardvark-dns bawaan podman).
+#
+# Catatan: model ini dipakai karena Quadlet `Pod=` baru ada di Podman 5,
+# sedangkan host produksi (Ubuntu 22.04) maksimal Podman 4.6.
+[Unit]
+Description=lacakedu internal network
+
+[Network]
+Label=app=lacakedu
+
+[Install]
+WantedBy=default.target

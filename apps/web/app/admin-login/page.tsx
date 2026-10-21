@@ -1,6 +1,6 @@
 "use client";
 
-// Login SUPER_ADMIN — hanya dilayani di admin.<apex> (lihat proxy + admin-login route).
+// Login SUPER_ADMIN — disajikan di apex sebagai /admin (rewrite proxy).
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Input } from "@/components/ui/input";
@@ -30,7 +30,7 @@ export default function AdminLoginPage() {
         return;
       }
       if (d.csrfToken) sessionStorage.setItem("csrf", d.csrfToken);
-      router.replace(d.mustChangePassword ? "/change-password" : "/pantau");
+      router.replace(d.mustChangePassword ? "/change-password" : "/pantau/dashboard");
     } catch {
       setError("Koneksi gagal. Periksa internet lalu coba lagi.");
     } finally {

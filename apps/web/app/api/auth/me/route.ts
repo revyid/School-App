@@ -15,7 +15,14 @@ export async function GET(req: NextRequest) {
     csrf: req.headers.get("x-csrf-token"),
   });
   if (!a.ok) return NextResponse.json({ error: a.error }, { status: a.status });
-  if (!a.school) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+  // SUPER_ADMIN: tidak punya sekolah, tapi klien tetap butuh csrfToken untuk mutasi.
+  if (!a.school) {
+    return NextResponse.json({
+      user: { id: a.userId, name: "Super Admin", role: "SUPER_ADMIN", email: null, mustChangePassword: a.mustChangePassword },
+      school: null,
+      csrfToken: a.csrf,
+    });
+  }
   const me = await runAsSchool(db, a.school.id, (tx) =>
     tx.user.findUnique({
       where: { id: a.userId },

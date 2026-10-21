@@ -8,8 +8,9 @@ import { runAsSchool } from "@sms/db/tenant";
 import { logAuth } from "@/server/audit";
 import { resolveDefaultPassword } from "@/server/password";
 import * as XLSX from "xlsx";
+import { ipOf } from "@/server/request-ip";
 
-const ip = (r: NextRequest) => r.headers.get("x-real-ip")?.split(",")[0].trim() || "unknown";
+const ip = ipOf;
 
 // POST /api/students/import — upload .xlsx, parse, validate, insert students.
 export async function POST(req: NextRequest) {

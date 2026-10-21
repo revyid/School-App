@@ -5,9 +5,10 @@ import { db } from "@sms/db/client";
 import { attemptLogin, AuthError } from "@/server/login";
 import { originOk } from "@/server/auth-gate";
 import { cookieHeader } from "@/server/session";
+import { ipOf } from "@/server/request-ip";
 
 const apex = () => process.env.APEX_DOMAIN ?? "domainmu.id";
-const ip = (r: NextRequest) => r.headers.get("x-real-ip")?.split(",")[0].trim() || "unknown";
+const ip = ipOf;
 
 export async function POST(req: NextRequest) {
   const host = req.headers.get("host") ?? "";

@@ -3,6 +3,7 @@ import { randomBytes } from "node:crypto";
 import argon2 from "argon2";
 import { apiGate } from "@/server/api-gate";
 import { hit } from "@/server/rate-limit";
+import { ipOf } from "@/server/request-ip";
 import { db } from "@sms/db/client";
 import { runAsSchool } from "@sms/db/tenant";
 import { logAuth } from "@/server/audit";
@@ -12,7 +13,7 @@ import { enqueueImport } from "@/server/queue";
 import { guruClassIds } from "@/server/lms-scope";
 import { paginationSchema, studentCreateSchema, normalizePhone } from "@sms/shared/master";
 
-const ip = (r: NextRequest) => r.headers.get("x-real-ip")?.split(",")[0].trim() || "unknown";
+const ip = ipOf;
 
 // GET /api/students?page&perPage&q&classId — ADMIN/GURU (SISWA ditolak).
 export async function GET(req: NextRequest) {

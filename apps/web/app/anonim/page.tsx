@@ -2,10 +2,12 @@ import { schoolSlugFromHost } from "@sms/shared/school";
 import { db } from "@sms/db/client";
 import { runAsSchool } from "@sms/db/tenant";
 import { headers } from "next/headers";
+import { PesanBaruDialog } from "@/components/PesanBaruDialog";
 import AnonimForm from "@/components/AnonimForm";
 import PublicHeader from "@/components/PublicHeader";
 
-// Halaman publik CTA anonim — tanpa login (untuk masyarakat umum)
+// Halaman publik CTA anonim — tanpa login (untuk masyarakat umum).
+// "Pesan baru" dialog menampilkan daftar guru + mapel.
 export default async function AnonimPage() {
   const h = await headers();
   const host = h.get("host") ?? "";
@@ -23,6 +25,7 @@ export default async function AnonimPage() {
       } catch { /* fallback ke nama sekolah */ }
     }
   }
+
   return (
     <div style={{ minHeight: "100vh", background: "#fffdf8", color: "#171716" }}>
       <PublicHeader schoolName={schoolName} />
@@ -49,6 +52,13 @@ export default async function AnonimPage() {
               Pesan Anda diteruskan ke pihak sekolah.
             </p>
           </div>
+
+          {/* Dialog "Pesan baru": guru + mapel. */}
+          <PesanBaruDialog
+            title="Pesan baru"
+            description="Pilih guru, lalu kirim pesan. Nama Anda tetap anonim."
+          />
+
           <AnonimForm />
           <p
             style={{

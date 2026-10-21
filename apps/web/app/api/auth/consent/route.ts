@@ -31,6 +31,10 @@ export async function POST(req: NextRequest) {
   });
   if (!auth.ok || !auth.school) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
+  // ParentalConsent hanya bermakna untuk siswa (Pasal 25 UU PDP). Guru/admin
+  // tidak butuh persetujuan orang tua; jangan buat baris palsu untuk mereka.
+  if (auth.role !== "SISWA") return NextResponse.json({ ok: true, recorded: false });
+
   const now = new Date();
   await runAsSchool(db, auth.school.id, (tx) =>
     tx.parentalConsent.upsert({

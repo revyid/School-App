@@ -10,9 +10,11 @@ sudo sysctl -w net.ipv4.ip_unprivileged_port_start=80
 cp deploy/quadlet/* ~/.config/containers/systemd/
 cp deploy/systemd/* ~/.config/systemd/user/
 systemctl --user daemon-reload
+# Unit memakai Quadlet .network (bukan .pod): key `Pod=` baru ada di Podman 5,
+# sedangkan Ubuntu 22.04 maksimal Podman 4.6. Butuh Podman >= 4.4.
 # Start SEMUA unit container (bukan hanya pod):
-systemctl --user start sms-lms-postgres.service sms-lms-redis.service
-systemctl --user start sms-lms-web.service sms-lms-worker.service sms-lms-nginx.service
+systemctl --user start lacakedu-postgres.service lacakedu-redis.service
+systemctl --user start lacakedu-web.service lacakedu-worker.service lacakedu-nginx.service
 # Satu-satunya yang di-enable: timer sertifikat:
 systemctl --user enable acme-renew.timer
 
@@ -21,8 +23,7 @@ systemctl --user enable acme-renew.timer
 
 ## Uji autostart (wajib lulus dua-duanya)
 1. Reboot: `sudo reboot` → setelah boot:
-   `systemctl --user is-active sms-lms-postgres.service sms-lms-redis.service sms-lms-web.service sms-lms-worker.service sms-lms-nginx.service`
+   `systemctl --user is-active lacakedu-postgres.service lacakedu-redis.service lacakedu-web.service lacakedu-worker.service lacakedu-nginx.service`
    semua harus `active`, dan `curl -k https://localhost/healthz` → ok.
 2. Cabut listrik: matikan paksa → nyalakan → cek sama.
    Bila gagal: `loginctl show-user $USER | grep Linger` harus `yes`.
-   Fallback terakhir: `systemctl --user enable sms-lms-pod.service` lalu ulangi uji.

@@ -5,8 +5,9 @@ import { db } from "@sms/db/client";
 import { runAsSchool } from "@sms/db/tenant";
 import { logAuth } from "@/server/audit";
 import * as XLSX from "xlsx";
+import { ipOf } from "@/server/request-ip";
 
-const ip = (r: NextRequest) => r.headers.get("x-real-ip")?.split(",")[0].trim() || "unknown";
+const ip = ipOf;
 
 // GET /api/students/import/:batchId/errors — unduh laporan error per baris (.xlsx).
 export async function GET(req: NextRequest, { params }: { params: Promise<{ batchId: string }> }) {

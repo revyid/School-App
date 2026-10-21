@@ -9,6 +9,8 @@
     "./client": { "types": "./dist/client.d.ts", "default": "./dist/client.js" },
     "./tenant": { "types": "./dist/tenant.d.ts", "default": "./dist/tenant.js" },
     "./prisma": { "types": "./dist/prisma.d.ts", "default": "./dist/prisma.js" },
+    "./root": { "types": "./dist/root.d.ts", "default": "./dist/root.js" },
+    "./root": { "types": "./dist/root.d.ts", "default": "./dist/root.js" },
     "./test-utils": { "types": "./dist/test-utils.d.ts", "default": "./dist/test-utils.js" },
     "./package.json": "./package.json"
   },

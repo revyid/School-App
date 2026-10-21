@@ -6,6 +6,7 @@ import { db } from "@sms/db/client";
 import { runAsSchool } from "@sms/db/tenant";
 import { schoolSlugFromHost } from "@sms/shared/school";
 import { siteGuidePrompt, type PublicSiteInfo } from "@/server/ai-site-guide";
+import { ipOf } from "@/server/request-ip";
 
 const AI_ROUTER_BASE = process.env.AI_ROUTER_BASE || "https://9router.revy.my.id/v1";
 const AI_ROUTER_KEY = process.env.AI_ROUTER_API_KEY || "";
@@ -419,7 +420,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "RAI belum diaktifkan administrator sekolah." }, { status: 503 });
   }
 
-  const ip = req.headers.get("x-real-ip")?.split(",")[0].trim() || "unknown";
+  const ip = ipOf(req);
   const rlG = await hit(`rl:ai:guest:${school.id}:${ip}`, 10, 3600);
   if (!rlG.ok) {
     return NextResponse.json(

@@ -3,6 +3,7 @@ import { schoolSlugFromHost } from "@sms/shared/school";
 import { db } from "@sms/db/client";
 import { runAsSchool } from "@sms/db/tenant";
 import { logAuth } from "@/server/audit";
+import { ipOf } from "@/server/request-ip";
 
 const apex = () => process.env.APEX_DOMAIN ?? "localtest.me";
 
@@ -23,7 +24,7 @@ function isRateLimited(ip: string): boolean {
 
 // POST /api/anonim — Kirim pesan anonim publik tanpa login
 export async function POST(req: NextRequest) {
-  const ip = req.headers.get("x-real-ip")?.split(",")[0].trim() || "unknown";
+  const ip = ipOf(req);
   if (isRateLimited(ip)) {
     return NextResponse.json(
       { error: "Terlalu banyak pesan dari perangkat ini. Coba lagi dalam 1 jam." },

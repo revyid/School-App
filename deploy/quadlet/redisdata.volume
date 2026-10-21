@@ -1,8 +1,8 @@
 [Unit]
-Description=sms-lms redisdata (AOF BullMQ)
+Description=lacakedu redisdata (AOF BullMQ)
 
 [Volume]
-Label=app=sms-lms
+Label=app=lacakedu
 
 [Install]
 WantedBy=default.target

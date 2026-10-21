@@ -14,6 +14,13 @@ describe("isValidSlug", () => {
 
 describe("schoolSlugFromHost", () => {
   const apex = "domainmu.id";
+  it("root melayani sekolah utama bila APEX_SCHOOL_SLUG diisi", () => {
+    process.env.APEX_SCHOOL_SLUG = "sman1";
+    expect(schoolSlugFromHost("domainmu.id", apex)).toBe("sman1");
+    expect(schoolSlugFromHost("domainmu.id:443", apex)).toBe("sman1");
+    delete process.env.APEX_SCHOOL_SLUG;
+    expect(schoolSlugFromHost("domainmu.id", apex)).toBeNull();
+  });
   it("subdomain valid → slug", () => {
     expect(schoolSlugFromHost("sman1.domainmu.id", apex)).toBe("sman1");
     expect(schoolSlugFromHost("sman1.domainmu.id:443", apex)).toBe("sman1");

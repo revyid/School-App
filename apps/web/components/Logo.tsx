@@ -13,8 +13,8 @@ export default function Logo({
   src?: string | null;
   name?: string;
 }) {
-  const displayText = name || "sms-lms";
-  const isCustomName = Boolean(name && name.toLowerCase() !== "sms-lms");
+  const displayText = name || "lacakedu";
+  const isCustomName = Boolean(name && name.toLowerCase() !== "lacakedu");
 
   return (
     <span className={cn("inline-flex min-w-0 items-center gap-2", light ? "text-cream" : "text-ink")}>

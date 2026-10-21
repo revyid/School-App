@@ -5,4 +5,3 @@ Disallow: /admin/
 Disallow: /guru/
 Disallow: /siswa/
 
-Sitemap: https://demo.revy.my.id/sitemap.xml

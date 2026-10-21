@@ -3,5 +3,5 @@ Description=Renew wildcard TLS cert via DNS-01 (acme.sh --cron)
 
 [Service]
 Type=oneshot
-EnvironmentFile=%h/sms-lms/acme.env
-ExecStart=%h/sms-lms/bin/renew-cert.sh
+EnvironmentFile=%h/lacakedu/acme.env
+ExecStart=%h/lacakedu/bin/renew-cert.sh

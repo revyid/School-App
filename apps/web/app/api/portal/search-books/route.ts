@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { schoolSlugFromHost } from "@sms/shared/school";
 import { db } from "@sms/db/client";
 import { hit } from "@/server/rate-limit";
+import { ipOf } from "@/server/request-ip";
 
 // GET /api/portal/search-books?q= — publik (tanpa login): pencarian katalog
 // e-book & materi pelajaran via Internet Archive API
@@ -15,7 +16,7 @@ export async function GET(req: NextRequest) {
   const school = await db.school.findFirst({ where: { slug }, select: { id: true } });
   if (!school) return NextResponse.json({ error: "not found" }, { status: 404 });
 
-  const ip = req.headers.get("x-real-ip")?.split(",")[0].trim() || "unknown";
+  const ip = ipOf(req);
   const rl = await hit(`rl:portal-books:${ip}`, 30, 60);
   if (!rl.ok) return NextResponse.json({ error: "Terlalu banyak pencarian, coba lagi nanti" }, { status: 429 });
 

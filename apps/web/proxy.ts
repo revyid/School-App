@@ -24,17 +24,18 @@ function isPublic(path: string): boolean {
   return seg === "portal" || seg === "public" || seg === "perkakas";
 }
 
-// Halaman super-admin (hanya di admin.<apex>). Data tetap dijaga API requireRole.
-function isAdminPage(path: string): boolean {
-  return path === "/admin-login" || path === "/pantau";
+// Konsol root hanya dilayani di apex; di subdomain sekolah path ini 404.
+function isRootConsole(path: string): boolean {
+  return path === "/pantau" || path.startsWith("/pantau/") || path === "/admin-login";
 }
 
 export function proxy(req: NextRequest) {
   const host = req.headers.get("host") ?? "";
   const bare = host.split(":")[0].trim().toLowerCase();
-  const isAdminHost = bare === `admin.${apex}` || bare === "admin.localtest.me" || bare === "admin.dev.revy.my.id";
-  const slug = schoolSlugFromHost(host, apex);
-  if (!slug && !isAdminHost) return new NextResponse("not found", { status: 404 });
+  // Apex = konsol admin platform (login /admin). Subdomain = satu sekolah.
+  const isRoot = bare === apex || bare === "localtest.me" || bare === "dev.revy.my.id";
+  const slug = isRoot ? null : schoolSlugFromHost(host, apex);
+  if (!isRoot && !slug) return new NextResponse("not found", { status: 404 });
   // Nama cookie tergantung env (prod __Host-session, dev sms-session-dev).
   // Proxy tidak boleh bergantung pada env yang belum tentu tersedia di runtime-nya,
   // jadi terima KEDUANYA di sini. Otorisasi penuh tetap di authorize().
@@ -44,7 +45,7 @@ export function proxy(req: NextRequest) {
     (req.cookies.get("sms-session-dev")?.value ?? "").length > 0;
 
   const nonce = Buffer.from(crypto.randomUUID()).toString("base64");
-  const connectHost = isAdminHost ? `admin.${apex}` : `${slug}.${apex}`;
+  const connectHost = isRoot ? apex : `${slug}.${apex}`;
   const isDev = process.env.NODE_ENV === "development";
   const path = req.nextUrl.pathname;
   // /perkakas/peta memuat tile peta + routing publik (tanpa login, client-side).
@@ -80,13 +81,31 @@ export function proxy(req: NextRequest) {
     return r;
   }
 
-  if (isAdminPage(path)) {
-    // Halaman admin hanya di host admin; proteksi data tetap di tiap API.
-    if (!isAdminHost) return new NextResponse("not found", { status: 404 });
-    const res = NextResponse.next({ request: { headers: reqHeaders } });
-    res.headers.set("Content-Security-Policy", csp);
-    return res;
+  if (isRoot) {
+    // /admin = form login root; /pantau/* = konsol root. Tanpa rewrite:
+    // "/" dan "/admin" bercabang per Host di halaman masing-masing.
+    if (path === "/login") {
+      const url = req.nextUrl.clone();
+      url.pathname = "/admin";
+      const r = NextResponse.redirect(url);
+      r.headers.set("Content-Security-Policy", csp);
+      return r;
+    }
+    if (path === "/" || path === "/admin" || path.startsWith("/pantau")) {
+      const res = NextResponse.next({ request: { headers: reqHeaders } });
+      res.headers.set("Content-Security-Policy", csp);
+      return res;
+    }
+    if (isPublic(path)) {
+      const res = NextResponse.next({ request: { headers: reqHeaders } });
+      res.headers.set("Content-Security-Policy", csp);
+      return res;
+    }
+    return new NextResponse("not found", { status: 404 });
   }
+
+  // Konsol root tidak pernah dilayani di subdomain sekolah.
+  if (isRootConsole(path)) return new NextResponse("not found", { status: 404 });
 
   if (isPublic(path)) {
     const res = NextResponse.next({ request: { headers: reqHeaders } });

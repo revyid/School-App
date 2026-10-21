@@ -8,8 +8,9 @@ import { runAsSchool } from "@sms/db/tenant";
 import { logAuth } from "@/server/audit";
 import { resolveDefaultPassword } from "@/server/password";
 import { teacherCreateSchema, teacherPatchSchema, paginationSchema } from "@sms/shared/master";
+import { ipOf } from "@/server/request-ip";
 
-const ip = (r: NextRequest) => r.headers.get("x-real-ip")?.split(",")[0].trim() || "unknown";
+const ip = ipOf;
 
 export async function GET(req: NextRequest) {
   const a = await apiGate(req, ["ADMIN", "GURU", "SISWA"]);

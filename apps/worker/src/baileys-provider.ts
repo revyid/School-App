@@ -44,7 +44,7 @@ async function spawnSession(schoolId: string): Promise<Session> {
     version,
     auth: state,
     printQRInTerminal: false,
-    browser: ["sms-lms", "worker", "1.0"],
+    browser: ["lacakedu", "worker", "1.0"],
     connectTimeoutMs: 30_000,
   });
   sess.sock = sock;

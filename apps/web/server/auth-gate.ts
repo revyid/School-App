@@ -25,6 +25,11 @@ export function originOk(origin: string | null, referer: string | null, slug: st
   try {
     const got = new URL(raw).hostname.toLowerCase();
     const target = slug.toLowerCase();
+    const apexHost = apex().toLowerCase();
+    // Root admin: origin sah hanya dari apex.
+    if (target === "admin") return got === apexHost;
+    // Mode satu sekolah: login/aksi dari root (apex) juga sah.
+    if (got === apexHost && schoolSlugFromHost(apexHost, apex()) === target) return true;
     return (
       got === `${target}.${apex()}`.toLowerCase() ||
       got === `${target}.revy.my.id` ||
@@ -47,10 +52,11 @@ export interface GateInput {
 }
 
 export async function authorize(o: GateInput) {
-  // Cabang SUPER_ADMIN: Host admin.<apex>, sesi sch=admin/schoolId="".
+  // Cabang SUPER_ADMIN: Host apex (root), sesi sch=admin/schoolId="".
   // Verifikasi via RPC definer (app_user tak bisa SELECT baris NULL).
   const hostbare = o.host.split(":")[0].trim().toLowerCase();
-  if (hostbare === `admin.${apex()}`.toLowerCase()) {
+  const rootHost = apex().toLowerCase();
+  if (hostbare === rootHost || hostbare === "localtest.me" || hostbare === "dev.revy.my.id") {
     if (!o.token) return err(401, "unauthorized");
     const sess = await readSession(o.token);
     if (!sess || sess.sch !== "admin" || sess.schoolId !== "" || sess.role !== "SUPER_ADMIN") {

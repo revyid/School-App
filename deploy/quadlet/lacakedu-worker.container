@@ -1,15 +1,15 @@
 [Unit]
-Description=sms-lms worker (Socket.io + BullMQ + WA)
-After=sms-lms-postgres.service sms-lms-redis.service
-Requires=sms-lms-postgres.service sms-lms-redis.service
+Description=lacakedu worker (Socket.io + BullMQ + WA)
+After=lacakedu-postgres.service lacakedu-redis.service
+Requires=lacakedu-postgres.service lacakedu-redis.service
 
 [Container]
-Image=localhost/sms-lms-worker:latest
-ContainerName=sms-lms-worker
-Pod=sms-lms.pod
+Image=localhost/lacakedu-worker:latest
+ContainerName=lacakedu-worker
+Network=lacakedu.network
 User=node
 # Tanpa Exec=: pakai CMD dari image (harus SAMA dengan CMD di Containerfile.worker).
-EnvironmentFile=%h/sms-lms/worker.env
+EnvironmentFile=%h/lacakedu/worker.env
 Volume=wa-sessions.volume:/data/wa-sessions:Z,U
 Volume=uploads.volume:/data/uploads:Z,U
 Volume=backups.volume:/data/backups:Z,U

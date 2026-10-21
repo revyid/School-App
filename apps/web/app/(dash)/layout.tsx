@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import { headers } from "next/headers";
 import { getPageAuth } from "@/app/lib/require-page";
 import DashShell, { type MenuItem } from "@/components/DashShell";
 
@@ -62,6 +63,15 @@ const MENUS: Record<string, { utama: MenuItem[]; lainnya: MenuItem[]; groups?: {
 };
 
 export default async function DashLayout({ children }: { children: React.ReactNode }) {
+  // Root-admin punya shell sendiri: jangan lewat gate tenant di sini.
+  const h = await headers();
+  const path = h.get("x-pathname") ?? "";
+  const apex = process.env.APEX_DOMAIN ?? "domainmu.id";
+  const bare = (h.get("host") ?? "").split(":")[0].trim().toLowerCase();
+  const isRoot = bare === apex || bare === "localtest.me" || bare === "dev.revy.my.id";
+  if (isRoot && (path === "/admin" || path.startsWith("/admin/"))) return <>{children}</>;
+  if (path === "/pantau" || path.startsWith("/pantau/")) return <>{children}</>;
+
   // F4: satu authorize + satu query user/settings per navigasi (React.cache).
   const a = await getPageAuth();
   if (!a.ok) redirect(a.redirectTo);

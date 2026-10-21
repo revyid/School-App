@@ -5,8 +5,9 @@ import { db } from "@sms/db/client";
 import { runAsSchool } from "@sms/db/tenant";
 import { logAuth } from "@/server/audit";
 import * as XLSX from "xlsx";
+import { ipOf } from "@/server/request-ip";
 
-const ip = (r: NextRequest) => r.headers.get("x-real-ip")?.split(",")[0].trim() || "unknown";
+const ip = ipOf;
 
 // GET /api/students/import/:batchId/credentials — unduh daftar kredensial SEKALI.
 // Setelah diunduh, flag credentialsDownloaded=true dan endpoint mengembalikan 410.

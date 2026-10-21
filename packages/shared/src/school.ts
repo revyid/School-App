@@ -23,9 +23,14 @@ export function schoolSlugFromHost(host: string, apex: string = APEX_DOMAIN): st
   
   // Dukungan domain tunnel dev.revy.my.id dan revy.my.id otomatis
   const knownApexes = Array.from(new Set([apex, "dev.revy.my.id", "revy.my.id", "localtest.me"])).filter(Boolean);
+  // Mode satu sekolah: root (apex) melayani sekolah utama ini.
+  const apexSchool = (process.env.APEX_SCHOOL_SLUG ?? "").trim().toLowerCase();
   
   for (const a of knownApexes) {
-    if (h === a) continue;
+    if (h === a) {
+      if (a === apex && apexSchool && isValidSlug(apexSchool)) return apexSchool;
+      continue;
+    }
     if (h.endsWith("." + a)) {
       const slug = h.slice(0, -(a.length + 1));
       if (slug && !slug.includes(".") && isValidSlug(slug)) return slug;

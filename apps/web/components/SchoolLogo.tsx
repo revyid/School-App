@@ -8,9 +8,11 @@ import { useState } from "react";
 import Logo from "./Logo";
 import { cn } from "@/lib/utils";
 
+// object-contain: gambar tetap utuh (tidak terpotong), proporsi native
+// terjaga. object-cover (sebelumnya) memotong bagian tepi logo.
 export default function SchoolLogo({ compact = false, light = false, name }: { compact?: boolean; light?: boolean; name?: string }) {
   const [ok, setOk] = useState(true);
-  const displayText = name || "sms-lms";
+  const displayText = name || "lacakedu";
 
   // Saat logo custom gagal dimuat, serahkan ke Logo default yang SUDAH
   // menyertakan teks nama sekolah — jangan render teks dua kali.
@@ -24,7 +26,7 @@ export default function SchoolLogo({ compact = false, light = false, name }: { c
         alt={displayText}
         width={compact ? 24 : 28}
         height={compact ? 24 : 28}
-        className="shrink-0 rounded-lg object-cover"
+        className="shrink-0 rounded-lg object-contain"
         onError={() => setOk(false)}
       />
       <span className={cn("overflow-hidden text-ellipsis whitespace-nowrap font-extrabold tracking-[-0.04em]", compact ? "text-base" : "text-[18px]")}>
