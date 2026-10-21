@@ -3,13 +3,28 @@
 # issuance (tanpa --dns). Exit 2 = belum jatuh tempo -> BUKAN error.
 set -u
 : "${ACME_HOME:=$HOME/lacakedu/acme}"
+DOMAIN="lacakedu.web.id"
+ENV_FILE="$HOME/lacakedu/acme.env"
+
+[ -f "$ENV_FILE" ] || { echo "acme.env belum ada, lewati renewal"; exit 0; }
+# shellcheck disable=SC1090
+. "$ENV_FILE"
 : "${DNS_API:?DNS_API belum di-set (lihat acme.env)}"
 
-"$ACME_HOME/acme.sh" --renew -d 'domainmu.id'
+# Belum ada sertifikat untuk domain ini (issuance manual belum dijalankan) -> lewati.
+if ! "$ACME_HOME/acme.sh" --list 2>/dev/null | grep -q "$DOMAIN"; then
+  echo "belum ada sertifikat untuk $DOMAIN, lewati renewal"
+  exit 0
+fi
+
+"$ACME_HOME/acme.sh" --renew -d "$DOMAIN" --home "$ACME_HOME"
 code=$?
 if [ "$code" -eq 2 ]; then echo "cert masih berlaku"; exit 0; fi
 if [ "$code" -ne 0 ]; then echo "renew gagal: $code"; exit "$code"; fi
-"$ACME_HOME/acme.sh" --install-cert -d 'domainmu.id' \
+
+"$ACME_HOME/acme.sh" --install-cert -d "$DOMAIN" \
   --fullchain-file "$HOME/lacakedu/certs/fullchain.pem" \
-  --key-file "$HOME/lacakedu/certs/privkey.pem"
-podman exec lacakedu-nginx nginx -s reload
+  --key-file "$HOME/lacakedu/certs/privkey.pem" \
+  --home "$ACME_HOME"
+podman exec lacakedu-nginx nginx -s reload 2>/dev/null || \
+  systemctl --user restart lacakedu-nginx

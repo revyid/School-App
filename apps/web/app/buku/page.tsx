@@ -1,8 +1,7 @@
 import { schoolSlugFromHost } from "@sms/shared/school";
-import { db } from "@sms/db/client";
-import { runAsSchool } from "@sms/db/tenant";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
+import { getPublicSchool } from "@/lib/public-cache";
 import BukuClient from "./BukuClient";
 
 // /buku — halaman rak bacaan publik (tanpa login, per sekolah).
@@ -14,13 +13,8 @@ export default async function BukuPage() {
   const apex = process.env.APEX_DOMAIN ?? "domainmu.id";
   const slug = schoolSlugFromHost(host, apex);
   if (!slug) redirect("/login");
-  const school = await db.school.findFirst({ where: { slug }, select: { id: true, name: true } });
+  // Identitas sekolah di-cache per slug (60 dtk, tag school:<slug>).
+  const school = await getPublicSchool(slug);
   if (!school) redirect("/login");
-  let displayName = school.name;
-  try {
-    const st = await runAsSchool(db, school.id, (tx) =>
-      tx.schoolSettings.findUnique({ where: { schoolId: school.id }, select: { portalName: true } }));
-    if (st?.portalName) displayName = st.portalName;
-  } catch { /* fallback ke nama sekolah */ }
-  return <BukuClient schoolName={displayName} />;
+  return <BukuClient schoolName={school.portalName} />;
 }

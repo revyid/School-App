@@ -1,8 +1,7 @@
 import { headers } from "next/headers";
 import LegalShell from "@/components/LegalShell";
 import { schoolSlugFromHost } from "@sms/shared/school";
-import { db } from "@sms/db/client";
-import { runAsSchool } from "@sms/db/tenant";
+import { getPublicLegal } from "@/lib/public-cache";
 
 // Teks mengikuti UU No. 27/2022 (UU PDP). Yang ditulis HANYA yang benar-benar
 // dilakukan sistem — jangan menambah klaim keamanan yang tidak bisa dibuktikan.
@@ -10,23 +9,12 @@ export default async function PrivasiPage() {
   const h = await headers();
   const host = h.get("host") ?? "";
   const slug = schoolSlugFromHost(host, process.env.APEX_DOMAIN ?? "localtest.me");
-  let schoolName = "Sekolah";
-  let custom: { text: string; updatedAt: Date } | null = null;
-
-  if (slug) {
-    const s = await db.school.findFirst({ where: { slug }, select: { id: true, name: true } });
-    if (s) {
-      schoolName = s.name;
-      try {
-        const st = await runAsSchool(db, s.id, (tx) =>
-          tx.schoolSettings.findUnique({ where: { schoolId: s.id }, select: { portalName: true } }));
-        if (st?.portalName) schoolName = st.portalName;
-        const p = await runAsSchool(db, s.id, (tx) =>
-          tx.privacyPolicy.findUnique({ where: { schoolId: s.id }, select: { text: true, updatedAt: true } }));
-        if (p?.text.trim()) custom = { text: p.text.trim(), updatedAt: p.updatedAt };
-      } catch { /* fallback ke teks bawaan */ }
-    }
-  }
+  // Nama sekolah + kebijakan khusus di-cache per slug (tag school:<slug>).
+  const legal = slug ? await getPublicLegal(slug) : null;
+  const schoolName = legal?.portalName ?? "Sekolah";
+  const custom = legal?.policy
+    ? { text: legal.policy.text, updatedAt: new Date(legal.policy.updatedAt) }
+    : null;
 
   const contact = process.env.PRIVACY_CONTACT_EMAIL?.trim() || null;
   const contactNode = contact

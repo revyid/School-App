@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
+import { revalidateTag } from "next/cache";
 import { SESSION_COOKIE } from "@sms/shared/auth";
 import { requireRole } from "@/server/auth-gate";
 import { getRootDb } from "@sms/db/root";
+import { getRootSettings, ROOT_SETTINGS_TAG } from "@/lib/public-cache";
 
 // GET /api/root/settings — SUPER_ADMIN: hero + meta platform dari RootSettings.
 export async function GET(req: NextRequest) {
@@ -17,21 +19,8 @@ export async function GET(req: NextRequest) {
   });
   if (!a.ok) return NextResponse.json({ error: a.error }, { status: a.status });
 
-  const rows = await getRootDb().$queryRaw<{ key: string; value: unknown }[]>`
-    SELECT key, value FROM "RootSettings"
-    WHERE key IN ('heroImageUrl', 'heroAlt', 'platformName', 'platformTagline')`;
-  const val = (key: string) => {
-    const v = rows.find((r) => r.key === key)?.value;
-    return typeof v === "string" ? v : "";
-  };
-  return NextResponse.json({
-    heroImageUrl: val("heroImageUrl") || null,
-    settings: {
-      heroAlt: val("heroAlt"),
-      platformName: val("platformName"),
-      platformTagline: val("platformTagline"),
-    },
-  });
+  // Di-cache 60 dtk dengan tag root-settings; PATCH di bawah menghapus cache.
+  return NextResponse.json(await getRootSettings());
 }
 
 // PATCH /api/root/settings — ubah identitas platform.
@@ -66,5 +55,6 @@ export async function PATCH(req: NextRequest) {
       VALUES (${key}, to_jsonb(${value}::text), now())
       ON CONFLICT ("key") DO UPDATE SET "value" = EXCLUDED."value", "updatedAt" = now()`;
   }
+  revalidateTag(ROOT_SETTINGS_TAG, { expire: 0 });
   return NextResponse.json({ ok: true });
 }

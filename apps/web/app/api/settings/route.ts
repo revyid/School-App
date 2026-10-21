@@ -1,10 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
+import { revalidateTag } from "next/cache";
 import { SESSION_COOKIE } from "@sms/shared/auth";
 import { requireRole } from "@/server/auth-gate";
 import { db } from "@sms/db/client";
 import { runAsSchool } from "@sms/db/tenant";
 import { logAuth } from "@/server/audit";
 import { settingsSchema } from "@sms/shared/master";
+import { schoolTag } from "@/lib/public-cache";
 
 async function gate(req: NextRequest, roles: ("ADMIN" | "GURU" | "SISWA")[]) {
   return requireRole({
@@ -82,5 +84,7 @@ export async function PATCH(req: NextRequest) {
     }),
   );
   await logAuth(a.school.id, "SETTINGS.UPDATE", { actorId: a.userId });
+  // Data publik sekolah (portal, buku, legal) memakai tag school:<slug>.
+  revalidateTag(schoolTag(a.school.slug), { expire: 0 });
   return NextResponse.json({ settings: row });
 }

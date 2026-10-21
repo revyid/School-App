@@ -1,10 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
+import { revalidateTag } from "next/cache";
 import { SESSION_COOKIE } from "@sms/shared/auth";
 import { requireRole } from "@/server/auth-gate";
 import { db } from "@sms/db/client";
 import { runAsSchool } from "@sms/db/tenant";
 import { logAuth } from "@/server/audit";
 import { policySchema } from "@sms/shared/leave";
+import { schoolTag } from "@/lib/public-cache";
 
 async function gate(req: NextRequest, roles: ("ADMIN" | "GURU" | "SISWA")[]) {
   return requireRole({
@@ -41,5 +43,7 @@ export async function PUT(req: NextRequest) {
       create: { schoolId: a.school.id, text: body.data.text },
     }));
   await logAuth(a.school.id, "POLICY.UPDATE", { actorId: a.userId, meta: {} });
+  // Halaman /privasi memakai cache publik dengan tag school:<slug>.
+  revalidateTag(schoolTag(a.school.slug), { expire: 0 });
   return NextResponse.json({ policy: row });
 }

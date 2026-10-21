@@ -1,10 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
+import { revalidateTag } from "next/cache";
 import { SESSION_COOKIE } from "@sms/shared/auth";
 import { requireRole } from "@/server/auth-gate";
 import { db } from "@sms/db/client";
 import { runAsSchool } from "@sms/db/tenant";
 import { logAuth } from "@/server/audit";
 import { announcementInputSchema, announcementVisible } from "@sms/shared/portal";
+import { schoolTag } from "@/lib/public-cache";
 
 async function gate(req: NextRequest, roles: ("ADMIN" | "GURU" | "SISWA")[]) {
   return requireRole({
@@ -61,5 +63,7 @@ export async function POST(req: NextRequest) {
       },
     }));
   await logAuth(a.school.id, "ANNOUNCE.CREATE", { actorId: a.userId, meta: { id: row.id } });
+  // Pengumuman ALL ikut payload portal/info yang di-cache.
+  revalidateTag(schoolTag(a.school.slug), { expire: 0 });
   return NextResponse.json({ announcement: row }, { status: 201 });
 }

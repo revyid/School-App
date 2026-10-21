@@ -3,6 +3,14 @@
 Status: **RANCANGAN (belum diimplementasikan)** · Tanggal: 2026-10-21
 Dasar: audit keamanan & performa (`docs/security-audit-2026-10-21.md`) + pemetaan kode repo.
 
+## Keputusan yang sudah diambil (2026-10-21)
+
+1. **EPUB reader in-app** — pakai `epubjs` (±300KB) di reader in-app. PDF via `<iframe sandbox>`, markdown dirender sebagai React element.
+2. **Root mengedit langsung ke `SchoolSettings`** — tanpa tabel override terpisah. Simpler: perubahan root langsung terlihat di sekolah. Riwayat tetap ada di `AuditLog` (aksi `ROOT.SCHOOL_SETTINGS_UPDATE`).
+3. **Statistik view — bisa dipilih** — toggle "Total views" ↔ "Unique per hari" di UI dashboard root; query-nyaBEDA (counter total vs `count(distinct)` per hari).
+4. **Lingkup QA — bisa dipilih** — pilihan cakupan di UI/jalur QA: (a) 1 sekolah + 1 sekolah kedua (paling cepat, cukup untuk uji isolasi), (b) semua sekolah demo.
+5. **Gambar karakter — per sekolah DAN boleh custom** — tiap sekolah punya ilustrasi sendiri;]="(default dari aset) atau gambar custom yang diunggah admin sekolah (dan bisa ditimpa root). Default: ilustrasi per kategori sekolah, custom: upload PNG/JPG/WEBP ≤ 2MB.
+
 ## Prinsip & batasan yang tidak boleh dilanggar
 
 1. **Dua level admin, tetap terpisah**

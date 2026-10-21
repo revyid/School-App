@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { revalidateTag } from "next/cache";
 import { randomBytes } from "node:crypto";
 import { mkdir, writeFile } from "node:fs/promises";
 import { SESSION_COOKIE } from "@sms/shared/auth";
@@ -7,6 +8,7 @@ import { db } from "@sms/db/client";
 import { runAsSchool } from "@sms/db/tenant";
 import { logAuth } from "@/server/audit";
 import { detectImage, MAX_LOGO_BYTES } from "@/server/images";
+import { schoolTag } from "@/lib/public-cache";
 
 const root = () => process.env.UPLOADS_ROOT ?? "/data/uploads";
 
@@ -45,5 +47,7 @@ export async function POST(req: NextRequest) {
     }),
   );
   await logAuth(a.school.id, "SETTINGS.LOGO", { actorId: a.userId });
+  // Logo ikut payload publik (portal/info + /api/portal/logo).
+  revalidateTag(schoolTag(a.school.slug), { expire: 0 });
   return NextResponse.json({ url }, { status: 201 });
 }

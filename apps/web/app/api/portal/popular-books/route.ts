@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { db } from "@sms/db/client";
 import { schoolSlugFromHost } from "@sms/shared/school";
+import { getPublicSchool } from "@/lib/public-cache";
 
 // GET /api/portal/popular-books — daftar buku pelajaran gratis semua mapel
 // Sumber: katalog buku terbuka (Internet Archive Public API)
@@ -21,9 +21,11 @@ const TTL = 6 * 60 * 60_000; // 6 jam cache
 
 export async function GET(req: NextRequest) {
   const host = req.headers.get("host") ?? "";
-  const slug = schoolSlugFromHost(host, process.env.APEX_DOMAIN ?? "localtest.me");
+  const slug = schoolSlugFromHost(host, process.env.APEX_DOMAIN ?? "domainmu.id");
   if (!slug) return NextResponse.json({ error: "not found" }, { status: 404 });
-  const school = await db.school.findFirst({ where: { slug }, select: { id: true } });
+  // Cek sekolah lewat cache identitas publik (60 dtk, tag school:<slug>)
+  // supaya katalog populer tidak query Postgres tiap request.
+  const school = await getPublicSchool(slug);
   if (!school) return NextResponse.json({ error: "not found" }, { status: 404 });
 
   if (cache && Date.now() - cache.at < TTL && cache.rows.length > 0) {

@@ -1,7 +1,7 @@
 import { headers } from "next/headers";
 import LegalShell from "@/components/LegalShell";
 import { schoolSlugFromHost } from "@sms/shared/school";
-import { db } from "@sms/db/client";
+import { getPublicSchool } from "@/lib/public-cache";
 
 // Syarat layanan. Sengaja DIPISAH dari kebijakan privasi (Pasal 22 UU PDP):
 // persetujuan pemrosesan data pribadi bukan bagian dari perjanjian ini.
@@ -9,12 +9,9 @@ export default async function SyaratPage() {
   const h = await headers();
   const host = h.get("host") ?? "";
   const slug = schoolSlugFromHost(host, process.env.APEX_DOMAIN ?? "localtest.me");
-  let schoolName = "Sekolah";
-
-  if (slug) {
-    const s = await db.school.findFirst({ where: { slug }, select: { id: true, name: true } });
-    if (s) schoolName = s.name;
-  }
+  // Nama sekolah di-cache per slug (tag school:<slug>).
+  const school = slug ? await getPublicSchool(slug) : null;
+  const schoolName = school?.name ?? "Sekolah";
 
   const contact = process.env.PRIVACY_CONTACT_EMAIL?.trim() || null;
   const contactNode = contact

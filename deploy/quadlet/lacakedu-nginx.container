@@ -1,13 +1,19 @@
 [Unit]
-Description=lacakedu nginx (HTTP origin untuk cloudflared tunnel; tidak ada port publik)
+Description=lacakedu nginx (origin HTTP untuk tunnel + HTTPS publik)
 After=lacakedu-web.service lacakedu-worker.service
 
 [Container]
 Image=docker.io/library/nginx:stable-alpine
 ContainerName=lacakedu-nginx
 Network=lacakedu.network
+# Origin internal tunnel cloudflared (hanya loopback host).
 PublishPort=127.0.0.1:8080:80
+# HTTP publik -> 301 ke HTTPS, dan HTTPS publik.
+PublishPort=80:8081
+PublishPort=443:443
 Volume=%h/lacakedu/nginx/nginx.conf:/etc/nginx/nginx.conf:ro,Z
+Volume=%h/lacakedu/nginx/lacakedu-site.conf:/etc/nginx/site/lacakedu.conf:ro,Z
+Volume=%h/lacakedu/certs:/etc/nginx/certs:ro,z
 HealthCmd=CMD-SHELL wget -qO- http://127.0.0.1/healthz | grep -q ok
 HealthInterval=30s
 

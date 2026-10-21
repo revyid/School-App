@@ -1,10 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
+import { revalidateTag } from "next/cache";
 import { randomBytes } from "node:crypto";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { SESSION_COOKIE } from "@sms/shared/auth";
 import { requireRole } from "@/server/auth-gate";
 import { getRootDb } from "@sms/db/root";
 import { detectImage } from "@/server/images";
+import { ROOT_SETTINGS_TAG } from "@/lib/public-cache";
 
 const root = () => process.env.UPLOADS_ROOT ?? "/data/uploads";
 const MAX_HERO_BYTES = 2 * 1024 * 1024;
@@ -70,5 +72,6 @@ export async function POST(req: NextRequest) {
   if (typeof alt === "string") {
     await dbRoot.$queryRaw`UPDATE "RootSettings" SET value = to_jsonb(${alt.slice(0, 200)}::text), "updatedAt" = now() WHERE key = 'heroAlt'`;
   }
+  revalidateTag(ROOT_SETTINGS_TAG, { expire: 0 });
   return NextResponse.json({ url }, { status: 201 });
 }
