@@ -10,6 +10,7 @@ Metode: review kode (agent), nmap, nuclei 6.501 template × 44.000+ request, tes
 | nuclei (6.501 template, 3 target) | **0 temuan** |
 | nmap full port scan | hanya **22/SSH** + 8090 (listener tes) terbuka publik |
 | Review kode auth | 1 HIGH (rate-limit bypass), 3 MEDIUM, 1 LOW — **sudah diperbaiki** |
+| Cloudflare Free | WAF custom rules (403) + rate limit 5/10 dtk (429) — **aktif & terverifikasi** |
 | Kerentanan yang bisa dieksploitasi tanpa auth | **tidak ditemukan** |
 
 Semua temuan yang bisa dieksploitasi sudah diperbaiki dan diverifikasi ulang di server live (lihat "Perbaikan yang diterapkan").
@@ -66,7 +67,7 @@ Semua temuan yang bisa dieksploitasi sudah diperbaiki dan diverifikasi ulang di 
 ## Risiko tersisa & rekomendasi
 
 1. **PENTING — cabut listener tes 8090** (`deploy/quadlet/lacakedu-nginx.container` → `PublishPort=8090:8080` + blok `listen 8080` di `deploy/nginx/nginx.conf`). Selama aktif, origin bisa diakses tanpa Cloudflare (membypass WAF/DDoS). Jalur admin sudah ditutup (403) di listener itu, tapi tetap shouldn’t ada port publik tambahan.
-2. **Rate limit masih mengandalkan IP.** Setelah fix, XFF tak bisa dipalsukan, tapi penyerang dengan banyak IP asli tetap bisa mencoba. Batas per-akun (20/jam) yang sekarang menutup sebagian besar risiko.
+2. **Rate limit berlapis & terverifikasi:** edge Cloudflare (5 request/10 dtk per IP → 429) + app (30/IP/mnt, 300/IP/jam, 5/akun/5mnt, 20/akun/jam → 429). Batas per-IP sengaja longgar agar siswa yang berbagi IP NAT (satu sekolah satu IP) tidak saling mengunci saat jam masuk; anti brute force bertumpu pada batas per-akun.
 3. **Panel Cloudflare:** pastikan WAF/Managed Rules aktif dan Battening.
 4. **Rahasia:** `admin@lacakedu.web.id` (SUPER_ADMIN) memakai password yang sudah dibagikan di chat/audit — **ganti password** dan rotasi `INTERNAL_TOKEN`, `app_root` & `app_user` password.
 5. **Backup:** pastikan `pg_dump` harian berjalan (unit `backups-volume`) dan ada salinan off-VPS.

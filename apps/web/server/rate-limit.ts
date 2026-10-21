@@ -10,8 +10,11 @@ export async function hit(key: string, limit: number, windowSec: number) {
 // Tanpa pasta (fallback gateway IP): X-Real-IP = IP gateway untuk semua klien,
 // jadi batas per-IP dilonggarkan 10x; batas per-AKUN tetap ketat.
 const RELAXED = process.env.TRUST_GATEWAY_IP === "1";
-const IP_MIN = RELAXED ? 100 : 10;
-const IP_HOUR = RELAXED ? 1000 : 100;
+// Batas per-IP longgar: satu sekolah biasanya satu IP NAT, jadi 60+ siswa
+// login bareng (jam masuk) tidak boleh saling mengunci. Anti brute force
+// bertumpu pada batas per-AKUN (5/5 mnt, 20/jam) + rate limit edge Cloudflare.
+const IP_MIN = RELAXED ? 300 : 30;
+const IP_HOUR = RELAXED ? 3000 : 300;
 
 export async function loginRateLimit(ip: string, acct: string) {
   const r1 = await hit(`rl:login:ip:${ip}`, IP_MIN, 60);
