@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { revalidateTag } from "next/cache";
+import { purgeEdge } from "@/server/cf-purge";
 import { randomBytes } from "node:crypto";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { SESSION_COOKIE } from "@sms/shared/auth";
@@ -73,5 +74,6 @@ export async function POST(req: NextRequest) {
     await dbRoot.$queryRaw`UPDATE "RootSettings" SET value = to_jsonb(${alt.slice(0, 200)}::text), "updatedAt" = now() WHERE key = 'heroAlt'`;
   }
   revalidateTag(ROOT_SETTINGS_TAG, { expire: 0 });
+  await purgeEdge(["/beranda", "/privasi", "/syarat"]);
   return NextResponse.json({ url }, { status: 201 });
 }

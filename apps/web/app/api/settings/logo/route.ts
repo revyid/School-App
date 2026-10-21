@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { revalidateTag } from "next/cache";
+import { purgeEdge } from "@/server/cf-purge";
 import { randomBytes } from "node:crypto";
 import { mkdir, writeFile } from "node:fs/promises";
 import { SESSION_COOKIE } from "@sms/shared/auth";
@@ -49,5 +50,9 @@ export async function POST(req: NextRequest) {
   await logAuth(a.school.id, "SETTINGS.LOGO", { actorId: a.userId });
   // Logo ikut payload publik (portal/info + /api/portal/logo).
   revalidateTag(schoolTag(a.school.slug), { expire: 0 });
+  await purgeEdge([
+    `https://${a.school.slug}.${process.env.APEX_DOMAIN ?? "lacakedu.web.id"}/`,
+    `https://${a.school.slug}.${process.env.APEX_DOMAIN ?? "lacakedu.web.id"}/privasi`,
+  ]);
   return NextResponse.json({ url }, { status: 201 });
 }

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { revalidateTag } from "next/cache";
+import { purgeEdge } from "@/server/cf-purge";
 import { SESSION_COOKIE } from "@sms/shared/auth";
 import { requireRole } from "@/server/auth-gate";
 import { getRootDb } from "@sms/db/root";
@@ -56,5 +57,6 @@ export async function PATCH(req: NextRequest) {
       ON CONFLICT ("key") DO UPDATE SET "value" = EXCLUDED."value", "updatedAt" = now()`;
   }
   revalidateTag(ROOT_SETTINGS_TAG, { expire: 0 });
+  await purgeEdge(["/beranda", "/privasi", "/syarat"]);
   return NextResponse.json({ ok: true });
 }

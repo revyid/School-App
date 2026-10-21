@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { revalidateTag } from "next/cache";
+import { purgeEdge } from "@/server/cf-purge";
 import { SESSION_COOKIE } from "@sms/shared/auth";
 import { requireRole } from "@/server/auth-gate";
 import { db } from "@sms/db/client";
@@ -86,5 +87,10 @@ export async function PATCH(req: NextRequest) {
   await logAuth(a.school.id, "SETTINGS.UPDATE", { actorId: a.userId });
   // Data publik sekolah (portal, buku, legal) memakai tag school:<slug>.
   revalidateTag(schoolTag(a.school.slug), { expire: 0 });
+  await purgeEdge([
+    `https://${a.school.slug}.${process.env.APEX_DOMAIN ?? "lacakedu.web.id"}/`,
+    `https://${a.school.slug}.${process.env.APEX_DOMAIN ?? "lacakedu.web.id"}/buku`,
+    `https://${a.school.slug}.${process.env.APEX_DOMAIN ?? "lacakedu.web.id"}/privasi`,
+  ]);
   return NextResponse.json({ settings: row });
 }
