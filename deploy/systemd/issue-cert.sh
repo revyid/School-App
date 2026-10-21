@@ -17,10 +17,18 @@ DOMAIN="lacakedu.web.id"
 ENV_FILE="$HOME/lacakedu/acme.env"
 
 [ -f "$ENV_FILE" ] || { echo "belum ada $ENV_FILE (DNS_API + CF_Token)"; exit 1; }
+# set -a: variabel dari file HARUS diekspor, kalau tidak acme.sh (child
+# process) tidak pernah melihatnya -> "You didn't specify a Cloudflare api key".
+set -a
 # shellcheck disable=SC1090
 . "$ENV_FILE"
+set +a
 : "${DNS_API:?DNS_API belum di-set di $ENV_FILE}"
 : "${CF_Token:?CF_Token belum di-set di $ENV_FILE}"
+# Buang spasi/newline yang mungkin ikut tersalin saat paste.
+CF_Token="$(printf '%s' "$CF_Token" | tr -d '[:space:]')"
+export CF_Token
+echo "DNS_API=$DNS_API  CF_Token=…${CF_Token: -6} (terbaca)"
 
 mkdir -p "$HOME/lacakedu/certs"
 

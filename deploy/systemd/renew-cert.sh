@@ -7,12 +7,17 @@ DOMAIN="lacakedu.web.id"
 ENV_FILE="$HOME/lacakedu/acme.env"
 
 [ -f "$ENV_FILE" ] || { echo "acme.env belum ada, lewati renewal"; exit 0; }
+# set -a: acme.sh (child process) butuh variabel ini di environment.
+set -a
 # shellcheck disable=SC1090
 . "$ENV_FILE"
+set +a
 : "${DNS_API:?DNS_API belum di-set (lihat acme.env)}"
+CF_Token="$(printf '%s' "${CF_Token:-}" | tr -d '[:space:]')"
+[ -n "$CF_Token" ] && export CF_Token
 
 # Belum ada sertifikat untuk domain ini (issuance manual belum dijalankan) -> lewati.
-if ! "$ACME_HOME/acme.sh" --list 2>/dev/null | grep -q "$DOMAIN"; then
+if ! "$ACME_HOME/acme.sh" --list --home "$ACME_HOME" 2>/dev/null | grep -q "$DOMAIN"; then
   echo "belum ada sertifikat untuk $DOMAIN, lewati renewal"
   exit 0
 fi
