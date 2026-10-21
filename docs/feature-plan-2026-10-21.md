@@ -7,7 +7,9 @@ Dasar: audit keamanan & performa (`docs/security-audit-2026-10-21.md`) + pemetaa
 
 1. **EPUB reader in-app** — pakai `epubjs` (±300KB) di reader in-app. PDF via `<iframe sandbox>`, markdown dirender sebagai React element.
 2. **Root mengedit langsung ke `SchoolSettings`** — tanpa tabel override terpisah. Simpler: perubahan root langsung terlihat di sekolah. Riwayat tetap ada di `AuditLog` (aksi `ROOT.SCHOOL_SETTINGS_UPDATE`).
-3. **Statistik view — bisa dipilih** — toggle "Total views" ↔ "Unique per hari" di UI dashboard root; query-nyaBEDA (counter total vs `count(distinct)` per hari).
+3. **Statistik view — TOTAL per hari** (dipilih 22 Okt 2026). Satu baris per konten per hari di
+   `ContentView`, di-upsert per event view. Tidak ada hitungan unik per hari (biaya jauh lebih
+   tinggi); pembeda "unloading" tidak dipakai. Sisa query view per hari cukup satu baris.
 4. **Lingkup QA — bisa dipilih** — pilihan cakupan di UI/jalur QA: (a) 1 sekolah + 1 sekolah kedua (paling cepat, cukup untuk uji isolasi), (b) semua sekolah demo.
 5. **Gambar karakter — per sekolah DAN boleh custom** — tiap sekolah punya ilustrasi sendiri;]="(default dari aset) atau gambar custom yang diunggah admin sekolah (dan bisa ditimpa root). Default: ilustrasi per kategori sekolah, custom: upload PNG/JPG/WEBP ≤ 2MB.
 
@@ -37,7 +39,11 @@ Dasar: audit keamanan & performa (`docs/security-audit-2026-10-21.md`) + pemetaa
 
 ---
 
-## Fase 1 — Fondasi data (1–2 hari)
+## Fase 1 — Fondasi data (1–2 hari) — **SELESAI 22 Okt 2026**
+
+> Terpasang: migrasi `20261022120000_book_contentview_school_branding` (tabel `Book`, `ContentView`,
+> 5 kolom branding di `SchoolSettings`), RLS per sekolah, dan terverifikasi: tenant hanya
+> melihat buku sekolahnya, tenant **diblokir** membuat buku platform, `app_root` melihat semua.
 
 ### 1.1 Model `Book` (ebook) — belum ada sama sekali
 ```
@@ -63,23 +69,26 @@ enum BookSource { LINK UPLOAD MARKDOWN }
 ```
 > Katalog buku sekarang **100% proxy Internet Archive** (`api/portal/search-books`, `api/portal/popular-books`) — tidak ada data buku di DB. Model ini membuat katalog internal bisa berdampingan (sumber: `internal` | `archive`).
 
-### 1.2 Tabel penghitung view/pembacaan
+### 1.2 Tabel penghitung view/pembacaan — **Selesai: `ContentView` (total per hari)**
 ```
 model ContentView {
-  id        String  @id @default(cuid())
-  schoolId  String
-  kind      String  // BOOK | MATERIAL | TASK | ANNOUNCEMENT | PORTAL
-  entityId  String
-  count     Int     @default(0)
-  day       DateTime @db.Date
+  id       String   @id @default(cuid())
+  schoolId String
+  kind     String   @db.VarChar(32)   // BOOK | MATERIAL | TASK | ANNOUNCEMENT | PORTAL
+  entityId String   @db.VarChar(64)
+  day      DateTime @db.Date
+  count    Int      @default(0)
   @@unique([schoolId, kind, entityId, day])
   @@index([schoolId, day])
 }
 ```
-Event view dikirim `POST /api/track/view` (publik, tanpa auth, limiter Redis), ditulis dengan upsert `ON CONFLICT DO UPDATE count = count + 1`. Alternatif lebih murah: `pg-hll`/Redis counter per hari → flush harian. **Pilih Redis + flush harian** (tidak menambah beban tulis ke Postgres per request).
+Event view dikirim `POST /api/track/view` (publik, tanpa auth, limiter Redis), ditulis dengan
+upsert `ON CONFLICT DO UPDATE count = count + 1`. Kalau yang tercatat total per hari, tidak
+perlu tabel terpisah — satu baris per konten per hari cukup.
 
-### 1.3 Pengaturan per-sekolah yang bisa diedit root
-Tambah kolom pada `SchoolSettings` (atau tabel baru `SchoolOverrides` bila ingin memisahkan "nilai default sekolah" vs "nilai yang di-override root"):
+### 1.3 Pengaturan per-sekolah yang bisa diedit root — **Kolom sudah ada di `SchoolSettings`**
+Kolom baru (terpasang 22 Okt 2026): `characterImageUrl`, `heroImageUrl`, `dashboardBannerUrl`,
+`brandColor`, `portalTheme` (default `"default"`). API untuk menulisnya menyusul di Fase 2.
 
 | Key | Jenis | Default | Edit oleh |
 |---|---|---|---|

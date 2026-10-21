@@ -15,6 +15,12 @@ enum Role {
   SISWA
 }
 
+enum BookSource {
+  LINK
+  UPLOAD
+  MARKDOWN
+}
+
 enum AttendanceStatus {
   HADIR
   IZIN
@@ -142,6 +148,8 @@ model School {
   aiChatSessions  AiChatSession[]
   aiChatMessages  AiChatMessage[]
   pushSubscriptions PushSubscription[]
+  books             Book[]
+  contentViews      ContentView[]
 }
 
 model User {
@@ -174,6 +182,7 @@ model User {
   collabMessages     CollabMessage[] @relation("CollabMessageAuthor")
   consents           ParentalConsent[]
   markedConsents     ParentalConsent[] @relation("ConsentMarker")
+  booksCreated       Book[]        @relation("BookCreator")
   assessAttempts     AssessAttempt[]  @relation("AssessStudent")
   gradedAttempts     AssessAttempt[]  @relation("AssessGrader")
   groupMemberships   StudyGroupMember[]
@@ -255,12 +264,57 @@ model Subject {
   @@index([schoolId])
 }
 
+// Buku/ebook: internal (link, upload file, atau paste markdown).
+// schoolId NULL = buku platform (dimiliki root, terbaca semua sekolah).
+model Book {
+  id          String     @id @default(cuid())
+  schoolId    String?
+  school      School?    @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  title       String     @db.VarChar(200)
+  author      String?    @db.VarChar(160)
+  coverUrl    String?
+  source      BookSource
+  url         String?
+  fileKey     String?
+  bodyMd      String?
+  mimeType    String?    @db.VarChar(128)
+  sizeBytes   Int?
+  published   Boolean    @default(false)
+  createdById String?
+  createdBy   User?      @relation("BookCreator", fields: [createdById], references: [id], onDelete: SetNull)
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+
+  @@index([schoolId, published])
+  @@index([createdAt])
+}
+
+// Penghitung view per hari (TOTAL, bukan unik). Satu baris per konten per hari.
+model ContentView {
+  id       String   @id @default(cuid())
+  schoolId String
+  school   School   @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  kind     String   @db.VarChar(32)
+  entityId String   @db.VarChar(64)
+  day      DateTime @db.Date
+  count    Int      @default(0)
+
+  @@unique([schoolId, kind, entityId, day])
+  @@index([schoolId, day])
+}
+
 model SchoolSettings {
   id                   String   @id @default(cuid())
   schoolId             String   @unique
   school               School   @relation(fields: [schoolId], references: [id], onDelete: Cascade)
   portalName           String   @default("")
   logoUrl              String?
+  // Branding sekolah (Fase 1): gambar karakter dashboard, hero, warna, banner.
+  characterImageUrl    String?
+  heroImageUrl         String?
+  dashboardBannerUrl   String?
+  brandColor           String?
+  portalTheme          String   @default("default")
   startTime            String   @default("07:00")
   cutoffTime           String   @default("07:30")
   waDailyCap           Int      @default(200)
