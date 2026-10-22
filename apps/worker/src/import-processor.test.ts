@@ -6,7 +6,7 @@ import { runAsSchool } from "@lacakedu/db/tenant";
 import { dbSystemTest as dbSystem } from "@lacakedu/db/test-utils"; // TEST-ONLY
 import { processImportBatch } from "./import-processor.js";
 
-const UPLOADS = process.env.UPLOADS_ROOT ?? "/home/revy/Projects/me/lacakedu/data/uploads";
+const UPLOADS = process.env.UPLOADS_ROOT ?? "/home/revy/Projects/me/sms-lms/data/uploads";
 let schoolId = "";
 let adminId = "";
 

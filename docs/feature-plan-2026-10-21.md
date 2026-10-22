@@ -260,7 +260,7 @@ yang tersisa terutama di teks UI, scope paket, dan identifier internal).
 | **3. Identifier internal** | env `SMS_COOKIE_*` → `LACAKEDU_COOKIE_*` (dengan fallback), cookie dev `lacakedu-session-dev`, cache `lacakedu-shell-v2`/`lacakedu-tts`, container dev `lacakedu-test-*` | 1 jam | ✅ selesai 22 Okt |
 | **4. Server-side (ops)** | DB `smsdb` → `lacakedudb`; role kerja `lacakedu` (superuser, bisa login); role bootstrap `sms` → `lacakedu_sys` (**NOLOGIN** + password dirotasi — tak bisa dipakai login, hanya sebagai pemilik katalog sistem); semua password role DB dirotasi; path backup `/var/backups/lacakedu`; env + healthcheck + scripts/docs | 2–3 jam | ✅ selesai 22 Okt (backup + uji restore dulu) |
 | **5. Prefix token QR** | `sms1-` → `lac1-`, scanner dual-accept `/^(sms1\|lac1)-[0-9a-f]{32}$/`; validasi server tetap lookup DB (tanpa aturan prefix) → QR lama tetap valid | 1 jam | ✅ selesai 22 Okt |
-| **6. Path folder lokal** | `/home/revy/Projects/me/sms-lms` → `/home/revy/Projects/me/lacakedu` (5 file + symlink workspace `node_modules/@lacakedu/*`) | 15 menit | ✅ selesai 22 Okt |
+| **6. Path folder lokal** | ~~rename folder repo~~ → **DIBATALKAN**: folder lokal tetap `/home/revy/Projects/me/sms-lms` (nama folder adalah detail mesin; merename-nya memutus tool/session lokal). Path string di source tetap `sms-lms`. | 0 | ⛔ dibatalkan 22 Okt |
 
 ### Yang TIDAK boleh diganti
 - **"SMS" sebagai Short Message Service** (broadcast WhatsApp, "tidak ada SMS/email cadangan") — bukan brand.

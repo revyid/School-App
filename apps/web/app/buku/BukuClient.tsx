@@ -4,6 +4,7 @@ import PublicHeader from "@/components/PublicHeader";
 import Reveal from "@/components/Reveal";
 import { useFetch } from "@/app/lib/api";
 import { useState } from "react";
+import { useTrackView } from "@/app/lib/use-track-view";
 
 type Book = {
   title: string;
@@ -18,6 +19,8 @@ type Book = {
 const CARD_COLORS = ["#e85e43", "#97c4db", "#f5c94a", "#aec6a4"];
 
 export default function BukuClient({ schoolName }: { schoolName: string }) {
+  // View halaman katalog (1 per identitas per 15 menit, di-throttle server).
+  useTrackView("PORTAL", "buku");
   const popular = useFetch<{ rows: Book[] }>("/api/portal/popular-books");
   const [q, setQ] = useState("");
   const [rows, setRows] = useState<Book[]>([]);

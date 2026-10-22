@@ -1,0 +1,27 @@
+# Konteks build: jangan kirim dependensi & artefak build ke daemon.
+# (tanpa ini konteks = 3,3 GB: node_modules 2,8 GB + .next 442 MB, dan
+#  node_modules ikut ter-COPY ke image lalu di-install ulang di atasnya.)
+**/node_modules
+node_modules
+**/.next
+.next
+**/dist
+dist
+.git
+.gitignore
+data
+**/data
+*.log
+**/*.log
+coverage
+**/coverage
+
+# .env berisi rahasia (AI router key, VAPID private, INTERNAL_TOKEN).
+# JANGAN pernah di-bake ke image — runtime ambil dari env file di server.
+**/.env
+**/.env.*
+!**/.env.example
+
+# Dokumen/arsip tidak dipakai saat build.
+docs
+.hermes

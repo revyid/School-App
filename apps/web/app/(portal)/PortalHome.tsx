@@ -6,6 +6,7 @@ import Image from "next/image";
 import PublicLogo from "@/components/PublicLogo";
 import Reveal from "@/components/Reveal";
 import { useFetch } from "@/app/lib/api";
+import { useTrackView } from "@/app/lib/use-track-view";
 
 const Map = dynamic(() => import("./Map"), { ssr: false });
 const PopularBooks = dynamic(() => import("./PopularBooks"), { ssr: false });
@@ -26,6 +27,7 @@ type PortalInfo = {
 };
 
 export default function PortalPage() {
+  useTrackView("PORTAL", "portal");
   const info = useFetch<PortalInfo>("/api/portal/info");
 
   const nama = info.data?.portalName || info.data?.school.name || "…";
