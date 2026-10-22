@@ -5,6 +5,7 @@ import { authorize, err } from "@/server/auth-gate";
 import { db } from "@lacakedu/db/client";
 import { runAsSchool } from "@lacakedu/db/tenant";
 import { getRootDb } from "@lacakedu/db/root";
+import { fetchOgImage } from "@/server/thumbnail";
 
 // Skema input buku. Satu endpoint untuk 3 sumber:
 //   LINK    -> title + url (+ author, coverUrl)
@@ -91,16 +92,20 @@ export async function POST(req: NextRequest) {
   if (source === "LINK" && !/^https?:\/\/\S+$/i.test(d.url ?? ""))
     return NextResponse.json({ error: "url harus diawali http:// atau https://" }, { status: 400 });
 
-  const data = {
+  const data0 = {
     title: d.title,
     author: d.author ?? null,
-    coverUrl: d.coverUrl ?? null,
     source,
     url: d.url ?? null,
     bodyMd: d.bodyMd ?? null,
     published: d.published ?? false,
     createdById: a.userId,
   } as const;
+
+  // Thumbnail otomatis dari link (best-effort; dokumen pdf/docx tidak punya gambar).
+  let coverUrl = d.coverUrl ?? null;
+  if (!coverUrl && source === "LINK" && d.url) coverUrl = await fetchOgImage(d.url);
+  const data = { ...data0, coverUrl };
 
   let row;
   if (a.role === "SUPER_ADMIN") {

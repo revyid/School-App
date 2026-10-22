@@ -326,3 +326,32 @@ Fase 0: 0,5 hari · Fase 1: 1,5 hari · Fase 2: 2,5 hari · Fase 3: 2,5 hari · 
 3. **Statistik view**:全会 jumlah view, atau view unik per hari? ( unik jauh lebih mahal)
 4. **Lingkup "semua fitur"** di Fase 7: cukup 1 sekolah + 1 sekolah kedua, atau semua sekolah demo?
 5. **Gambar karakter**: ilustrasi ثابت per sekolah, atau karakter humanoid/custom per sekolah (butuh generator/editor)?
+
+
+---
+
+## Catatan implementasi Fase 5–6 (22 Okt 2026)
+
+### 3 ilustrasi utama → 3 slot yang bisa diganti per sekolah
+Aset bawaan: `student-hero-transparent.webp` (karakter putri), `student-book.webp` (karakter pria),
+`classroom-illustration.webp` (suasana kelas). Masing-masing punya slot di `SchoolSettings`:
+
+| Slot | Menggantikan | Tampil di |
+|---|---|---|
+| `characterImageUrl` | `student-hero-transparent.webp` | portal (siswa), dashboard siswa, halaman login |
+| `bookImageUrl` | `student-book.webp` | portal (baca buku), dashboard admin |
+| `heroImageUrl` | `classroom-illustration.webp` | CTA bawah portal, dashboard guru |
+
+Upload: `/admin/pengaturan` (admin sekolah) atau `/pantau/schools/<id>` (root).
+Semua slot punya **fallback** ke aset bawaan (kalau slot kosong ATAU file hilang → `onError`).
+Kolom `bookImageUrl` ditambahkan lewat migrasi `20261022160000_school_book_image`.
+
+### UX buku
+- Katalog **"Buku sekolah"** dibuka lewat **Sheet** (drawer) dari tombol di halaman `/buku`
+  (bukan inline) → daftar + form tambah di dalam sheet.
+- **Thumbnail** per buku: bisa diunggah (`POST /api/books/thumbnail` → `/api/books/cover?f=…`),
+  atau otomatis diambil dari halaman yang di-link (`og:image`/`twitter:image`/`<img>` pertama).
+- Penambahan buku: 3 mode — **LINK**, **tempel markdown**, **unggah file** (pdf/epub/docx/md/txt ≤25MB,
+  deteksi magic bytes).
+- Pembaca `/buku/<id>`: markdown (RaiMarkdown aman), PDF (iframe), EPUB (fallback unduh — reader
+  native butuh `epubjs`, belum terpasang), link (buka sumber).
