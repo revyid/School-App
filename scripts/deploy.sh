@@ -5,7 +5,7 @@
 set -euo pipefail
 
 VPS="ubuntu@139.190.103.107"
-LOCAL="/home/revy/Projects/me/sms-lms"
+LOCAL="/home/revy/Projects/me/lacakedu"
 REMOTE="/home/ubuntu/lacakedu"
 WEB_IMG="localhost/lacakedu-web:latest"
 WORKER_IMG="localhost/lacakedu-worker:latest"

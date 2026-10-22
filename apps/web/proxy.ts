@@ -36,12 +36,14 @@ export function proxy(req: NextRequest) {
   const isRoot = isRootHost(bare, apex);
   const slug = isRoot ? null : schoolSlugFromHost(host, apex);
   if (!isRoot && !slug) return new NextResponse("not found", { status: 404 });
-  // Nama cookie tergantung env (prod __Host-session, dev sms-session-dev).
+  // Nama cookie tergantung env (prod __Host-session, dev lacakedu-session-dev).
   // Proxy tidak boleh bergantung pada env yang belum tentu tersedia di runtime-nya,
   // jadi terima KEDUANYA di sini. Otorisasi penuh tetap di authorize().
+  // Nama dev lama (sms-session-dev) tetap diterima agar sesi dev lama tidak putus.
   const hasSession =
     (req.cookies.get(SESSION_COOKIE)?.value ?? "").length > 0 ||
     (req.cookies.get("__Host-session")?.value ?? "").length > 0 ||
+    (req.cookies.get("lacakedu-session-dev")?.value ?? "").length > 0 ||
     (req.cookies.get("sms-session-dev")?.value ?? "").length > 0;
 
   const nonce = Buffer.from(crypto.randomUUID()).toString("base64");

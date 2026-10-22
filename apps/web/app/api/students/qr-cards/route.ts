@@ -58,7 +58,7 @@ export async function GET(req: NextRequest) {
           data: {
             schoolId: a.school.id,
             studentId: s.userId,
-            token: `sms1-${randomBytes(16).toString("hex")}`,
+            token: `lac1-${randomBytes(16).toString("hex")}`,
           },
         });
       }

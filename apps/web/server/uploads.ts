@@ -1,7 +1,7 @@
 import { mkdir, writeFile, unlink } from "node:fs/promises";
 import { dirname } from "node:path";
 
-const uploadsRoot = () => process.env.UPLOADS_ROOT ?? "/home/revy/Projects/me/sms-lms/data/uploads";
+const uploadsRoot = () => process.env.UPLOADS_ROOT ?? "/home/revy/Projects/me/lacakedu/data/uploads";
 
 // Magic bytes (bukan ekstensi). xlsx = ZIP container -> cek 'PK\x03\x04'.
 const XLSX_MAGIC = Buffer.from([0x50, 0x4b, 0x03, 0x04]);

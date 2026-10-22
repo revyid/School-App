@@ -7,7 +7,7 @@ Env:
 - `SYSTEM_URL` = role `app_system` (hanya tes lintas-sekolah + `@sms/cli`).
 
 ## Dev (DB lokal, boleh reset)
-export MIGRATE_URL="postgresql://sms:***@127.0.0.1:5432/smsdb"
+export MIGRATE_URL="postgresql://lacakedu:***@127.0.0.1:5432/lacakedudb"
 pnpm --filter @sms/db exec prisma migrate dev
 # Bila checksum 0002 berubah setelah di-apply:
 pnpm --filter @sms/db exec prisma migrate reset

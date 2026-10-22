@@ -12,13 +12,13 @@ RESP=$(curl -s -D /tmp/hdr.txt -X POST \
   -H "Origin: http://$HOST" -H "Referer: http://$HOST/login" \
   -d "{\"identifier\":\"$IDENT\",\"password\":\"$PASS\"}" \
   "$BASE/api/auth/login")
-SID=$(grep -i "^set-cookie:" /tmp/hdr.txt | sed 's/.*sms-session-dev=\([^;]*\).*/\1/' | tr -d '\r')
+SID=$(grep -i "^set-cookie:" /tmp/hdr.txt | sed 's/.*lacakedu-session-dev=\([^;]*\).*/\1/' | tr -d '\r')
 CSRF=$(echo "$RESP" | python3 -c 'import sys,json; print(json.load(sys.stdin).get("csrfToken",""))' 2>/dev/null)
 ROLE=$(echo "$RESP" | python3 -c 'import sys,json; print(json.load(sys.stdin).get("user",{}).get("role",""))' 2>/dev/null)
 echo "login: role=$ROLE sid=${SID:0:8}… csrf=${CSRF:0:8}…"
 
 if [ -z "$SID" ]; then echo "GAGAL login"; exit 1; fi
-C="sms-session-dev=$SID"
+C="lacakedu-session-dev=$SID"
 HC="Host: $HOST"
 HX="x-csrf-token: $CSRF"
 HO="Origin: http://$HOST"

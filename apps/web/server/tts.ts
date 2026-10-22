@@ -26,7 +26,7 @@ export function vendorDir(): string {
 }
 
 export function cacheDir(): string {
-  return process.env.PIPER_CACHE_DIR ?? path.join(os.homedir(), ".cache", "sms-tts");
+  return process.env.PIPER_CACHE_DIR ?? path.join(os.homedir(), ".cache", "lacakedu-tts");
 }
 
 function modelPath(): string {

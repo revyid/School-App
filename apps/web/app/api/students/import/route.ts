@@ -160,7 +160,7 @@ export async function POST(req: NextRequest) {
           data: {
             schoolId: a.school.id,
             studentId: u.id,
-            token: `sms1-${randomBytes(16).toString("hex")}`,
+            token: `lac1-${randomBytes(16).toString("hex")}`,
           },
         });
       });

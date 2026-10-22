@@ -3,7 +3,7 @@
 // menggantikan worker lama, subscription push ikut mati, dan di Android/Chrome
 // notif tidak pernah muncul walau izin sudah granted.
 // Versi cache bump tiap rilis agar klien dapat shell baru.
-const CACHE = "sms-shell-v2";
+const CACHE = "lacakedu-shell-v2";
 const SHELL = ["/login", "/manifest.webmanifest"];
 
 self.addEventListener("install", (event) => {
@@ -47,7 +47,7 @@ self.addEventListener("push", (event) => {
       body: data.body || "",
       icon: "/icon-192.png",
       badge: "/icon-192.png",
-      tag: "sms-notif",
+      tag: "lacakedu-notif",
       renotify: true,
       data: { url: data.url || "/" },
       vibrate: [150, 50, 150],

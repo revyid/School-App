@@ -4,7 +4,7 @@
 --   3. SchoolSettings: kolom branding per sekolah (karakter, hero, banner, warna, tema).
 --
 -- Jalankan sebagai owner tabel `sms`:
---   psql -U sms -d smsdb -f migration.sql
+--   psql -U lacakedu -d lacakedudb -f migration.sql
 --
 -- Hak akses:
 --   - app_user: default privilege (db-create-roles.sql) sudah memberi CRUD; tabel ini

@@ -1,5 +1,5 @@
 -- Dijalankan SEKALI sebagai superuser POSTGRES_USER (`sms`), SEBELUM migrasi:
---   podman exec -i lacakedu-postgres psql -U sms -d smsdb < scripts/db-create-roles.sql
+--   podman exec -i lacakedu-postgres psql -U lacakedu -d lacakedudb < scripts/db-create-roles.sql
 -- Tiga peran koneksi, JANGAN dicampur:
 --   sms        : superuser (dibuat image postgres dari POSTGRES_USER). DDL + migrate.
 --                Superuser MELEWATI semua RLS termasuk FORCE — migrasi tidak buta.

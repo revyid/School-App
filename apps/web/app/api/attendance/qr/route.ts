@@ -8,7 +8,7 @@ import { logAuth } from "@/server/audit";
 import { guruClassIds } from "@/server/lms-scope";
 
 function newQrToken(): string {
-  return `sms1-${randomBytes(16).toString("hex")}`;
+  return `lac1-${randomBytes(16).toString("hex")}`;
 }
 
 async function gate(req: NextRequest, roles: ("ADMIN" | "GURU" | "SISWA")[]) {

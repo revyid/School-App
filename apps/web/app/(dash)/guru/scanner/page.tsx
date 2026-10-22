@@ -214,7 +214,7 @@ export default function ScannerPage() {
     cam.stop();
   }, [cam]);
 
-  // Loop deteksi: BarcodeDetector tiap 500ms; token sms1-* langsung dipost.
+  // Loop deteksi: BarcodeDetector tiap 500ms; token lac1-* langsung dipost.
   // FASE 3: Brave Android tidak punya BarcodeDetector → fallback jsQR
   // (lazy-import, hanya di scanner) dari frame video via canvas.
   const decodeWithJsqr = useCallback(async (video: HTMLVideoElement): Promise<string | null> => {
@@ -263,7 +263,8 @@ export default function ScannerPage() {
             else if (alive) setScanState("mencari");
             continue;
           }
-          if (/^sms1-[0-9a-f]{32}$/.test(val)) {
+          // Dual-accept: QR lama (sms1-) yang sudah tercetak tetap valid.
+          if (/^(sms1|lac1)-[0-9a-f]{32}$/.test(val)) {
             scanning.current = true;
             setScanState("mencari");
             setScanDetail(null);
@@ -355,7 +356,7 @@ export default function ScannerPage() {
         <form className="grid gap-[10px] mt-3 max-w-[480px]" onSubmit={(e) => { e.preventDefault(); if (manual.trim()) { void postToken(manual.trim()); setManual(""); } }}>
           <label className="grid gap-[6px] text-[13px] text-muted">
             Token manual (bila kamera tak mendukung):
-            <Input value={manual} onChange={(e) => setManual(e.target.value)} placeholder="sms1-…" />
+            <Input value={manual} onChange={(e) => setManual(e.target.value)} placeholder="lac1-…" />
           </label>
           <div className="mb-4 flex flex-wrap items-center gap-2.5"><Button variant="sticker" type="submit">Catat hadir</Button></div>
         </form>

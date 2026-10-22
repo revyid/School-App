@@ -13,7 +13,7 @@ Volume=pgdata.volume:/var/lib/postgresql:Z
 # JANGAN pakai ${POSTGRES_USER} (di-expand systemd). Samakan 'sms' dengan POSTGRES_USER.
 # Tuning untuk VPS 2 vCPU / 4 GB: buffer kecil, JIT mati (hindari spike CPU).
 Exec=postgres -c shared_buffers=256MB -c effective_cache_size=768MB -c work_mem=8MB -c maintenance_work_mem=64MB -c max_connections=40 -c random_page_cost=1.1 -c jit=off
-HealthCmd=CMD-SHELL pg_isready -U sms
+HealthCmd=CMD-SHELL pg_isready -U lacakedu
 HealthInterval=30s
 HealthRetries=3
 
