@@ -20,6 +20,7 @@ export type PublicSchool = {
   brandColor: string | null;
   branding: {
     characterImageUrl: string | null;
+    bookImageUrl: string | null;
     heroImageUrl: string | null;
     dashboardBannerUrl: string | null;
   };
@@ -68,7 +69,7 @@ export function getPublicSchool(slug: string): Promise<PublicSchool | null> {
       const st = await runAsSchool(db, school.id, (tx) =>
         tx.schoolSettings.findUnique({
           where: { schoolId: school.id },
-          select: { portalName: true, logoUrl: true, brandColor: true, characterImageUrl: true, heroImageUrl: true, dashboardBannerUrl: true },
+          select: { portalName: true, logoUrl: true, brandColor: true, characterImageUrl: true, bookImageUrl: true, heroImageUrl: true, dashboardBannerUrl: true },
         })).catch(() => null);
       return {
         id: school.id,
@@ -78,6 +79,7 @@ export function getPublicSchool(slug: string): Promise<PublicSchool | null> {
         brandColor: st?.brandColor ?? null,
         branding: {
           characterImageUrl: st?.characterImageUrl ?? null,
+          bookImageUrl: st?.bookImageUrl ?? null,
           heroImageUrl: st?.heroImageUrl ?? null,
           dashboardBannerUrl: st?.dashboardBannerUrl ?? null,
         },

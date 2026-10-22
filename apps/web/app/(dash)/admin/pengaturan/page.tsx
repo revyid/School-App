@@ -12,7 +12,7 @@ import { Alert } from "@/components/ui/alert";
 
 const BRAND_KINDS = [
   { kind: "character", field: "characterImageUrl", label: "Gambar karakter dashboard" },
-  { kind: "banner", field: "dashboardBannerUrl", label: "Banner dashboard" },
+  { kind: "book", field: "bookImageUrl", label: "Ilustrasi buku" },
   { kind: "hero", field: "heroImageUrl", label: "Gambar hero" },
 ] as const;
 

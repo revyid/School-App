@@ -36,7 +36,7 @@ type Msg = { variant: "success" | "destructive"; text: string } | null;
 
 const BRAND_KINDS = [
   { kind: "character", field: "characterImageUrl", label: "Gambar karakter" },
-  { kind: "banner", field: "dashboardBannerUrl", label: "Banner dashboard" },
+  { kind: "book", field: "bookImageUrl", label: "Ilustrasi buku" },
   { kind: "hero", field: "heroImageUrl", label: "Gambar hero" },
 ] as const;
 
@@ -185,11 +185,11 @@ export default function RootSchoolSettingsPage({ params }: { params: Promise<{ i
                     onChange={(e) => uploadBrand(b.kind, e)}
                     className="text-[13px]"
                   />
-                  {s[b.field] && (
+                  {s[b.field] ? (
                     <Button variant="sticker-ghost" size="sm" type="button" disabled={busy} onClick={() => removeBrand(b.field)}>
                       Hapus
                     </Button>
-                  )}
+                  ) : null}
                 </section>
               ))}
             </div>

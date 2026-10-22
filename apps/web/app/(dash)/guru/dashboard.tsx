@@ -20,7 +20,7 @@ export default function GuruDashboard() {
   }>("/api/tasks");
   const leave = useFetch<{ rows: { id: string }[] }>("/api/leave?status=PENDING");
   // Gambar karakter sekolah (bila diunggah admin) dengan fallback ilustrasi lama.
-  const brand = useFetch<{ settings: { characterImageUrl?: string | null } }>("/api/settings");
+  const brand = useFetch<{ settings: { characterImageUrl?: string | null; bookImageUrl?: string | null; heroImageUrl?: string | null } }>("/api/settings");
 
   const kelas = assign.data?.rows ?? [];
   const kelasUnik = Array.from(new Map(kelas.map((k) => [k.class.id, k])).values());
@@ -72,7 +72,9 @@ export default function GuruDashboard() {
               
             />
             <Image
-              src={brand.data?.settings.characterImageUrl ? "/api/portal/branding?kind=character" : "/assets/classroom-illustration.png"}
+              src={brand.data?.settings.heroImageUrl ? "/api/portal/branding?kind=hero" : "/assets/classroom-illustration.png"}
+              unoptimized
+              onError={(e) => { e.currentTarget.src = "/assets/classroom-illustration.png"; }}
               alt="Ilustrasi ruang kelas"
               width={200}
               height={240}

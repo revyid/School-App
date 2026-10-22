@@ -101,7 +101,8 @@ export default function PortalPage() {
           {/* kiri: siswi — student-hero-transparent (aset baru), fallback char-girl */}
           <div className="portal-hero-side hero-left" style={{ position: "relative", zIndex: 2, justifySelf: "start", width: "min(100%, 250px)", height: 370, transform: "rotate(-5deg)" }}>
             <div style={{ position: "absolute", inset: "40px 0 0", background: "#f5c94a", borderRadius: "48% 52% 38% 62% / 52% 41% 59% 48%", transform: "rotate(-10deg)" }} />
-            <Image src="/assets/student-hero-transparent.webp" alt="Ilustrasi siswi membawa buku" fill sizes="(max-width: 680px) 200px, 250px" className="anim-floaty" style={{ objectFit: "contain", objectPosition: "center bottom" }} priority />
+            {/* Ilustrasi karakter: bisa diganti admin sekolah (/api/portal/branding). */}
+            <Image src="/api/portal/branding?kind=character" alt="Ilustrasi siswi membawa buku" fill sizes="(max-width: 680px) 200px, 250px" className="anim-floaty" style={{ objectFit: "contain", objectPosition: "center bottom" }} priority unoptimized onError={(e) => { e.currentTarget.src = "/assets/student-hero-transparent.webp"; }} />
             <span style={{ position: "absolute", top: 36, left: -28, width: 52, height: 52, display: "grid", placeItems: "center", border: "1px solid #171716", borderRadius: "50%", background: "#fffdf8", boxShadow: "4px 5px 0 #171716", fontSize: 25 }} aria-hidden="true">✎</span>
             <span style={{ position: "absolute", bottom: 33, left: -60, padding: "10px 13px", border: "1px solid #171716", borderRadius: 14, background: "#fffdf8", fontFamily: "var(--font-meta)", fontSize: 8, textTransform: "uppercase", boxShadow: "3px 4px 0 #171716", transform: "rotate(-8deg)" }}>
               kelas<br /><strong style={{ fontFamily: "var(--font-display)", fontSize: 12 }}>ceria</strong>
@@ -137,7 +138,7 @@ export default function PortalPage() {
           {/* kanan: siswa — student-book (aset baru) */}
           <div className="portal-hero-side hero-right" style={{ position: "relative", zIndex: 2, justifySelf: "end", width: "min(100%, 250px)", height: 370, transform: "rotate(6deg)" }}>
             <div style={{ position: "absolute", inset: "40px 0 0", background: "#97c4db", borderRadius: "48% 52% 38% 62% / 52% 41% 59% 48%", transform: "rotate(10deg)" }} />
-            <Image src="/assets/student-book.webp" alt="Ilustrasi siswa berkacamata membaca buku" fill sizes="(max-width: 680px) 200px, 250px" loading="lazy" className="anim-floaty" style={{ objectFit: "contain", objectPosition: "center bottom" }} />
+            <Image src="/api/portal/branding?kind=book" alt="Ilustrasi siswa berkacamata membaca buku" fill sizes="(max-width: 680px) 200px, 250px" loading="lazy" className="anim-floaty" style={{ objectFit: "contain", objectPosition: "center bottom" }} unoptimized onError={(e) => { e.currentTarget.src = "/assets/student-book.webp"; }} />
             <span style={{ position: "absolute", top: 72, right: -27, width: 52, height: 52, display: "grid", placeItems: "center", border: "1px solid #171716", borderRadius: "50%", background: "#f5c94a", boxShadow: "4px 5px 0 #171716", fontSize: 25 }} aria-hidden="true">✺</span>
             <span style={{ position: "absolute", bottom: 66, right: -74, padding: "10px 13px", border: "1px solid #171716", borderRadius: 14, background: "#fffdf8", fontFamily: "var(--font-meta)", fontSize: 8, textTransform: "uppercase", boxShadow: "3px 4px 0 #171716", transform: "rotate(9deg)" }}>
               <strong style={{ fontFamily: "var(--font-display)", fontSize: 12 }}>{counts ? `${counts.students} siswa` : "…"}</strong><br />belajar di sini
@@ -264,7 +265,7 @@ export default function PortalPage() {
               </div>
               <div style={{ position: "relative", minHeight: 470, padding: "24px 28px 10px 0" }}>
                 <div style={{ position: "absolute", left: "10%", top: "14%", width: 400, height: 400, maxWidth: "86%", maxHeight: "72%", borderRadius: "50%", background: "#f5c94a" }} />
-                <Image src="/assets/classroom-illustration.webp" alt="Ilustrasi suasana kelas" fill sizes="(max-width: 900px) 100vw, 600px" style={{ objectFit: "cover", borderRadius: 24, zIndex: 2 }} />
+                <Image src="/api/portal/branding?kind=hero" alt="Ilustrasi suasana kelas" fill sizes="(max-width: 900px) 100vw, 600px" style={{ objectFit: "cover", borderRadius: 24, zIndex: 2 }} unoptimized onError={(e) => { e.currentTarget.src = "/assets/classroom-illustration.webp"; }} />
                 <span aria-hidden="true" className="anim-floaty" style={{ position: "absolute", zIndex: 3, top: "18%", right: "13%", display: "grid", placeItems: "center", width: 63, height: 63, border: "1px solid #171716", borderRadius: "50%", color: "#171716", fontSize: 30, background: "#fffdf8", boxShadow: "5px 6px 0 #171716" }}><Glyph name="spark" size={28} /></span>
               </div>
             </div>

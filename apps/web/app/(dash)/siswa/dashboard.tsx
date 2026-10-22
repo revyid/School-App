@@ -20,7 +20,7 @@ export default function SiswaDashboard() {
   );
   const exp = useFetch<{ points: number; badges: { name: string; awardedAt: string }[] }>("/api/exp/me");
   // Gambar karakter sekolah (bila diunggah admin) dengan fallback aset lama.
-  const brand = useFetch<{ settings: { characterImageUrl?: string | null } }>("/api/settings");
+  const brand = useFetch<{ settings: { characterImageUrl?: string | null; bookImageUrl?: string | null; heroImageUrl?: string | null } }>("/api/settings");
 
   const rows = tasks.data?.rows ?? [];
   const belum = rows.filter((t) => t.state === "BELUM" || t.state === "TERLAMBAT").length;
@@ -62,6 +62,8 @@ export default function SiswaDashboard() {
             />
             <Image
               src={brand.data?.settings.characterImageUrl ? "/api/portal/branding?kind=character" : "/assets/student-hero-transparent.png"}
+              unoptimized
+              onError={(e) => { e.currentTarget.src = "/assets/student-hero-transparent.png"; }}
               alt="Maskot siswa"
               width={220}
               height={260}

@@ -22,7 +22,7 @@ export async function POST(req: NextRequest) {
   if (!a.ok) return NextResponse.json({ error: a.error }, { status: a.status });
 
   const kind = (new URL(req.url).searchParams.get("kind") ?? "character").trim();
-  if (!["character", "banner", "hero"].includes(kind))
+  if (!["character", "book", "banner", "hero"].includes(kind))
     return NextResponse.json({ error: "jenis tidak dikenal" }, { status: 400 });
 
   const form = await req.formData().catch(() => null);
@@ -36,7 +36,11 @@ export async function POST(req: NextRequest) {
   });
   if ("error" in saved) return NextResponse.json({ error: saved.error }, { status: saved.status });
 
-  const field = kind === "character" ? "characterImageUrl" : kind === "banner" ? "dashboardBannerUrl" : "heroImageUrl";
+  const field =
+    kind === "character" ? "characterImageUrl"
+    : kind === "book" ? "bookImageUrl"
+    : kind === "banner" ? "dashboardBannerUrl"
+    : "heroImageUrl";
   await runAsSchool(db, a.school.id, (tx) =>
     tx.schoolSettings.upsert({
       where: { schoolId: a.school.id },

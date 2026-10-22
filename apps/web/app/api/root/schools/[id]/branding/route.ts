@@ -25,7 +25,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
 
   const { id } = await params;
   const kind = (new URL(req.url).searchParams.get("kind") ?? "character").trim();
-  if (!["character", "banner", "hero"].includes(kind))
+  if (!["character", "book", "banner", "hero"].includes(kind))
     return NextResponse.json({ error: "jenis tidak dikenal" }, { status: 400 });
 
   const root = getRootDb();
@@ -42,7 +42,11 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   });
   if ("error" in saved) return NextResponse.json({ error: saved.error }, { status: saved.status });
 
-  const field = kind === "character" ? "characterImageUrl" : kind === "banner" ? "dashboardBannerUrl" : "heroImageUrl";
+  const field =
+    kind === "character" ? "characterImageUrl"
+    : kind === "book" ? "bookImageUrl"
+    : kind === "banner" ? "dashboardBannerUrl"
+    : "heroImageUrl";
   await root.schoolSettings.upsert({
     where: { schoolId: school.id },
     update: { [field]: `branding/${saved.name}` },

@@ -60,6 +60,7 @@ export const settingsSchema = z.object({
   expRules: expRulesSchema.optional().nullable(),
   // Branding sekolah (Fase 5): gambar karakter dashboard, hero, banner, warna.
   characterImageUrl: z.string().trim().max(255).optional().nullable(),
+  bookImageUrl: z.string().trim().max(255).optional().nullable(),
   heroImageUrl: z.string().trim().max(255).optional().nullable(),
   dashboardBannerUrl: z.string().trim().max(255).optional().nullable(),
   brandColor: z

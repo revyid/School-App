@@ -204,13 +204,15 @@ export default function LoginPage() {
           }}
         >
           <Image
-            src="/assets/char-student.png"
+            src="/api/portal/branding?kind=character"
             alt=""
             width={240}
             height={280}
             className="anim-floaty"
             style={{ objectFit: "contain" }}
             priority
+            unoptimized
+            onError={(e) => { e.currentTarget.src = "/assets/char-student.png"; }}
           />
           <p style={{ fontWeight: 800, fontSize: 17, textAlign: "center", margin: 0, letterSpacing: "-0.02em" }}>
             “Satu langkah kecil hari ini, satu dunia baru besok.”

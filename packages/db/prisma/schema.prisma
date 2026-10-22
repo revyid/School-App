@@ -311,6 +311,7 @@ model SchoolSettings {
   logoUrl              String?
   // Branding sekolah (Fase 1): gambar karakter dashboard, hero, warna, banner.
   characterImageUrl    String?
+  bookImageUrl         String?
   heroImageUrl         String?
   dashboardBannerUrl   String?
   brandColor           String?
