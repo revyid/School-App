@@ -43,6 +43,18 @@ async function findBook(id: string, role: "ADMIN" | "SUPER_ADMIN", schoolId: str
   return runAsSchool(db, schoolId!, (tx) => tx.book.findUnique({ where: { id } }));
 }
 
+// GET /api/books/[id] — detail satu buku (dipakai halaman pembaca).
+export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const a = await gate(req);
+  if (!a.ok) return NextResponse.json({ error: a.error }, { status: a.status });
+  const { id } = await params;
+  const book = await findBook(id, a.role, a.schoolId);
+  if (!book) return NextResponse.json({ error: "buku tidak ditemukan" }, { status: 404 });
+  if (a.role !== "SUPER_ADMIN" && book.schoolId !== a.schoolId)
+    return NextResponse.json({ error: "buku tidak ditemukan" }, { status: 404 });
+  return NextResponse.json({ book });
+}
+
 // PATCH /api/books/[id] — ubah metadata / publish / unpublish.
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const a = await gate(req);

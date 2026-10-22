@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { SESSION_COOKIE } from "@lacakedu/shared/auth";
 import { requireRole } from "@/server/auth-gate";
+import { getPlatformFlags } from "@/lib/public-cache";
 import { hit } from "@/server/rate-limit";
 import { db } from "@lacakedu/db/client";
 import { runAsSchool } from "@lacakedu/db/tenant";
@@ -204,6 +205,7 @@ export const maxDuration = 60;
 
 export async function GET(req: NextRequest) {
   if (!AI_CHAT_ENABLED) return NextResponse.json({ enabled: false, messages: [] });
+  if (!(await getPlatformFlags()).aiChat) return NextResponse.json({ enabled: false, messages: [] });
   const a = await gate(req);
   if (a.ok && a.school) {
     const messages = await runAsSchool(db, a.school.id, async (tx) => {
@@ -336,7 +338,7 @@ function honestError(kind: string): { error: string; status: number } {
 }
 
 export async function POST(req: NextRequest) {
-  if (!AI_CHAT_ENABLED) {
+  if (!AI_CHAT_ENABLED || !(await getPlatformFlags()).aiChat) {
     return NextResponse.json({ error: "RAI dinonaktifkan oleh konfigurasi layanan." }, { status: 503 });
   }
   const body = await req.json().catch(() => null);

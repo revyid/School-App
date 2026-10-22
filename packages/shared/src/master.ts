@@ -58,11 +58,7 @@ export const settingsSchema = z.object({
   mapLat: z.number().min(-90).max(90).optional().nullable(),
   mapLng: z.number().min(-180).max(180).optional().nullable(),
   expRules: expRulesSchema.optional().nullable(),
-});
-
-// Setelan yang boleh diubah SUPER_ADMIN untuk sebuah sekolah.
-// Partial (semua opsional) + kolom branding. Dipakai juga oleh API sekolah.
-export const rootSchoolSettingsSchema = settingsSchema.partial().extend({
+  // Branding sekolah (Fase 5): gambar karakter dashboard, hero, banner, warna.
   characterImageUrl: z.string().trim().max(255).optional().nullable(),
   heroImageUrl: z.string().trim().max(255).optional().nullable(),
   dashboardBannerUrl: z.string().trim().max(255).optional().nullable(),
@@ -73,6 +69,11 @@ export const rootSchoolSettingsSchema = settingsSchema.partial().extend({
     .optional()
     .nullable(),
   portalTheme: z.string().trim().max(32).optional(),
+});
+
+// Setelan yang boleh diubah SUPER_ADMIN untuk sebuah sekolah.
+// Partial (semua opsional) + kolom branding. Dipakai juga oleh API sekolah.
+export const rootSchoolSettingsSchema = settingsSchema.partial().extend({
   timezone: z.string().trim().max(64).optional(),
 });
 

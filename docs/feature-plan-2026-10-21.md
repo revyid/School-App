@@ -173,7 +173,30 @@ API: `GET /api/root/analytics?range=30&schoolId=` mengembalikan agregat siap-plo
 
 ---
 
-## Fase 4 — Setelan root (1–2 hari)
+## Fase 4 — Setelan root (1–2 hari) — **SELESAI 22 Okt 2026**
+
+> Terpasang: `GET/PATCH /api/root/settings` (platformName, platformTagline, platformLogoUrl,
+> primaryColor, supportEmail, featureFlags), upload logo platform
+> (`POST /api/root/settings/logo` → `GET /api/portal/platform-logo`), panel UI di
+> `/pantau/settings`. FeatureFlags **terpasang ke perilaku app**: aiChat, waBroadcast,
+> ebook, qrAttendance, studentImport (default `true` agar fitur existing tak mati).
+
+## Fase 5 — Branding sekolah (2–3 hari) — **SELESAI 22 Okt 2026**
+
+> Terpasang: kolom branding di `SchoolSettings` (characterImageUrl, heroImageUrl,
+> dashboardBannerUrl, brandColor, portalTheme), upload per jenis
+> (`POST /api/settings/branding?kind=…` + `POST /api/root/schools/[id]/branding`),
+> penyaji publik (`GET /api/portal/branding`), gambar karakter dipakai di dashboard
+> admin/siswa/guru (fallback ke aset lama), halaman setelan sekolah untuk root
+> (`/pantau/schools/<id>`).
+
+## Fase 6 — Ebook (3–5 hari) — **SELESAI 22 Okt 2026 (reader EPUB menyusul)**
+
+> Terpasang: `POST /api/books/upload` (pdf/epub/docx/md/txt ≤25MB, deteksi magic bytes),
+> `GET /api/books/[id]/file` (stream ter-gate), tab "Buku sekolah" di `/buku`, reader
+> `/buku/[id]` (markdown via RaiMarkdown aman, PDF via iframe, EPUB → fallback unduh),
+> halaman kelola `/admin/buku` (link / paste markdown / unggah file, publish, hapus).
+> **Belum:** reader EPUB native (butuh epubjs; `pnpm` tak ada di env builder) & pratinjau docx.
 
 Halaman `/pantau/settings` diperluas:
 - **Identitas platform**: nama, tagline, logo platform, email dukungan, warna utama.

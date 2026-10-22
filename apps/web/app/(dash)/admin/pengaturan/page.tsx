@@ -10,6 +10,12 @@ import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Alert } from "@/components/ui/alert";
 
+const BRAND_KINDS = [
+  { kind: "character", field: "characterImageUrl", label: "Gambar karakter dashboard" },
+  { kind: "banner", field: "dashboardBannerUrl", label: "Banner dashboard" },
+  { kind: "hero", field: "heroImageUrl", label: "Gambar hero" },
+] as const;
+
 export default function SettingsPage() {
   const { data } = useFetch<{ settings: Record<string, unknown> }>(`/api/settings`);
   const [f, setF] = useState<Record<string, string>>({});
@@ -17,6 +23,9 @@ export default function SettingsPage() {
   const [logoMsg, setLogoMsg] = useState<string | null>(null);
   const [logoVer, setLogoVer] = useState(0);
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
+  const [brandMsg, setBrandMsg] = useState<string | null>(null);
+  const [brandVer, setBrandVer] = useState(0);
+  const [brandPreview, setBrandPreview] = useState<Record<string, string>>({});
 
   async function uploadLogoFile(file: File | null) {
     if (!file) return;
@@ -57,36 +66,91 @@ export default function SettingsPage() {
         ttsPhraseDup: String(s.ttsPhraseDup ?? "{{name}} sudah di catat"),
         mapLat: s.mapLat === null || s.mapLat === undefined ? "" : String(s.mapLat),
         mapLng: s.mapLng === null || s.mapLng === undefined ? "" : String(s.mapLng),
+        brandColor: String(s.brandColor ?? ""),
+        characterImageUrl: String(s.characterImageUrl ?? ""),
+        dashboardBannerUrl: String(s.dashboardBannerUrl ?? ""),
+        heroImageUrl: String(s.heroImageUrl ?? ""),
       });
     }
   }, [data]);
 
-  async function save() {
+  function payload(extra?: Record<string, unknown>) {
+    return {
+      portalName: f.portalName,
+      startTime: f.startTime,
+      cutoffTime: f.cutoffTime,
+      waDailyCap: Number(f.waDailyCap),
+      waPerMinuteCap: Number(f.waPerMinuteCap),
+      ctaGtkUrl: f.ctaGtkUrl || null,
+      ctaMuridUrl: f.ctaMuridUrl || null,
+      studentRetentionDays: Number(f.studentRetentionDays),
+      photoRetentionDays: Number(f.photoRetentionDays),
+      defaultPasswordMode: f.defaultPasswordMode === "nisn" ? "nisn" : "random",
+      aiChatEnabled: f.aiChatEnabled === "true",
+      ttsPhrase: (f.ttsPhrase ?? "").trim() || "{{name}} sudah hadir",
+      ttsPhraseDup: (f.ttsPhraseDup ?? "").trim() || "{{name}} sudah di catat",
+      mapLat: f.mapLat === "" ? null : Number(f.mapLat),
+      mapLng: f.mapLng === "" ? null : Number(f.mapLng),
+      brandColor: f.brandColor || null,
+      ...extra,
+    };
+  }
+
+  // settingsSchema punya default untuk field yang tak dikirim, jadi selalu kirim
+  // payload lengkap agar PATCH sebagian tidak mereset setelan lain.
+  async function patch(extra?: Record<string, unknown>): Promise<string | null> {
     const res = await api("/api/settings", {
       method: "PATCH", headers: { "content-type": "application/json" },
-      body: JSON.stringify({
-        portalName: f.portalName,
-        startTime: f.startTime,
-        cutoffTime: f.cutoffTime,
-        waDailyCap: Number(f.waDailyCap),
-        waPerMinuteCap: Number(f.waPerMinuteCap),
-        ctaGtkUrl: f.ctaGtkUrl || null,
-        ctaMuridUrl: f.ctaMuridUrl || null,
-        studentRetentionDays: Number(f.studentRetentionDays),
-        photoRetentionDays: Number(f.photoRetentionDays),
-        defaultPasswordMode: f.defaultPasswordMode === "nisn" ? "nisn" : "random",
-        aiChatEnabled: f.aiChatEnabled === "true",
-        ttsPhrase: (f.ttsPhrase ?? "").trim() || "{{name}} sudah hadir",
-        ttsPhraseDup: (f.ttsPhraseDup ?? "").trim() || "{{name}} sudah di catat",
-        mapLat: f.mapLat === "" ? null : Number(f.mapLat),
-        mapLng: f.mapLng === "" ? null : Number(f.mapLng),
-      }),
+      body: JSON.stringify(payload(extra)),
     });
     const d = await res.json().catch(() => ({}));
-    setMsg(res.ok ? "Tersimpan" : "Gagal: " + (d.error || res.status));
+    return res.ok ? null : "Gagal: " + (d.error || res.status);
+  }
+
+  async function save() {
+    setMsg(await patch() ?? "Tersimpan");
+  }
+
+  async function saveColor() {
+    const err = await patch();
+    setBrandMsg(err ?? "Warna brand tersimpan.");
+  }
+
+  async function uploadBrand(kind: string, field: string, file: File | null) {
+    if (!file) return;
+    setBrandPreview((p) => ({ ...p, [kind]: URL.createObjectURL(file) }));
+    setBrandMsg("Mengunggah…");
+    try {
+      const form = new FormData();
+      form.append("file", file);
+      const res = await api(`/api/settings/branding?kind=${kind}`, { method: "POST", body: form });
+      const d = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setBrandMsg("Gagal: " + (d.error || res.status));
+        return;
+      }
+      setF((p) => ({ ...p, [field]: String(d.path ?? "") }));
+      setBrandMsg("Gambar tersimpan.");
+      setBrandVer((v) => v + 1);
+    } catch {
+      setBrandMsg("Gagal mengunggah (offline?).");
+    }
+  }
+
+  async function removeBrand(kind: string, field: string) {
+    const err = await patch({ [field]: null });
+    if (err) {
+      setBrandMsg(err);
+      return;
+    }
+    setF((p) => ({ ...p, [field]: "" }));
+    setBrandPreview((p) => ({ ...p, [kind]: "" }));
+    setBrandVer((v) => v + 1);
+    setBrandMsg("Gambar dihapus.");
   }
 
   const set = (k: string) => (e: { target: { value: string } }) => setF((p) => ({ ...p, [k]: e.target.value }));
+  const brandHex = /^#[0-9a-fA-F]{6}$/.test(f.brandColor ?? "") ? f.brandColor! : "#c2410c";
 
   return (
     <>
@@ -112,6 +176,48 @@ export default function SettingsPage() {
           <img className="rounded-xl object-cover border border-solid border-line mt-2" src={logoPreview} alt="Pratinjau logo baru" width={56} height={56} />
         )}
         {logoMsg && <Alert>{logoMsg}</Alert>}
+      </Card>
+      <Card className="max-w-full mb-4">
+        <h2 className="display text-[18px] mt-0 mr-0 mb-3 ml-0">Branding sekolah</h2>
+        <div className="grid gap-4 md:grid-cols-3">
+          {BRAND_KINDS.map((b) => {
+            const current = f[b.field];
+            const preview = brandPreview[b.kind] || (current ? `/api/portal/branding?kind=${b.kind}&v=${brandVer}` : "");
+            return (
+              <section key={b.kind} className="grid gap-2 border border-solid border-line rounded-xl p-[14px] bg-cream">
+                <h3 className="m-0 text-[14px] text-ink">{b.label}</h3>
+                {preview ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img className="rounded-xl object-cover border border-solid border-line bg-paper-deep w-full h-[120px]"
+                    src={preview}
+                    alt={b.label}
+                    onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
+                  />
+                ) : (
+                  <p className="m-0 text-[12px] text-muted">Belum ada gambar.</p>
+                )}
+                <UploadPopup label="Pilih gambar" maxMb={2} accept="image/png,image/jpeg,image/webp"
+                  onFile={(file) => uploadBrand(b.kind, b.field, file)} />
+                {current && (
+                  <Button variant="sticker-ghost" size="sm" type="button" onClick={() => removeBrand(b.kind, b.field)}>
+                    Hapus
+                  </Button>
+                )}
+              </section>
+            );
+          })}
+        </div>
+        <div className="settings-row">
+          <label className="grid gap-[6px] text-[13px] text-muted flex-[1_1_220px]">Warna brand (hex)
+            <div className="flex items-center gap-2">
+              <input type="color" aria-label="Pilih warna brand" value={brandHex} onChange={set("brandColor")}
+                className="h-10 w-14 rounded-xl border border-solid border-line bg-cream" />
+              <Input className="w-full" value={f.brandColor ?? ""} onChange={set("brandColor")} placeholder="#c2410c" />
+            </div>
+          </label>
+          <div className="flex items-center"><Button variant="sticker" type="button" onClick={saveColor}>Simpan warna</Button></div>
+        </div>
+        {brandMsg && <Alert>{brandMsg}</Alert>}
       </Card>
       <Card className="max-w-[680px]">
         {!data && <Alert>Memuat…</Alert>}

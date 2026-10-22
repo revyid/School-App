@@ -3,6 +3,7 @@ import { randomBytes } from "node:crypto";
 import argon2 from "argon2";
 import { SESSION_COOKIE } from "@lacakedu/shared/auth";
 import { requireRole } from "@/server/auth-gate";
+import { getPlatformFlags } from "@/lib/public-cache";
 import { db } from "@lacakedu/db/client";
 import { runAsSchool } from "@lacakedu/db/tenant";
 import { logAuth } from "@/server/audit";
@@ -14,6 +15,9 @@ const ip = ipOf;
 
 // POST /api/students/import — upload .xlsx, parse, validate, insert students.
 export async function POST(req: NextRequest) {
+  if (!(await getPlatformFlags()).studentImport)
+    return NextResponse.json({ error: "import siswa dimatikan di setelan platform" }, { status: 403 });
+
   const a = await requireRole({
     host: req.headers.get("host") ?? "",
     token: req.cookies.get(SESSION_COOKIE)?.value,

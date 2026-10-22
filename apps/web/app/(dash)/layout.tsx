@@ -47,6 +47,7 @@ const MENUS: Record<string, { utama: MenuItem[]; lainnya: MenuItem[]; groups?: {
       { label: "Akademik", items: [
         { href: "/admin/jadwal", label: "Jadwal", icon: "jadwal" },
         { href: "/admin/kehadiran", label: "Kehadiran", icon: "kehadiran" },
+        { href: "/admin/buku", label: "Buku", icon: "materi" },
       ]},
       { label: "Komunikasi", items: [
         { href: "/admin/pengumuman", label: "Pengumuman", icon: "pengumuman" },

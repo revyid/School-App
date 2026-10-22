@@ -15,6 +15,7 @@ export default function AdminDashboard() {
   const leave = useFetch<{ rows: { id: string }[] }>("/api/leave?status=PENDING");
   const ann = useFetch<{ rows: { id: string; title: string }[] }>("/api/announcements");
   const wa = useFetch<{ connected?: boolean; queue?: { waiting: number } }>("/api/wa/status");
+  const brand = useFetch<{ settings: { characterImageUrl?: string | null } }>("/api/settings");
 
   const pendingIzin = leave.data?.rows.length ?? 0;
   const metric = (hook: { loading: boolean; error?: unknown; data?: { total?: number; rows?: unknown[] } | null }) => hook.loading ? "…" : hook.error ? "—" : (hook.data?.total ?? hook.data?.rows?.length ?? 0);
@@ -45,7 +46,7 @@ export default function AdminDashboard() {
           </div>
           <div className="dash-hero-char relative shrink-0 w-[180px] h-[180px]">
             <Image
-              src="/assets/student-book.png"
+              src={brand.data?.settings.characterImageUrl ? "/api/portal/branding?kind=character" : "/assets/student-book.png"}
               alt="Operasional sekolah"
               fill
               className="anim-floaty object-contain rounded-2xl z-[1]"

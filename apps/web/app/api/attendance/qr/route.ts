@@ -2,6 +2,7 @@ import { randomBytes } from "node:crypto";
 import { NextRequest, NextResponse } from "next/server";
 import { SESSION_COOKIE } from "@lacakedu/shared/auth";
 import { requireRole } from "@/server/auth-gate";
+import { getPlatformFlags } from "@/lib/public-cache";
 import { db } from "@lacakedu/db/client";
 import { runAsSchool } from "@lacakedu/db/tenant";
 import { logAuth } from "@/server/audit";
@@ -28,6 +29,8 @@ async function gate(req: NextRequest, roles: ("ADMIN" | "GURU" | "SISWA")[]) {
 // ADMIN boleh semua; GURU hanya kelasnya; SISWA hanya miliknya (untuk kartu QR).
 // Token dibuat otomatis bila belum ada.
 export async function GET(req: NextRequest) {
+  if (!(await getPlatformFlags()).qrAttendance)
+    return NextResponse.json({ error: "absensi QR dimatikan di setelan platform" }, { status: 403 });
   const a = await gate(req, ["ADMIN", "GURU", "SISWA"]);
   if (!a.ok) return NextResponse.json({ error: a.error }, { status: a.status });
   const studentId = ((new URL(req.url).searchParams.get("studentId") ?? "") || a.userId).slice(0, 64);

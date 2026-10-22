@@ -1,6 +1,7 @@
 "use client";
 
 // Root: daftar sekolah + hitungan dasar.
+import Link from "next/link";
 import { useFetch } from "@/app/lib/api";
 import { PageHead } from "@/components/ui/page-header";
 import { Card } from "@/components/ui/card";
@@ -57,8 +58,8 @@ export default function PantauSchoolsPage() {
               <span><strong className="text-ink">{n(s.classCount)}</strong> kelas</span>
             </div>
             <div>
-              <Button variant="sticker-ghost" disabled title="Belum tersedia">
-                Dasbor sekolah
+              <Button variant="sticker-ghost" render={<Link href={`/pantau/schools/${s.id}`} />}>
+                Atur
               </Button>
             </div>
           </Card>

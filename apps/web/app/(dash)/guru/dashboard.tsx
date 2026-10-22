@@ -19,6 +19,8 @@ export default function GuruDashboard() {
     rows: { id: string; title: string; class: { name: string }; _count: { submissions: number } }[];
   }>("/api/tasks");
   const leave = useFetch<{ rows: { id: string }[] }>("/api/leave?status=PENDING");
+  // Gambar karakter sekolah (bila diunggah admin) dengan fallback ilustrasi lama.
+  const brand = useFetch<{ settings: { characterImageUrl?: string | null } }>("/api/settings");
 
   const kelas = assign.data?.rows ?? [];
   const kelasUnik = Array.from(new Map(kelas.map((k) => [k.class.id, k])).values());
@@ -70,7 +72,7 @@ export default function GuruDashboard() {
               
             />
             <Image
-              src="/assets/classroom-illustration.png"
+              src={brand.data?.settings.characterImageUrl ? "/api/portal/branding?kind=character" : "/assets/classroom-illustration.png"}
               alt="Ilustrasi ruang kelas"
               width={200}
               height={240}

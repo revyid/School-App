@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createHash } from "node:crypto";
 import { SESSION_COOKIE } from "@lacakedu/shared/auth";
 import { requireRole } from "@/server/auth-gate";
+import { getPlatformFlags } from "@/lib/public-cache";
 import { hit } from "@/server/rate-limit";
 import { db } from "@lacakedu/db/client";
 import { runAsSchool } from "@lacakedu/db/tenant";
@@ -26,6 +27,9 @@ async function gate(req: NextRequest) {
 // Ambil parentPhone siswa per kelas (atau seluruh sekolah bila tanpa classId),
 // render {nama}, enqueue per nomor. Return: { queued, skipped: [{name, reason}] }.
 export async function POST(req: NextRequest) {
+  if (!(await getPlatformFlags()).waBroadcast)
+    return NextResponse.json({ error: "broadcast WhatsApp dimatikan di setelan platform" }, { status: 403 });
+
   const a = await gate(req);
   if (!a.ok) return NextResponse.json({ error: a.error }, { status: a.status });
 

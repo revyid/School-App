@@ -1,13 +1,38 @@
-FROM docker.io/library/node:22-bookworm-slim
+# syntax=docker/dockerfile:1
+# Build worker (BullMQ + WhatsApp). Manifest dulu -> layer install cache-friendly.
+FROM docker.io/library/node:22-bookworm-slim AS build
 RUN corepack enable && corepack prepare pnpm@10.18.0 --activate
 WORKDIR /app
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
+COPY apps/web/package.json apps/web/
+COPY apps/worker/package.json apps/worker/
+COPY packages/db/package.json packages/db/
+COPY packages/shared/package.json packages/shared/
+COPY packages/cli/package.json packages/cli/
+RUN --mount=type=cache,target=/pnpm/store pnpm install --frozen-lockfile
 COPY . .
-RUN pnpm install --frozen-lockfile
 RUN MIGRATE_URL=postgresql://dummy:***@localhost:5432/dummy pnpm --filter @lacakedu/db exec prisma generate
 RUN pnpm --filter @lacakedu/shared run build
 RUN pnpm --filter @lacakedu/db run build
 RUN pnpm --filter @lacakedu/worker run build
 RUN pnpm --filter @lacakedu/cli run build
+
+# ---------------------------------------------------------------- runtime image
+# Hanya dependency produksi (dev deps dibuang) -> image jauh lebih kecil.
+FROM docker.io/library/node:22-bookworm-slim
+RUN corepack enable && corepack prepare pnpm@10.18.0 --activate
+WORKDIR /app
+ENV NODE_ENV=production
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
+COPY apps/worker/package.json apps/worker/
+COPY packages/db/package.json packages/db/
+COPY packages/shared/package.json packages/shared/
+COPY packages/cli/package.json packages/cli/
+RUN --mount=type=cache,target=/pnpm/store pnpm install --frozen-lockfile --prod
+COPY --from=build /app/apps/worker/dist ./apps/worker/dist
+COPY --from=build /app/packages/db/dist ./packages/db/dist
+COPY --from=build /app/packages/shared/dist ./packages/shared/dist
+COPY --from=build /app/packages/db/prisma ./packages/db/prisma
 USER node
 EXPOSE 3001
 # Quadlet TANPA Exec= -> CMD ini yang jalan; sinkron dengan unit worker.

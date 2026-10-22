@@ -17,6 +17,12 @@ export type PublicSchool = {
   name: string;
   portalName: string;
   logoUrl: string | null;
+  brandColor: string | null;
+  branding: {
+    characterImageUrl: string | null;
+    heroImageUrl: string | null;
+    dashboardBannerUrl: string | null;
+  };
 };
 
 export type PortalInfo = {
@@ -59,13 +65,19 @@ export function getPublicSchool(slug: string): Promise<PublicSchool | null> {
       const st = await runAsSchool(db, school.id, (tx) =>
         tx.schoolSettings.findUnique({
           where: { schoolId: school.id },
-          select: { portalName: true, logoUrl: true },
+          select: { portalName: true, logoUrl: true, brandColor: true, characterImageUrl: true, heroImageUrl: true, dashboardBannerUrl: true },
         })).catch(() => null);
       return {
         id: school.id,
         name: school.name,
         portalName: st?.portalName || school.name,
         logoUrl: st?.logoUrl ?? null,
+        brandColor: st?.brandColor ?? null,
+        branding: {
+          characterImageUrl: st?.characterImageUrl ?? null,
+          heroImageUrl: st?.heroImageUrl ?? null,
+          dashboardBannerUrl: st?.dashboardBannerUrl ?? null,
+        },
       };
     },
     ["public-school", slug],
@@ -195,5 +207,50 @@ export function getRootSettings(): Promise<RootSettings> {
     },
     ["root-settings"],
     { tags: [ROOT_SETTINGS_TAG], revalidate: TTL },
+  )();
+}
+
+// Flag fitur platform (RootSettings.featureFlags). Default: semua MATI.
+// Di-cache 60 detik; invalidasi lewat tag root-settings (dipanggil route settings).
+export type PlatformFlags = {
+  aiChat: boolean;
+  waBroadcast: boolean;
+  ebook: boolean;
+  qrAttendance: boolean;
+  studentImport: boolean;
+};
+
+// Default = fitur yang sudah aktif sebelum flag diperkenalkan (bukan mati,
+// biar rollout tidak mematikan fitur yang sedang dipakai). Nilai eksplisit di
+// RootSettings selalu menang.
+const FLAG_DEFAULTS: PlatformFlags = {
+  aiChat: true,
+  waBroadcast: true,
+  ebook: true,
+  qrAttendance: true,
+  studentImport: true,
+};
+
+export function getPlatformFlags(): Promise<PlatformFlags> {
+  return unstable_cache(
+    async () => {
+      try {
+        const rows = await getRootDb().$queryRaw<{ key: string; value: unknown }[]>`
+          SELECT key, value FROM "RootSettings" WHERE key = 'featureFlags'`;
+        const raw = rows[0]?.value;
+        const obj = (typeof raw === "string" ? JSON.parse(raw) : raw) as Record<string, unknown>;
+        return {
+          aiChat: obj?.aiChat === true,
+          waBroadcast: obj?.waBroadcast === true,
+          ebook: obj?.ebook === true,
+          qrAttendance: obj?.qrAttendance === true,
+          studentImport: obj?.studentImport === true,
+        };
+      } catch {
+        return FLAG_DEFAULTS;
+      }
+    },
+    ["root-platform-flags"],
+    { revalidate: 60, tags: ["root-settings"] },
   )();
 }
