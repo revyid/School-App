@@ -50,6 +50,9 @@ export type PublicSchoolDirectory = {
 
 export type RootSettings = {
   heroImageUrl: string | null;
+  platformLogoUrl: string | null;
+  primaryColor: string | null;
+  supportEmail: string | null;
   settings: { heroAlt: string; platformName: string; platformTagline: string };
 };
 
@@ -191,13 +194,17 @@ export function getRootSettings(): Promise<RootSettings> {
     async () => {
       const rows = await getRootDb().$queryRaw<{ key: string; value: unknown }[]>`
         SELECT key, value FROM "RootSettings"
-        WHERE key IN ('heroImageUrl', 'heroAlt', 'platformName', 'platformTagline')`;
+        WHERE key IN ('heroImageUrl', 'heroAlt', 'platformName', 'platformTagline',
+                      'platformLogoUrl', 'primaryColor', 'supportEmail')`;
       const val = (key: string) => {
         const v = rows.find((r) => r.key === key)?.value;
         return typeof v === "string" ? v : "";
       };
       return {
         heroImageUrl: val("heroImageUrl") || null,
+        platformLogoUrl: val("platformLogoUrl") || null,
+        primaryColor: val("primaryColor") || null,
+        supportEmail: val("supportEmail") || null,
         settings: {
           heroAlt: val("heroAlt"),
           platformName: val("platformName"),

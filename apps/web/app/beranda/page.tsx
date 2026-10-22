@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import Reveal from "@/components/Reveal";
 import SchoolsClient from "./SchoolsClient";
+import { getRootSettings } from "@/lib/public-cache";
 
 const FEATURES = [
   { icon: CalendarCheck, title: "Presensi & Absensi", desc: "Catat kehadiran siswa secara digital, rekap otomatis tiap bulan." },
@@ -30,7 +31,22 @@ const ROLES = [
   { label: "Kepala Sekolah", desc: "Lihat analitik seluruh kelas, pantau kinerja guru, dan ambil keputusan berbasis data." },
 ] as const;
 
-export default function LandingPage() {
+export default async function LandingPage() {
+  // Setelan platform (nama, tagline, logo, hero) dari RootSettings.
+  // Invalidasi: PATCH /api/root/settings -> revalidateTag("root-settings").
+  const cfg = await getRootSettings().catch(() => null);
+  const platformName = cfg?.settings?.platformName || "Lacakedu";
+  const platformTagline = cfg?.settings?.platformTagline || "Kelola kehadiran, tugas, asesmen, dan komunikasi sekolah secara terpadu.";
+  const heroUrl = cfg?.heroImageUrl || "";
+  const logoUrl = cfg?.platformLogoUrl || "";
+  // heroUrl sudah berupa path endpoint hero ("/api/root/settings/hero?f=...") -> pakai langsung
+  // + cache-buster. Logo platform disimpan sebagai path file -> lewat route penyaji.
+  const heroSrc = heroUrl
+    ? heroUrl.startsWith("http")
+      ? heroUrl
+      : `${heroUrl}${heroUrl.includes("?") ? "&" : "?"}v=${Date.now()}`
+    : "";
+
   return (
     <div style={{ background: "#f7f4ec", minHeight: "100vh" }}>
       <main style={{ maxWidth: 1600, margin: "0 auto", background: "#f7f4ec", overflow: "clip" }}>
@@ -52,7 +68,13 @@ export default function LandingPage() {
             borderBottom: "1px solid rgba(23,23,22,.14)",
           }}
         >
-          <span className="display" style={{ fontSize: 20, letterSpacing: "-0.04em" }}>Lacakedu</span>
+          <span className="display" style={{ fontSize: 20, letterSpacing: "-0.04em", display: "inline-flex", alignItems: "center", gap: 8 }}>
+            {logoUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={`/api/portal/platform-logo?v=${Date.now()}`} alt={platformName} width={26} height={26} style={{ borderRadius: 7 }} />
+            ) : null}
+            {platformName}
+          </span>
           <nav style={{ display: "flex", gap: "clamp(18px, 3vw, 44px)", marginLeft: "auto", fontSize: 12, fontWeight: 600 }}>
             <a href="#fitur" style={{ color: "#575752", textDecoration: "none" }}>Fitur</a>
             <a href="#sekolah" style={{ color: "#575752", textDecoration: "none" }}>Sekolah</a>
@@ -69,6 +91,14 @@ export default function LandingPage() {
 
         {/* HERO */}
         <section style={{ padding: "80px clamp(16px, 5vw, 112px) 60px", textAlign: "center" }}>
+          {heroSrc ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={heroSrc}
+              alt={`${platformName} — hero platform`}
+              style={{ width: "100%", maxHeight: 380, objectFit: "cover", borderRadius: 20, marginBottom: 34 }}
+            />
+          ) : null}
           <Reveal>
             <p className="kicker" style={{ justifyContent: "center", display: "flex", alignItems: "center", gap: 8, marginBottom: 16 }}>
               Learning Management System untuk sekolah
@@ -77,7 +107,7 @@ export default function LandingPage() {
               Satu platform untuk semua<br /><span style={{ color: "#e85e43" }}>sekolah</span>
             </h1>
             <p style={{ maxWidth: 480, margin: "0 auto", color: "#575752", fontSize: 15, lineHeight: 1.75 }}>
-              Kelola kehadiran, tugas, asesmen, dan komunikasi sekolah secara terpadu. Dibangun untuk guru, siswa, dan orang tua.
+              {platformTagline} Dibangun untuk guru, siswa, dan orang tua.
             </p>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 16, marginTop: 36, flexWrap: "wrap" }}>
               <a
