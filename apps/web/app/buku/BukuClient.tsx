@@ -2,9 +2,10 @@
 
 import PublicHeader from "@/components/PublicHeader";
 import Reveal from "@/components/Reveal";
-import ConfirmDialog from "@/components/ConfirmDialog";
-import { api, useFetch } from "@/app/lib/api";
+import BookManagerSheet, { type SchoolBook } from "@/components/BookManagerSheet";
+import { useFetch } from "@/app/lib/api";
 import { useState } from "react";
+import { BookOpenIcon } from "lucide-react";
 import { useTrackView } from "@/app/lib/use-track-view";
 
 type Book = {
@@ -18,24 +19,6 @@ type Book = {
 };
 
 const CARD_COLORS = ["#e85e43", "#97c4db", "#f5c94a", "#aec6a4"];
-
-type SchoolBook = {
-  id: string;
-  title: string;
-  author: string | null;
-  coverUrl: string | null;
-  source: "LINK" | "UPLOAD" | "MARKDOWN";
-  url: string | null;
-  mimeType: string | null;
-  sizeBytes: number | null;
-  published: boolean;
-};
-
-const SOURCE_LABEL: Record<SchoolBook["source"], string> = {
-  LINK: "Tautan",
-  UPLOAD: "File",
-  MARKDOWN: "Markdown",
-};
 
 export default function BukuClient({ schoolName }: { schoolName: string }) {
   // View halaman katalog (1 per identitas per 15 menit, di-throttle server).
@@ -52,20 +35,7 @@ export default function BukuClient({ schoolName }: { schoolName: string }) {
   const me = useFetch<{ user: { role: string } }>("/api/auth/me");
   const role = me.data?.user.role;
   const isAdmin = role === "ADMIN" || role === "SUPER_ADMIN";
-  const [toDelete, setToDelete] = useState<SchoolBook | null>(null);
-  const [deleteMsg, setDeleteMsg] = useState<string | null>(null);
-
-  async function hapus(id: string) {
-    const res = await api(`/api/books/${id}`, { method: "DELETE" });
-    setToDelete(null);
-    if (!res.ok) {
-      const d = await res.json().catch(() => ({}));
-      setDeleteMsg(d.error || `Gagal menghapus (${res.status})`);
-      return;
-    }
-    setDeleteMsg(null);
-    void schoolBooks.reload();
-  }
+  const [sheetOpen, setSheetOpen] = useState(false);
 
   async function cari(e: React.FormEvent) {
     e.preventDefault();
@@ -149,83 +119,42 @@ export default function BukuClient({ schoolName }: { schoolName: string }) {
         )}
 
         <section style={{ marginTop: 56, paddingTop: 32, borderTop: "1px solid rgba(23,23,22,.15)" }} aria-labelledby="buku-sekolah">
-          <div style={{ display: "flex", flexWrap: "wrap", alignItems: "flex-end", justifyContent: "space-between", gap: 12, marginBottom: 18 }}>
+          <div style={{ display: "flex", flexWrap: "wrap", alignItems: "flex-end", justifyContent: "space-between", gap: 12 }}>
             <div>
               <p className="kicker">Perpustakaan Sekolah</p>
               <h2 id="buku-sekolah" className="display" style={{ fontSize: "clamp(26px, 3vw, 38px)", margin: "6px 0 4px" }}>Buku sekolah</h2>
               <p style={{ color: "#74746d", fontSize: 13.5, margin: 0 }}>Koleksi yang diunggah dan dikurasi oleh sekolah.</p>
             </div>
-            {isAdmin && (
-              <a href="/admin/buku" className="btn-sticker btn-primary" style={{ textDecoration: "none" }}>
-                + Tambah buku
-              </a>
-            )}
+            <button
+              type="button"
+              onClick={() => setSheetOpen(true)}
+              className="btn-sticker btn-primary"
+              style={{ display: "inline-flex", alignItems: "center", gap: 8 }}
+            >
+              <BookOpenIcon className="size-4" />
+              {isAdmin ? "Kelola buku sekolah" : "Lihat buku sekolah"}
+            </button>
           </div>
+        </section>
+      </main>
 
-          {schoolBooks.loading ? (
-            <p role="status" style={{ color: "#74746d" }}>Memuat buku sekolah…</p>
-          ) : schoolBooks.error ? (
-            <div className="card" style={{ padding: 22 }}>
-              <p style={{ margin: "0 0 10px", color: "#74746d" }}>
-                Masuk dulu untuk melihat koleksi buku sekolah.
-              </p>
+      <BookManagerSheet
+        open={sheetOpen}
+        onOpenChange={setSheetOpen}
+        books={schoolRows}
+        loading={schoolBooks.loading}
+        canManage={isAdmin}
+        notice={
+          schoolBooks.error ? (
+            <div className="rounded-2xl border border-line bg-cream p-4">
+              <p className="m-0 mb-2.5 text-sm text-muted">Masuk dulu untuk melihat koleksi buku sekolah.</p>
               <a href={`/login?next=${encodeURIComponent("/buku")}`} className="btn-sticker btn-ghost" style={{ textDecoration: "none" }}>
                 Masuk
               </a>
             </div>
-          ) : schoolRows.length === 0 ? (
-            <div className="card" style={{ padding: 22 }}>
-              <p style={{ margin: 0, color: "#74746d" }}>Belum ada buku sekolah yang terbit.</p>
-            </div>
-          ) : (
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(220px, 1fr))", gap: 14 }}>
-              {schoolRows.map((b) => (
-                <article key={b.id} className="card" style={{ padding: 16, gap: 8, background: "#fffdf8" }}>
-                  {b.coverUrl && (
-                    <div style={{ height: 120, borderRadius: 8, overflow: "hidden", background: "rgba(23,23,22,.06)" }}>
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img src={b.coverUrl} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} loading="lazy" />
-                    </div>
-                  )}
-                  <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-                    <span style={{ fontSize: 11, fontWeight: 700, border: "1px solid #171716", borderRadius: 99, padding: "1px 8px" }}>
-                      {SOURCE_LABEL[b.source]}
-                    </span>
-                    <span style={{ fontSize: 11, fontWeight: 700, borderRadius: 99, padding: "1px 8px", background: b.published ? "#dcebd2" : "#efe7d2", color: b.published ? "#3f5c2c" : "#7a6a3d" }}>
-                      {b.published ? "Terbit" : "Draf"}
-                    </span>
-                  </div>
-                  <a href={`/buku/${b.id}`} style={{ color: "#171716", fontWeight: 700, fontSize: 15, lineHeight: 1.3, textDecoration: "none" }}>
-                    {b.title}
-                  </a>
-                  <small style={{ color: "#74746d", fontSize: 12 }}>{b.author || "Tanpa penulis"}</small>
-                  <div style={{ display: "flex", gap: 8, marginTop: "auto" }}>
-                    <a href={`/buku/${b.id}`} className="btn-sticker btn-ghost" style={{ textDecoration: "none", fontSize: 12, padding: "5px 12px" }}>
-                      Baca
-                    </a>
-                    {isAdmin && (
-                      <button type="button" onClick={() => setToDelete(b)} style={{ background: "none", border: "none", color: "#c94b35", cursor: "pointer", fontSize: 12, fontWeight: 700 }}>
-                        Hapus
-                      </button>
-                    )}
-                  </div>
-                </article>
-              ))}
-            </div>
-          )}
-          {deleteMsg && <p role="alert" style={{ color: "#c94b35", fontSize: 13 }}>{deleteMsg}</p>}
-        </section>
-      </main>
-
-      <ConfirmDialog
-        open={!!toDelete}
-        title="Hapus buku?"
-        message={toDelete ? `"${toDelete.title}" akan dihapus permanen.` : ""}
-        confirmLabel="Ya, hapus"
-        onConfirm={() => {
-          if (toDelete) return hapus(toDelete.id);
-        }}
-        onCancel={() => setToDelete(null)}
+          ) : undefined
+        }
+        onChanged={() => void schoolBooks.reload()}
       />
     </div>
   );

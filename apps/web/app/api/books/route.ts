@@ -6,6 +6,8 @@ import { db } from "@lacakedu/db/client";
 import { runAsSchool } from "@lacakedu/db/tenant";
 import { getRootDb } from "@lacakedu/db/root";
 import { fetchOgImage } from "@/server/thumbnail";
+import { schoolSlugFromHost } from "@lacakedu/shared/school";
+import { getPublicSchool } from "@/lib/public-cache";
 
 // Skema input buku. Satu endpoint untuk 3 sumber:
 //   LINK    -> title + url (+ author, coverUrl)
@@ -47,7 +49,23 @@ async function gate(req: NextRequest): Promise<BookAuth | { ok: false; status: n
 // GET /api/books?scope=school|platform&q=&page=&perPage=
 export async function GET(req: NextRequest) {
   const a = await gate(req);
-  if (!a.ok) return NextResponse.json({ error: a.error }, { status: a.status });
+  if (!a.ok) {
+    // Tamu: boleh melihat buku TERBIT milik sekolah dari host saja.
+    const slug = schoolSlugFromHost(req.headers.get("host") ?? "", process.env.APEX_DOMAIN ?? "domainmu.id");
+    if (!slug) return NextResponse.json({ error: "not found" }, { status: 404 });
+    const school = await getPublicSchool(slug);
+    if (!school) return NextResponse.json({ error: "not found" }, { status: 404 });
+    const pub = await getRootDb().book.findMany({
+      where: { schoolId: school.id, published: true },
+      orderBy: { createdAt: "desc" },
+      take: 50,
+      select: {
+        id: true, schoolId: true, title: true, author: true, coverUrl: true, source: true,
+        url: true, mimeType: true, sizeBytes: true, published: true, createdAt: true,
+      },
+    });
+    return NextResponse.json({ rows: pub, total: pub.length, page: 1, perPage: pub.length });
+  }
   const url = new URL(req.url);
   const q = (url.searchParams.get("q") ?? "").trim().slice(0, 128);
   const page = Math.max(1, Number(url.searchParams.get("page") ?? 1) || 1);
