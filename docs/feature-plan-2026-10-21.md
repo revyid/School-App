@@ -256,11 +256,11 @@ yang tersisa terutama di teks UI, scope paket, dan identifier internal).
 | Batch | Isi | Perkiraan | Status |
 |---|---|---|---|
 | **1. Teks UI** | 22 kemunculan / 17 file: wordmark `Logo.tsx`, judul `layout.tsx`, `manifest.webmanifest`, landing `/beranda`, `PortalHome`, header `/pantau`, judul `/perkakas/*`, teks kartu QR siswa, `User-Agent` fetch, komentar panduan AI | 30 menit | ✅ selesai 22 Okt |
-| **2. Scope paket** | `@sms/*` → `@lacakedu/*` (492 import / 182 file) + `bin: sms-admin` → `lacakedu-admin` + filter pnpm di Containerfile + `scripts/lint-imports.sh` + regenerate `pnpm-lock.yaml` | 1–2 jam | 🔄 berjalan |
-| **3. Identifier internal** | env `SMS_COOKIE_*` → `LACAKEDU_COOKIE_*`, cookie dev `sms-session-dev` → `lacakedu-session-dev`, cache `sms-shell-v2`/`sms-tts`, container dev `sms-test-*` | 1 jam | ⏳ |
-| **4. Server-side (ops)** | role Postgres `sms` → `lacakedu`, DB `smsdb` → `lacakedudb`, path backup `/var/backups/sms`, `POSTGRES_USER`/`POSTGRES_DB` di env | 2–3 jam + downtime | ⏳ (butuh backup & uji restore) |
-| **5. Prefix token QR** | `sms1-` → mis. `lac1-` | 1 jam | ⏳ **WAJIB dual-accept**: QR siswa yang sudah tercetak harus tetap valid → scanner menerima dua format sementara, prefix baru untuk QR baru |
-| **6. Path folder lokal** | `/home/revy/Projects/me/sms-lms` → `…/lacakedu` (6 file) | 15 menit | ⏳ (ikut kalau folder repo di-rename) |
+| **2. Scope paket** | `@sms/*` → `@lacakedu/*` (492 import / 182 file) + `bin: sms-admin` → `lacakedu-admin` + filter pnpm di Containerfile + `scripts/lint-imports.sh` + regenerate `pnpm-lock.yaml` | 1–2 jam | ✅ selesai 22 Okt |
+| **3. Identifier internal** | env `SMS_COOKIE_*` → `LACAKEDU_COOKIE_*` (dengan fallback), cookie dev `lacakedu-session-dev`, cache `lacakedu-shell-v2`/`lacakedu-tts`, container dev `lacakedu-test-*` | 1 jam | ✅ selesai 22 Okt |
+| **4. Server-side (ops)** | DB `smsdb` → `lacakedudb`, role kerja Postgres `lacakedu` (superuser), role bootstrap `sms` → `lacakedu_sys` (tak bisa di-drop: pemilik katalog sistem), path backup `/var/backups/lacakedu`, env + healthcheck + scripts/docs | 2–3 jam | ✅ selesai 22 Okt (backup + uji restore dulu) |
+| **5. Prefix token QR** | `sms1-` → `lac1-`, scanner dual-accept `/^(sms1\|lac1)-[0-9a-f]{32}$/`; validasi server tetap lookup DB (tanpa aturan prefix) → QR lama tetap valid | 1 jam | ✅ selesai 22 Okt |
+| **6. Path folder lokal** | `/home/revy/Projects/me/sms-lms` → `/home/revy/Projects/me/lacakedu` (5 file + symlink workspace `node_modules/@lacakedu/*`) | 15 menit | ✅ selesai 22 Okt |
 
 ### Yang TIDAK boleh diganti
 - **"SMS" sebagai Short Message Service** (broadcast WhatsApp, "tidak ada SMS/email cadangan") — bukan brand.
