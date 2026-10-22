@@ -146,7 +146,13 @@ POST   /api/books/[id]/view       (hitung view; rate-limited)
 
 ---
 
-## Fase 3 — Dashboard root lengkap (2–3 hari)
+## Fase 3 — Dashboard root lengkap (2–3 hari) — **SELESAI 22 Okt 2026**
+
+> Terpasang: `GET /api/root/analytics?range=7|30|90&schoolId=` (15 metrik + 4 time-series
+> + ringkasan per sekolah + penggunaan fitur + antrean WA), `unstable_cache` 60 dtk
+> (terukur 0,24 s → 0,018 s), dashboard `/pantau/dashboard` (filter rentang/sekolah,
+> 7 grafik via chart.js + SVG, Export CSV), pelacak view (`POST /api/track/view`).
+> Data cross-check dengan DB: 112 user (113 − 1 SUPER_ADMIN), 106 siswa, 5 guru ✓.
 
 Grafik: pakai `chart.js` (sudah terpasang, contoh: `apps/web/components/AssessChart.tsx`) — buat satu komponen generik `ChartCard` supaya konsisten.
 

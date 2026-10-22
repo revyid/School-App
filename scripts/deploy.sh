@@ -54,3 +54,7 @@ done
 # Verifikasi tanpa kredensial: cek halaman publik + API root hidup & ter-gate.
 ssh -o BatchMode=yes -o StrictHostKeyChecking=no "$VPS" 'for p in /beranda /api/health /privasi; do printf "  %-16s => " "$p"; curl -s -o /dev/null -w "%{http_code}\n" -m 10 -H "Host: lacakedu.web.id" http://127.0.0.1:8080$p; done; printf "  %-16s => " "/api/root/users"; curl -s -o /dev/null -w "%{http_code} (401 = hidup & digate)\n" -m 10 -H "Host: lacakedu.web.id" "http://127.0.0.1:8080/api/root/users?perPage=5"; printf "  %-16s => " "/api/books"; curl -s -o /dev/null -w "%{http_code} (401 = hidup & digate)\n" -m 10 -H "Host: lacakedu.web.id" http://127.0.0.1:8080/api/books'
 echo "deploy selesai ✓"
+
+# Bersihkan layer build yang menggantung (disk lokal pernah 97%).
+podman image prune -f >/dev/null 2>&1 || true
+df -h / | tail -1
