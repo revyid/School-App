@@ -49,7 +49,7 @@ export async function POST(req: NextRequest) {
   const name = `${crypto.randomUUID().replace(/-/g, "")}.${ext}`;
   // Validasi ke DB dulu: schoolId dari query tidak boleh jadi bagian path file.
   const q = a.role === "SUPER_ADMIN" ? (new URL(req.url).searchParams.get("schoolId") ?? "").trim() : "";
-  const sch = q && /^\w{8,40}$/.test(q) ? await getRootDb().school.findUnique({ where: { id: q }, select: { id: true } }) : null;
+  const sch = q ? await getRootDb().school.findUnique({ where: { id: q }, select: { id: true } }) : null;
   const schoolId = a.role === "SUPER_ADMIN" ? (sch?.id ?? "") : a.school!.id;
   if (!schoolId) return NextResponse.json({ error: "sekolah tidak ditemukan" }, { status: 404 });
 
