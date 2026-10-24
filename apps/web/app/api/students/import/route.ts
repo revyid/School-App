@@ -34,8 +34,10 @@ export async function POST(req: NextRequest) {
   const file = formData.get("file") as File | null;
   if (!file) return NextResponse.json({ error: "file wajib diisi" }, { status: 400 });
 
+  if (file.size > 10 * 1024 * 1024) return NextResponse.json({ error: "file melebihi 10MB" }, { status: 413 });
   const buf = Buffer.from(await file.arrayBuffer());
-  const wb = XLSX.read(buf, { type: "buffer" });
+  magic: if (buf.length < 4 || !(buf[0] === 0x50 && buf[1] === 0x4b)) return NextResponse.json({ error: "file bukan .xlsx valid" }, { status: 400 });
+  const wb = XLSX.read(buf, { type: "buffer", dense: true });
   const sheet = wb.Sheets[wb.SheetNames[0]];
   if (!sheet) return NextResponse.json({ error: "sheet kosong" }, { status: 400 });
 

@@ -1,3 +1,4 @@
+import { timingSafeEqual } from "node:crypto";
 import express from "express";
 import { createServer } from "node:http";
 import { Server as SocketServer } from "socket.io";
@@ -16,10 +17,17 @@ app.get("/healthz", (_req, res) => {
   res.status(200).send("ok");
 });
 
+function trustToken(req: { headers: Record<string, unknown> }): boolean {
+  const given = String(req.headers["x-internal-token"] ?? "");
+  const expect = process.env.INTERNAL_TOKEN ?? "";
+  const a = Buffer.from(given), b = Buffer.from(expect);
+  return timingSafeEqual(a.subarray(0, b.length), b);
+}
+
 // Internal (hanya loopback): status sesi WA + QR pairing per sekolah.
 // Dipanggil web server-side (bukan browser) dengan header x-internal-token.
 app.get("/wa-status", async (req, res) => {
-  if (req.headers["x-internal-token"] !== (process.env.INTERNAL_TOKEN ?? "")) {
+  if (!trustToken(req)) {
     res.status(403).send("forbidden");
     return;
   }
@@ -36,7 +44,7 @@ app.get("/wa-status", async (req, res) => {
 
 // Internal agregat: status semua sesi WA (untuk dashboard super-admin).
 app.get("/wa-status-all", async (req, res) => {
-  if (req.headers["x-internal-token"] !== (process.env.INTERNAL_TOKEN ?? "")) {
+  if (!trustToken(req)) {
     res.status(403).send("forbidden");
     return;
   }

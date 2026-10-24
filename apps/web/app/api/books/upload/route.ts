@@ -76,9 +76,11 @@ export async function POST(req: NextRequest) {
   // Sekolah mana? ADMIN -> sekolahnya; SUPER_ADMIN -> ?schoolId= (wajib).
   let schoolId: string;
   if (a.role === "SUPER_ADMIN") {
-    const q = new URL(req.url).searchParams.get("schoolId")?.trim();
-    if (!q) return NextResponse.json({ error: "schoolId wajib untuk root" }, { status: 400 });
-    schoolId = q;
+    const q = (new URL(req.url).searchParams.get("schoolId") ?? "").trim();
+    // Validasi ke DB dulu: schoolId dari query tidak boleh jadi bagian path file.
+    const sch = q && /^\w{8,40}$/.test(q) ? await getRootDb().school.findUnique({ where: { id: q }, select: { id: true } }) : null;
+    if (!sch) return NextResponse.json({ error: "sekolah tidak ditemukan" }, { status: 404 });
+    schoolId = sch.id;
   } else {
     schoolId = a.schoolId;
   }

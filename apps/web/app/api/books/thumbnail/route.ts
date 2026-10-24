@@ -47,10 +47,11 @@ export async function POST(req: NextRequest) {
   if (!ext) return NextResponse.json({ error: "format harus PNG/JPG/WEBP" }, { status: 400 });
 
   const name = `${crypto.randomUUID().replace(/-/g, "")}.${ext}`;
-  const schoolId = a.role === "SUPER_ADMIN"
-    ? (new URL(req.url).searchParams.get("schoolId") ?? "").trim()
-    : a.school!.id;
-  if (!schoolId) return NextResponse.json({ error: "schoolId wajib untuk root" }, { status: 400 });
+  // Validasi ke DB dulu: schoolId dari query tidak boleh jadi bagian path file.
+  const q = a.role === "SUPER_ADMIN" ? (new URL(req.url).searchParams.get("schoolId") ?? "").trim() : "";
+  const sch = q && /^\w{8,40}$/.test(q) ? await getRootDb().school.findUnique({ where: { id: q }, select: { id: true } }) : null;
+  const schoolId = a.role === "SUPER_ADMIN" ? (sch?.id ?? "") : a.school!.id;
+  if (!schoolId) return NextResponse.json({ error: "sekolah tidak ditemukan" }, { status: 404 });
 
   const dir = path.join(process.env.UPLOADS_ROOT ?? "/data/uploads", schoolId, "books", "covers");
   await fsp.mkdir(dir, { recursive: true });
