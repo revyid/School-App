@@ -13,3 +13,7 @@ packages/db/src/generated/
 data/
 *.tsbuildinfo
 doublecheck-*.md
+# Rahasia: jangan pernah masuk git (pernah bocor di history, sudah dibersihkan)
+apps/web/.env.local
+apps/web/.env
+data/wa-sessions/
