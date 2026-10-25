@@ -15,7 +15,11 @@ export async function GET(req: NextRequest) {
   if (!slug) return NextResponse.json({ error: "not found" }, { status: 404 });
   const kind = (new URL(req.url).searchParams.get("kind") ?? "character").trim();
   const field =
-    kind === "banner" ? "dashboardBannerUrl" : kind === "hero" ? "heroImageUrl" : "characterImageUrl";
+    kind === "banner" ? "dashboardBannerUrl"
+    : kind === "hero" ? "heroImageUrl"
+    : kind === "siswa" ? "siswaImageUrl"
+    : kind === "book" ? "bookImageUrl"
+    : "characterImageUrl";
 
   const school = await getPublicSchool(slug);
   if (!school) return NextResponse.json({ error: "not found" }, { status: 404 });
