@@ -25,7 +25,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
 
   const { id } = await params;
   const kind = (new URL(req.url).searchParams.get("kind") ?? "character").trim();
-  if (!["character", "book", "banner", "hero"].includes(kind))
+  if (!["character", "siswa", "book", "banner", "hero"].includes(kind))
     return NextResponse.json({ error: "jenis tidak dikenal" }, { status: 400 });
 
   const root = getRootDb();
@@ -44,6 +44,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
 
   const field =
     kind === "character" ? "characterImageUrl"
+    : kind === "siswa" ? "siswaImageUrl"
     : kind === "book" ? "bookImageUrl"
     : kind === "banner" ? "dashboardBannerUrl"
     : "heroImageUrl";

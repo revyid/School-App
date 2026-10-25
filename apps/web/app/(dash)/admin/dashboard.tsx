@@ -15,7 +15,7 @@ export default function AdminDashboard() {
   const leave = useFetch<{ rows: { id: string }[] }>("/api/leave?status=PENDING");
   const ann = useFetch<{ rows: { id: string; title: string }[] }>("/api/announcements");
   const wa = useFetch<{ connected?: boolean; queue?: { waiting: number } }>("/api/wa/status");
-  const brand = useFetch<{ settings: { characterImageUrl?: string | null; bookImageUrl?: string | null; heroImageUrl?: string | null } }>("/api/settings");
+  const brand = useFetch<{ settings: { characterImageUrl?: string | null; bookImageUrl?: string | null; siswaImageUrl?: string | null; heroImageUrl?: string | null } }>("/api/settings");
 
   const pendingIzin = leave.data?.rows.length ?? 0;
   const metric = (hook: { loading: boolean; error?: unknown; data?: { total?: number; rows?: unknown[] } | null }) => hook.loading ? "…" : hook.error ? "—" : (hook.data?.total ?? hook.data?.rows?.length ?? 0);

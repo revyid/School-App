@@ -22,7 +22,7 @@ export async function POST(req: NextRequest) {
   if (!a.ok) return NextResponse.json({ error: a.error }, { status: a.status });
 
   const kind = (new URL(req.url).searchParams.get("kind") ?? "character").trim();
-  if (!["character", "book", "banner", "hero"].includes(kind))
+  if (!["character", "siswa", "book", "banner", "hero"].includes(kind))
     return NextResponse.json({ error: "jenis tidak dikenal" }, { status: 400 });
 
   const form = await req.formData().catch(() => null);
@@ -38,6 +38,7 @@ export async function POST(req: NextRequest) {
 
   const field =
     kind === "character" ? "characterImageUrl"
+    : kind === "siswa" ? "siswaImageUrl"
     : kind === "book" ? "bookImageUrl"
     : kind === "banner" ? "dashboardBannerUrl"
     : "heroImageUrl";

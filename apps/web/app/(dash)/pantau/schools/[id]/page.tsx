@@ -35,9 +35,10 @@ interface SchoolDetail {
 type Msg = { variant: "success" | "destructive"; text: string } | null;
 
 const BRAND_KINDS = [
-  { kind: "character", field: "characterImageUrl", label: "Gambar karakter" },
-  { kind: "book", field: "bookImageUrl", label: "Ilustrasi buku" },
-  { kind: "hero", field: "heroImageUrl", label: "Gambar hero" },
+  { kind: "character", field: "characterImageUrl", label: "Karakter siswi (putri)" },
+  { kind: "siswa", field: "siswaImageUrl", label: "Karakter siswa (putra)" },
+  { kind: "book", field: "bookImageUrl", label: "Ilustrasi buku (dashboard admin)" },
+  { kind: "hero", field: "heroImageUrl", label: "Ilustrasi kelas (CTA portal & guru)" },
 ] as const;
 
 export default function RootSchoolSettingsPage({ params }: { params: Promise<{ id: string }> }) {

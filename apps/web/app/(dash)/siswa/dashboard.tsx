@@ -20,7 +20,7 @@ export default function SiswaDashboard() {
   );
   const exp = useFetch<{ points: number; badges: { name: string; awardedAt: string }[] }>("/api/exp/me");
   // Gambar karakter sekolah (bila diunggah admin) dengan fallback aset lama.
-  const brand = useFetch<{ settings: { characterImageUrl?: string | null; bookImageUrl?: string | null; heroImageUrl?: string | null } }>("/api/settings");
+  const brand = useFetch<{ settings: { characterImageUrl?: string | null; bookImageUrl?: string | null; siswaImageUrl?: string | null; heroImageUrl?: string | null } }>("/api/settings");
 
   const rows = tasks.data?.rows ?? [];
   const belum = rows.filter((t) => t.state === "BELUM" || t.state === "TERLAMBAT").length;

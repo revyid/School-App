@@ -20,7 +20,7 @@ export default function GuruDashboard() {
   }>("/api/tasks");
   const leave = useFetch<{ rows: { id: string }[] }>("/api/leave?status=PENDING");
   // Gambar karakter sekolah (bila diunggah admin) dengan fallback ilustrasi lama.
-  const brand = useFetch<{ settings: { characterImageUrl?: string | null; bookImageUrl?: string | null; heroImageUrl?: string | null } }>("/api/settings");
+  const brand = useFetch<{ settings: { characterImageUrl?: string | null; bookImageUrl?: string | null; siswaImageUrl?: string | null; heroImageUrl?: string | null } }>("/api/settings");
 
   const kelas = assign.data?.rows ?? [];
   const kelasUnik = Array.from(new Map(kelas.map((k) => [k.class.id, k])).values());
